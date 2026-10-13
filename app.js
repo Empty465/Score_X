@@ -1,17 +1,19 @@
 const views = [...document.querySelectorAll('.view')];
 const navItems = [...document.querySelectorAll('.nav-item')];
 const breadcrumbCurrent = document.querySelector('#breadcrumb-current');
-const titles = { home: '오늘의 게임', snake: '스네이크 런', memory: '짝꿍 찾기', reaction: '순간 포착', mole: '두더지 잡기', baseball: '숫자 야구', rocket: '로켓 착륙' };
+const titles = { home: '임무 관제실', investment: '투자 관제실', shop: '재화 상점', snake: '우주 쓰레기 수거', memory: '시스템 오류 복구', reaction: '수동 도킹 시퀀스', mole: '비상 경고등 진압', baseball: '궤도 진입 좌표 해독', rocket: '1단 부스터 회수' };
 const bestKeys = { snake: 'playground-best-snake', memory: 'playground-best-memory', reaction: 'playground-best-reaction', mole: 'playground-best-mole', baseball: 'playground-best-baseball', rocket: 'playground-best-rocket' };
 const scoreGames = [
-  { id: 'snake', label: '스네이크 런', icon: '↝' },
-  { id: 'memory', label: '짝꿍 찾기', icon: '▦' },
-  { id: 'reaction', label: '순간 포착', icon: '✳' },
-  { id: 'mole', label: '두더지 잡기', icon: '⌁' },
-  { id: 'baseball', label: '숫자 야구', icon: '#' },
-  { id: 'rocket', label: '로켓 착륙', icon: '▲' }
+  { id: 'snake', label: '우주 쓰레기 수거', icon: '↝' },
+  { id: 'memory', label: '시스템 오류 복구', icon: '▦' },
+  { id: 'reaction', label: '수동 도킹 시퀀스', icon: '✳' },
+  { id: 'mole', label: '비상 경고등 진압', icon: '⌁' },
+  { id: 'baseball', label: '궤도 진입 좌표 해독', icon: '#' },
+  { id: 'rocket', label: '1단 부스터 회수', icon: '▲' }
 ];
 let activePlayer = null;
+let currentProfile = null;
+let shopItems = [];
 try { activePlayer = JSON.parse(localStorage.getItem('playground-player') || 'null'); } catch { activePlayer = null; }
 
 document.querySelector('#today-date').textContent = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
@@ -51,11 +53,17 @@ function ensureScoreServer() {
 
 function renderScoreboard(data) {
   const currentUser = data.currentUser;
+  currentProfile = currentUser;
   document.querySelector('#total-score').textContent = formatPoints(currentUser?.total || 0);
   document.querySelector('#current-player-label').textContent = currentUser
     ? `${currentUser.name} · ${currentUser.rank}위`
     : activePlayer ? `${activePlayer.name} · 기록을 불러오는 중` : '이름을 등록하면 순위에 참여할 수 있어요.';
-  document.querySelector('.avatar').textContent = currentUser?.name?.slice(0, 1) || 'P';
+  const profileAvatar = document.querySelector('.avatar');
+  profileAvatar.textContent = currentUser?.avatar || '🚀';
+  profileAvatar.setAttribute('aria-label', currentUser ? `${currentUser.name} 프로필` : '크루 프로필');
+  document.querySelector('#wallet-balance').textContent = currentUser ? formatPoints(currentUser.credits) : '—';
+  document.querySelector('#shop-balance').textContent = currentUser ? formatPoints(currentUser.credits) : '—';
+  renderShopItems();
 
   const rankingList = document.querySelector('#score-rankings');
   const playerRows = data.players.map((player) => {
@@ -65,6 +73,9 @@ function renderScoreboard(data) {
     const rank = document.createElement('span');
     rank.className = 'ranking-number';
     rank.textContent = String(player.rank).padStart(2, '0');
+    const avatar = document.createElement('span');
+    avatar.className = 'ranking-avatar';
+    avatar.textContent = player.avatar || '🚀';
     const name = document.createElement('span');
     name.className = 'ranking-name';
     name.textContent = player.name;
@@ -73,7 +84,7 @@ function renderScoreboard(data) {
     const unit = document.createElement('small');
     unit.textContent = ' PTS';
     points.append(unit);
-    row.append(rank, name, points);
+    row.append(rank, avatar, name, points);
     return row;
   });
   if (playerRows.length === 0) {
@@ -95,6 +106,151 @@ function renderScoreboard(data) {
     row.append(label, points);
     return row;
   }));
+}
+
+function setShopMessage(message, isError = false) {
+  const status = document.querySelector('#shop-message');
+  status.textContent = message;
+  status.classList.toggle('is-error', isError);
+}
+
+function renderShopItems() {
+  const container = document.querySelector('#shop-items');
+  if (!container) return;
+  container.replaceChildren();
+  if (shopItems.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'shop-empty';
+    empty.textContent = '상점 상품을 불러오는 중입니다.';
+    container.append(empty);
+    return;
+  }
+
+  const owned = new Set(currentProfile?.ownedCosmetics || []);
+  shopItems.forEach((item) => {
+    const card = document.createElement('article');
+    card.className = 'shop-item';
+    const preview = document.createElement('div');
+    preview.className = 'shop-item-preview';
+    preview.textContent = item.emoji;
+    const category = document.createElement('span');
+    category.className = 'shop-item-category';
+    category.textContent = item.type === 'display-name' ? 'CREW ID' : 'PROFILE ICON';
+    const title = document.createElement('h3');
+    title.textContent = item.name;
+    const description = document.createElement('p');
+    description.textContent = item.description;
+    const price = document.createElement('div');
+    price.className = 'shop-item-price';
+    const priceLabel = document.createElement('span');
+    priceLabel.textContent = '가격';
+    const priceAmount = document.createElement('strong');
+    priceAmount.textContent = `◇ ${formatPoints(item.price)} `;
+    const priceUnit = document.createElement('small');
+    priceUnit.textContent = 'CR';
+    priceAmount.append(priceUnit);
+    price.append(priceLabel, priceAmount);
+    card.append(preview, category, title, description, price);
+
+    const form = document.createElement('form');
+    form.className = item.type === 'display-name' ? 'shop-item-form has-name-input' : 'shop-item-form';
+    form.dataset.itemId = item.id;
+    if (item.type === 'display-name') {
+      const input = document.createElement('input');
+      input.name = 'displayName';
+      input.type = 'text';
+      input.maxLength = 24;
+      input.placeholder = currentProfile?.name || '새 점수판 이름';
+      input.setAttribute('aria-label', '변경할 점수판 이름');
+      form.append(input);
+    }
+    const button = document.createElement('button');
+    button.className = 'shop-buy-button';
+    button.type = 'submit';
+    const isOwned = owned.has(item.id);
+    const isEquipped = item.type === 'avatar' && currentProfile?.avatarId === item.avatarId;
+    const hasEnoughCredits = currentProfile && currentProfile.credits >= item.price;
+    button.textContent = item.type === 'display-name' ? '이름 변경권 구매' : isEquipped ? '장착 중' : isOwned ? '장착하기' : hasEnoughCredits ? '구매하기' : '크레딧 부족';
+    button.disabled = !currentProfile || (item.type === 'avatar' && isEquipped) || (item.type === 'avatar' && !isOwned && !hasEnoughCredits) || (item.type === 'display-name' && !hasEnoughCredits);
+    if (item.type === 'avatar') button.dataset.avatarId = item.avatarId;
+    form.append(button);
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const displayName = form.elements.displayName?.value || '';
+      if (item.type === 'display-name' && !displayName.trim()) {
+        setShopMessage('새 점수판 이름을 입력해 주세요.', true);
+        form.elements.displayName?.focus();
+        return;
+      }
+      if (item.type === 'avatar' && isOwned) {
+        equipAvatar(item.avatarId, button);
+      } else {
+        purchaseShopItem(item.id, displayName, button);
+      }
+    });
+    card.append(form);
+    container.append(card);
+  });
+}
+
+async function loadShopItems() {
+  ensureScoreServer();
+  const response = await fetch('/api/shop/items');
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || '상점 상품을 불러오지 못했습니다.');
+  shopItems = result.items;
+  renderShopItems();
+  if (!currentProfile) setShopMessage('상점을 이용하려면 먼저 관제실에서 플레이어 이름을 등록하세요.');
+  else setShopMessage('미니게임에서 크레딧을 모아 크루 프로필을 꾸며보세요.');
+}
+
+async function purchaseShopItem(itemId, displayName, button) {
+  if (!activePlayer) {
+    setShopMessage('상점을 이용하려면 먼저 관제실에서 플레이어 이름을 등록하세요.', true);
+    return;
+  }
+  button.disabled = true;
+  setShopMessage('구매를 처리하고 있습니다.');
+  try {
+    ensureScoreServer();
+    const response = await fetch('/api/shop/purchase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: activePlayer.id, itemId, displayName })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || '구매를 완료하지 못했습니다.');
+    currentProfile = result.profile;
+    setShopMessage(`${result.profile.name} 크루 프로필을 업데이트했습니다.`);
+    await refreshScoreboard();
+  } catch (error) {
+    setShopMessage(error.message || '구매를 완료하지 못했습니다.', true);
+  } finally {
+    renderShopItems();
+  }
+}
+
+async function equipAvatar(avatarId, button) {
+  if (!activePlayer) return;
+  button.disabled = true;
+  setShopMessage('프로필 아이콘을 적용하고 있습니다.');
+  try {
+    ensureScoreServer();
+    const response = await fetch('/api/profile/avatar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: activePlayer.id, avatarId })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || '프로필 아이콘을 적용하지 못했습니다.');
+    currentProfile = result.profile;
+    setShopMessage('프로필 아이콘을 적용했습니다.');
+    await refreshScoreboard();
+  } catch (error) {
+    setShopMessage(error.message || '프로필 아이콘을 적용하지 못했습니다.', true);
+  } finally {
+    renderShopItems();
+  }
 }
 
 async function refreshScoreboard() {
@@ -138,7 +294,7 @@ async function registerPlayer(event) {
 
 async function awardScore(game, points) {
   const earned = Math.max(0, Math.floor(points));
-  if (!activePlayer || !earned) {
+  if (!activePlayer) {
     setPlayerMessage('점수를 저장하려면 먼저 플레이어 이름을 등록하세요.', true);
     return null;
   }
@@ -152,6 +308,7 @@ async function awardScore(game, points) {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || '점수 저장에 실패했습니다.');
     await refreshScoreboard();
+    setShopMessage(`임무 보상으로 ${formatPoints(result.creditsEarned)} CR을 획득했습니다.`);
   } catch (error) {
     setPlayerMessage(error.message || '점수 서버에 연결할 수 없습니다.', true);
     return null;
@@ -187,8 +344,9 @@ document.querySelectorAll('[data-launch]').forEach((button) => button.addEventLi
   showView(game);
   gameModules.get(game)?.onLaunch?.();
 }));
+loadShopItems().catch((error) => setShopMessage(error.message || '상점에 연결할 수 없습니다.', true));
 renderBests();
-document.querySelector('#player-name').value = activePlayer?.name || '';
+document.querySelector('#player-name').value = activePlayer?.accountName || activePlayer?.name || '';
 document.querySelector('#player-form').addEventListener('submit', registerPlayer);
 renderScoreboard({ players: [], currentUser: null });
 refreshScoreboard().catch((error) => setPlayerMessage(error.message || 'SQLite 서버를 실행해 주세요: node server.js', true));

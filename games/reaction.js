@@ -9,11 +9,11 @@ function resetReaction() {
   clearTimeout(reactionTimeout);
   reactionState = 'idle';
   reactionArena.className = 'reaction-arena';
-  document.querySelector('#reaction-instruction').textContent = '준비되면 시작 버튼을 눌러요';
-  document.querySelector('#reaction-hint').textContent = '초록색으로 바뀌면 클릭!';
+  document.querySelector('#reaction-instruction').textContent = '도킹 신호 대기';
+  document.querySelector('#reaction-hint').textContent = '결합 신호가 점등되면 확인하세요.';
   document.querySelector('#reaction-status').textContent = 'READY';
   document.querySelector('#reaction-score').innerHTML = '—<small> ms</small>';
-  document.querySelector('#reaction-start').textContent = '도전 시작 ↗';
+  document.querySelector('#reaction-start').textContent = '시퀀스 시작 ↗';
 }
 
 function startReaction() {
@@ -21,7 +21,7 @@ function startReaction() {
   reactionState = 'waiting';
   reactionArena.className = 'reaction-arena is-waiting';
   document.querySelector('#reaction-instruction').textContent = '초록색이 될 때까지 기다려요';
-  document.querySelector('#reaction-hint').textContent = '아직 누르지 마세요';
+  document.querySelector('#reaction-hint').textContent = '도킹 신호 전까지 대기하세요.';
   document.querySelector('#reaction-status').textContent = 'WAIT';
   document.querySelector('#reaction-start').textContent = '신호 대기 중';
   reactionTimeout = setTimeout(() => {
@@ -39,10 +39,10 @@ reactionArena.addEventListener('click', async () => {
     clearTimeout(reactionTimeout);
     reactionState = 'early';
     reactionArena.className = 'reaction-arena is-result';
-    document.querySelector('#reaction-instruction').textContent = '너무 빨라요!';
-    document.querySelector('#reaction-hint').textContent = '시작 버튼을 눌러 다시 도전';
+    document.querySelector('#reaction-instruction').textContent = '신호보다 빨랐습니다!';
+    document.querySelector('#reaction-hint').textContent = '시퀀스를 다시 시작하세요.';
     document.querySelector('#reaction-status').textContent = 'FALSE START';
-    document.querySelector('#reaction-start').textContent = '다시 도전 ↗';
+    document.querySelector('#reaction-start').textContent = '다시 시도 ↗';
     return;
   }
   if (reactionState !== 'ready') return;
@@ -50,7 +50,7 @@ reactionArena.addEventListener('click', async () => {
   reactionState = 'result';
   reactionArena.className = 'reaction-arena is-result';
   document.querySelector('#reaction-instruction').textContent = `${elapsed} ms`;
-  document.querySelector('#reaction-hint').textContent = '다시 도전해서 기록을 줄여봐요';
+  document.querySelector('#reaction-hint').textContent = '도킹 성공. 다시 시도해 기록을 단축하세요.';
   document.querySelector('#reaction-status').textContent = 'RESULT';
   document.querySelector('#reaction-score').innerHTML = `${elapsed}<small> ms</small>`;
   document.querySelector('#reaction-start').textContent = '다시 도전 ↗';

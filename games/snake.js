@@ -21,9 +21,9 @@ function resetSnake() {
   snakeDirection = { x: 1, y: 0 };
   nextSnakeDirection = { x: 1, y: 0 };
   snakeScore.textContent = '00';
-  document.querySelector('#snake-overlay-title').textContent = '준비됐나요?';
-  document.querySelector('#snake-overlay-copy').textContent = '방향키 또는 WASD로 움직여요.';
-  document.querySelector('#snake-start').textContent = '게임 시작 ↗';
+  document.querySelector('#snake-overlay-title').textContent = '수거 임무 준비';
+  document.querySelector('#snake-overlay-copy').textContent = '방향키 또는 WASD로 드론을 조종하세요.';
+  document.querySelector('#snake-start').textContent = '임무 시작 ↗';
   snakeOverlay.classList.remove('is-hidden');
   placeSnakeFood();
   drawSnake();
@@ -39,9 +39,9 @@ function drawSnake() {
   if (!snakeContext) return;
   const cell = snakeCanvas.width / snakeGridSize;
   snakeContext.clearRect(0, 0, snakeCanvas.width, snakeCanvas.height);
-  snakeContext.fillStyle = '#eaf0df';
+  snakeContext.fillStyle = '#081727';
   snakeContext.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
-  snakeContext.strokeStyle = '#dfe8d2';
+  snakeContext.strokeStyle = '#122b40';
   snakeContext.lineWidth = 1;
   for (let index = 1; index < snakeGridSize; index += 1) {
     snakeContext.beginPath();
@@ -53,18 +53,18 @@ function drawSnake() {
     snakeContext.lineTo(snakeCanvas.width, index * cell);
     snakeContext.stroke();
   }
-  snakeContext.fillStyle = '#f07b53';
+  snakeContext.fillStyle = '#ffd27d';
   snakeContext.beginPath();
   snakeContext.arc((snakeFood.x + .5) * cell, (snakeFood.y + .5) * cell, cell * .34, 0, Math.PI * 2);
   snakeContext.fill();
   snake.forEach((part, index) => {
-    snakeContext.fillStyle = index === 0 ? '#456a3c' : `hsl(96 27% ${42 + Math.min(index, 5) * 4}%)`;
+    snakeContext.fillStyle = index === 0 ? '#65e6d1' : `hsl(190 56% ${30 + Math.min(index, 5) * 5}%)`;
     snakeContext.beginPath();
     snakeContext.roundRect(part.x * cell + 1.5, part.y * cell + 1.5, cell - 3, cell - 3, cell * .3);
     snakeContext.fill();
   });
   const head = snake[0];
-  snakeContext.fillStyle = '#f8f7ef';
+  snakeContext.fillStyle = '#eafcff';
   snakeContext.beginPath();
   snakeContext.arc((head.x + .65) * cell, (head.y + .34) * cell, 1.7, 0, Math.PI * 2);
   snakeContext.fill();
@@ -76,10 +76,10 @@ async function finishSnake() {
   const previousBest = Number(getBest('snake') || 0);
   if (snakePoints > previousBest) saveBest('snake', snakePoints);
   const earned = await awardScore('snake', snakePoints * 100);
-  document.querySelector('#snake-overlay-title').textContent = '게임 끝!';
+  document.querySelector('#snake-overlay-title').textContent = '수거 임무 종료';
   const receipt = earned === null ? '이름 등록 후 기록돼요.' : `+${earned}P 적립`;
-  document.querySelector('#snake-overlay-copy').textContent = `먹이 ${snakePoints}개 · ${receipt}`;
-  document.querySelector('#snake-start').textContent = '다시 도전 ↗';
+  document.querySelector('#snake-overlay-copy').textContent = `회수한 파편 ${snakePoints}개 · ${receipt}`;
+  document.querySelector('#snake-start').textContent = '다시 출격 ↗';
   snakeOverlay.classList.remove('is-hidden');
 }
 
