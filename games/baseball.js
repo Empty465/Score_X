@@ -15,8 +15,8 @@ function resetBaseball() {
   document.querySelector('#baseball-status').textContent = 'PLAYING';
   document.querySelector('#baseball-attempts').textContent = '0';
   document.querySelector('#baseball-remaining').textContent = '09';
-  document.querySelector('#baseball-message').textContent = '1부터 9까지 숫자 세 개를 입력하세요.';
-  document.querySelector('#guess-log').innerHTML = '<li class="guess-empty">아직 기록이 없어요.</li>';
+  document.querySelector('#baseball-message').textContent = '좌표 보안 코드 3자리를 입력하세요.';
+  document.querySelector('#guess-log').innerHTML = '<li class="guess-empty">보안 터미널 대기 중...</li>';
   document.querySelector('#baseball-input').focus();
 }
 
@@ -26,7 +26,7 @@ async function submitBaseballGuess(event) {
   const guess = baseballInput.value.trim();
   const message = document.querySelector('#baseball-message');
   if (!/^[1-9]{3}$/.test(guess) || new Set(guess).size !== 3) {
-    message.textContent = '1부터 9까지 서로 다른 숫자 세 개를 입력하세요.';
+    message.textContent = '1부터 9까지 서로 다른 숫자 세 개로 코드를 입력하세요.';
     baseballInput.focus();
     return;
   }
@@ -52,14 +52,14 @@ async function submitBaseballGuess(event) {
     document.querySelector('#baseball-status').textContent = 'WIN';
     const earned = await awardScore('baseball', (10 - baseballAttempts) * 100);
     const receipt = earned === null ? '이름 등록 후 점수를 저장할 수 있어요.' : `+${earned}P 적립`;
-    message.textContent = `${baseballAttempts}번 만에 맞혔어요! ${receipt}`;
+    message.textContent = `${baseballAttempts}회 만에 좌표 코드를 해독했습니다. ${receipt}`;
     if (baseballAttempts < Number(getBest('baseball') || Infinity)) saveBest('baseball', baseballAttempts);
   } else if (baseballAttempts === 9) {
     baseballFinished = true;
     document.querySelector('#baseball-status').textContent = 'GAME OVER';
-    message.textContent = `기회가 끝났어요. 정답은 ${baseballAnswer}였습니다.`;
+    message.textContent = `해독 시도가 끝났습니다. 접근 코드는 ${baseballAnswer}입니다.`;
   } else {
-    message.textContent = strikes || balls ? `${strikes} 스트라이크, ${balls} 볼` : '아웃! 같은 숫자가 하나도 없어요.';
+    message.textContent = strikes || balls ? `터미널 응답 · ${strikes} 스트라이크, ${balls} 볼` : '접근 거부 · 일치하는 좌표가 없습니다.';
   }
   if (baseballFinished) {
     baseballInput.disabled = true;

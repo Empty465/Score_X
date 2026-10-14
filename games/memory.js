@@ -1,6 +1,6 @@
 const { getBest, saveBest, awardScore } = window.Playground;
 
-const memorySymbols = ['✿', '☀', '☁', '♫', '🍓', '☾', '♣', '✦'];
+const memorySymbols = ['⚙', '◉', '⌁', '✦', '◇', '☼', '▱', '⬡'];
 let memoryOpen = [];
 let memoryMatched = 0;
 let memoryMoves = 0;
@@ -25,7 +25,7 @@ function resetMemory() {
   document.querySelector('#memory-time').textContent = '00:00';
   document.querySelector('#memory-pairs').textContent = '08';
   document.querySelector('#memory-status').textContent = 'READY';
-  document.querySelector('#memory-start').textContent = '게임 시작 ↗';
+  document.querySelector('#memory-start').textContent = '복구 시작 ↗';
   const deck = [...memorySymbols, ...memorySymbols].sort(() => Math.random() - .5);
   document.querySelector('#memory-grid').innerHTML = deck.map((symbol, index) => `<button class="memory-card" data-symbol="${symbol}" aria-label="${index + 1}번째 카드, 뒤집혀 있음">?</button>`).join('');
   document.querySelectorAll('.memory-card').forEach((card) => card.addEventListener('click', () => flipMemoryCard(card)));
@@ -35,7 +35,7 @@ function beginMemoryTimer() {
   if (memoryStarted) return;
   memoryStarted = true;
   document.querySelector('#memory-status').textContent = 'PLAYING';
-  document.querySelector('#memory-start').textContent = '게임 진행 중';
+  document.querySelector('#memory-start').textContent = '회로 복구 중';
   memoryTimer = setInterval(() => {
     memorySeconds += 1;
     document.querySelector('#memory-time').textContent = formatTime(memorySeconds);
@@ -79,12 +79,12 @@ function flipMemoryCard(card) {
 async function finishMemory() {
   clearInterval(memoryTimer);
   document.querySelector('#memory-status').textContent = 'COMPLETE';
-  document.querySelector('#memory-start').textContent = '성공했어요!';
+  document.querySelector('#memory-start').textContent = '시스템 복구 완료';
   const previousBest = Number(getBest('memory') || Infinity);
   if (memoryMoves < previousBest) saveBest('memory', memoryMoves);
   const earned = await awardScore('memory', Math.max(100, 1200 - memoryMoves * 40 - memorySeconds * 5));
   const receipt = earned === null ? '이름 등록 후 저장' : `+${earned}P 적립`;
-  document.querySelector('#memory-start').textContent = `완료 · ${receipt}`;
+  document.querySelector('#memory-start').textContent = `복구 완료 · ${receipt}`;
 }
 
 document.querySelector('#memory-reset').addEventListener('click', resetMemory);

@@ -25,7 +25,7 @@ function resetMole() {
   document.querySelector('#mole-score').textContent = '00';
   document.querySelector('#mole-time').innerHTML = '20<small> 초</small>';
   document.querySelector('#mole-status').textContent = 'READY';
-  document.querySelector('#mole-start').textContent = '게임 시작 ↗';
+  document.querySelector('#mole-start').textContent = '임무 시작 ↗';
   renderMole();
 }
 
@@ -45,7 +45,7 @@ async function finishMole() {
   document.querySelector('#mole-status').textContent = 'COMPLETE';
   const earned = await awardScore('mole', moleScore * 20);
   const receipt = earned === null ? '이름 등록 후 저장' : `+${earned}P 적립`;
-  document.querySelector('#mole-start').textContent = `${moleScore}마리 · ${receipt}`;
+  document.querySelector('#mole-start').textContent = `${moleScore}회 차단 · ${receipt}`;
   if (moleScore > Number(getBest('mole') || 0)) saveBest('mole', moleScore);
   renderMole();
 }
@@ -55,7 +55,7 @@ function startMole() {
   resetMole();
   moleRunning = true;
   document.querySelector('#mole-status').textContent = 'PLAYING';
-  document.querySelector('#mole-start').textContent = '잡아보세요!';
+  document.querySelector('#mole-start').textContent = '경고를 차단하세요!';
   showNextMole();
   moleTimer = setInterval(() => {
     moleSecondsLeft -= 1;

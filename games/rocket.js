@@ -68,9 +68,9 @@ function resetRocket() {
   document.querySelector('#rocket-horizontal-speed').innerHTML = '—<small> m/s</small>';
   document.querySelector('#rocket-fuel-label').textContent = '100%';
   document.querySelector('#rocket-fuel-meter').value = 100;
-  document.querySelector('#rocket-overlay-title').textContent = '착륙 준비 완료';
-  document.querySelector('#rocket-overlay-copy').textContent = '추력으로 속도를 줄이고 패드 위에 착륙하세요.';
-  document.querySelector('#rocket-start').textContent = '발사하기 ↗';
+  document.querySelector('#rocket-overlay-title').textContent = '부스터 회수 준비 완료';
+  document.querySelector('#rocket-overlay-copy').textContent = '추력으로 속도를 줄이고 해상 패드에 수직 착륙하세요.';
+  document.querySelector('#rocket-start').textContent = '회수 시퀀스 시작 ↗';
   document.querySelector('#rocket-overlay').classList.remove('is-hidden');
   drawRocketScene();
 }
@@ -78,36 +78,46 @@ function resetRocket() {
 function drawRocketScene() {
   const context = rocketContext;
   const sky = context.createLinearGradient(0, 0, 0, rocketHeight);
-  sky.addColorStop(0, '#1e2934');
-  sky.addColorStop(1, '#46515a');
+  sky.addColorStop(0, '#071525');
+  sky.addColorStop(.72, '#123b55');
+  sky.addColorStop(1, '#24718a');
   context.fillStyle = sky;
   context.fillRect(0, 0, rocketWidth, rocketHeight);
   rocketStars.forEach((star) => {
     context.globalAlpha = star.alpha;
-    context.fillStyle = '#f4f1d8';
+    context.fillStyle = '#d8f5ff';
     context.beginPath();
     context.arc(star.x, star.y, star.size, 0, Math.PI * 2);
     context.fill();
   });
   context.globalAlpha = 1;
-  context.fillStyle = '#d3c7a5';
+  context.fillStyle = '#a8d8e2';
   context.beginPath();
   context.arc(592, 102, 34, 0, Math.PI * 2);
   context.fill();
-  context.fillStyle = '#b8ad8e';
+  context.fillStyle = '#74b4c7';
   context.beginPath();
   context.arc(580, 94, 7, 0, Math.PI * 2);
   context.arc(606, 111, 10, 0, Math.PI * 2);
   context.arc(600, 87, 4, 0, Math.PI * 2);
   context.fill();
-  context.fillStyle = '#77745f';
+  context.fillStyle = '#092136';
   context.fillRect(0, rocketGroundY, rocketWidth, rocketHeight - rocketGroundY);
-  context.fillStyle = '#a9a17c';
+  context.strokeStyle = '#28758a';
+  context.lineWidth = 2;
+  for (let wave = 0; wave < 7; wave += 1) {
+    const y = rocketGroundY + 13 + wave * 7;
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(rocketWidth, y);
+    context.stroke();
+  }
+  context.fillStyle = '#b9ced6';
   context.fillRect(0, rocketGroundY, rocketPadX - rocketPadWidth / 2, 5);
   context.fillRect(rocketPadX + rocketPadWidth / 2, rocketGroundY, rocketWidth - rocketPadX - rocketPadWidth / 2, 5);
-  context.fillStyle = '#c5e67a';
+  context.fillStyle = '#ff765f';
   context.fillRect(rocketPadX - rocketPadWidth / 2, rocketGroundY - 10, rocketPadWidth, 7);
-  context.fillStyle = '#e3daa9';
+  context.fillStyle = '#f2f6f5';
   for (let stripe = 0; stripe < 5; stripe += 1) context.fillRect(rocketPadX - 64 + stripe * 32, rocketGroundY - 8, 12, 3);
 
   if (!rocketBody) return;
@@ -116,21 +126,21 @@ function drawRocketScene() {
   context.rotate(rocketBody.angle);
   if (rocketRunning && rocketInput.thrust && rocketFuel > 0) {
     const flameLength = 19 + Math.random() * 10;
-    context.fillStyle = '#ff8053';
+    context.fillStyle = '#ff765f';
     context.beginPath();
     context.moveTo(-6, 17);
     context.lineTo(0, 17 + flameLength);
     context.lineTo(6, 17);
     context.closePath();
     context.fill();
-    context.fillStyle = '#ffd56f';
+    context.fillStyle = '#ffd27d';
     context.beginPath();
     context.moveTo(-3, 17);
     context.lineTo(0, 17 + flameLength * .68);
     context.lineTo(3, 17);
     context.fill();
   }
-  context.fillStyle = '#edf0e1';
+  context.fillStyle = '#f0f5f4';
   context.beginPath();
   context.moveTo(0, -24);
   context.lineTo(10, -8);
@@ -139,7 +149,7 @@ function drawRocketScene() {
   context.lineTo(-10, -8);
   context.closePath();
   context.fill();
-  context.fillStyle = '#ef7959';
+  context.fillStyle = '#ff765f';
   context.beginPath();
   context.moveTo(0, -24);
   context.lineTo(6, -13);
@@ -188,10 +198,10 @@ async function finishRocket(safeLanding) {
       : `속도 ${verticalSpeed.toFixed(1)} m/s · +${earned}P 적립`;
   } else {
     document.querySelector('#rocket-score').textContent = '0';
-    document.querySelector('#rocket-overlay-title').textContent = '착륙 실패';
+    document.querySelector('#rocket-overlay-title').textContent = '부스터 회수 실패';
     document.querySelector('#rocket-overlay-copy').textContent = '패드 중앙에서 기체를 수평으로 하고 하강 속도를 낮춰보세요.';
   }
-  document.querySelector('#rocket-start').textContent = '다시 비행 ↗';
+  document.querySelector('#rocket-start').textContent = '회수 재시도 ↗';
   document.querySelector('#rocket-overlay').classList.remove('is-hidden');
   drawRocketScene();
 }
