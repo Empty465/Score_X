@@ -59,7 +59,7 @@ reactionArena.addEventListener('click', async () => {
   const earned = await awardScore('reaction', Math.max(1, 1000 - elapsed));
   document.querySelector('#reaction-hint').textContent = earned === null
     ? '이름 등록 후 점수를 저장할 수 있어요.'
-    : `+${earned}P 적립 · 다시 도전해 기록을 줄여봐요`;
+    : `${earned} PTS 기록 · 다시 도전해 기록을 줄여봐요`;
 });
 
 document.querySelector('#reaction-start').addEventListener('click', startReaction);

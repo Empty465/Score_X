@@ -48,6 +48,20 @@ function setPlayerMessage(message, isError = false) {
   status.classList.toggle('is-error', isError);
 }
 
+function showMissionResult(game, points, result) {
+  const gameName = scoreGames.find((option) => option.id === game)?.label || game;
+  const dialog = document.querySelector('#mission-result-dialog');
+  document.querySelector('#mission-result-title').textContent = `${gameName} 완료`;
+  document.querySelector('#mission-result-copy').textContent = result.isNewBest
+    ? '새로운 게임별 최고 점수를 기록했습니다.'
+    : '이번 임무 결과와 보상을 확인하세요.';
+  document.querySelector('#mission-result-score').textContent = `${formatPoints(points)} PTS`;
+  document.querySelector('#mission-result-credits').textContent = `+${formatPoints(result.creditsEarned)} CR`;
+  document.querySelector('#mission-result-total').textContent =
+    `최고 기록 합산 ${formatPoints(result.totalBestScore)} PTS · ${result.tier}`;
+  if (!dialog.open) dialog.showModal();
+}
+
 function ensureScoreServer() {
   if (location.protocol !== 'http:' || location.port !== '3000') {
     throw new Error('점수 저장은 http://127.0.0.1:3000 에서 이용할 수 있어요.');
@@ -58,8 +72,9 @@ function renderScoreboard(data) {
   const currentUser = data.currentUser;
   currentProfile = currentUser;
   document.querySelector('#total-score').textContent = formatPoints(currentUser?.total || 0);
+  document.querySelector('#total-tier').textContent = currentUser?.tier || '훈련생';
   document.querySelector('#current-player-label').textContent = currentUser
-    ? `${currentUser.name} · ${currentUser.rank}위`
+    ? `${currentUser.name} · 기록 ${currentUser.rank}위 · 자산 ${currentUser.creditRank}위`
     : activePlayer ? `${activePlayer.name} · 기록을 불러오는 중` : '이름을 등록하면 순위에 참여할 수 있어요.';
   const profileAvatar = document.querySelector('.avatar');
   profileAvatar.textContent = currentUser?.avatar || '🚀';
@@ -73,42 +88,65 @@ function renderScoreboard(data) {
   renderShopItems();
   renderInvestment();
 
-  const rankingList = document.querySelector('#score-rankings');
-  const playerRows = data.players.map((player) => {
-    const row = document.createElement('li');
-    row.className = 'ranking-row';
-    if (player.id === currentUser?.id) row.classList.add('is-current-player');
-    if (player.backgroundId) row.classList.add(`ranking-bg-${player.backgroundId}`);
-    const rank = document.createElement('span');
-    rank.className = 'ranking-number';
-    rank.textContent = String(player.rank).padStart(2, '0');
-    const avatar = document.createElement('span');
-    avatar.className = 'ranking-avatar';
-    avatar.textContent = player.avatar || '🚀';
-    const name = document.createElement('span');
-    name.className = 'ranking-name';
-    name.textContent = player.name;
-    if (player.title) {
-      const title = document.createElement('small');
-      title.className = 'ranking-title';
-      title.textContent = player.title;
-      name.append(title);
+  function renderRankingList(container, players, valueKey, unitLabel, emptyMessage, showTier = false) {
+    const playerRows = players.map((player) => {
+      const row = document.createElement('li');
+      row.className = 'ranking-row';
+      if (player.id === currentUser?.id) row.classList.add('is-current-player');
+      if (player.backgroundId) row.classList.add(`ranking-bg-${player.backgroundId}`);
+      const rank = document.createElement('span');
+      rank.className = 'ranking-number';
+      rank.textContent = String(player.rank).padStart(2, '0');
+      const avatar = document.createElement('span');
+      avatar.className = 'ranking-avatar';
+      avatar.textContent = player.avatar || '🚀';
+      const name = document.createElement('span');
+      name.className = 'ranking-name';
+      name.textContent = player.name;
+      if (player.title) {
+        const title = document.createElement('small');
+        title.className = 'ranking-title';
+        title.textContent = player.title;
+        name.append(title);
+      }
+      if (showTier) {
+        const tier = document.createElement('small');
+        tier.className = 'ranking-tier';
+        tier.textContent = player.tier;
+        name.append(tier);
+      }
+      const points = document.createElement('strong');
+      points.textContent = formatPoints(player[valueKey]);
+      const unit = document.createElement('small');
+      unit.textContent = ` ${unitLabel}`;
+      points.append(unit);
+      row.append(rank, avatar, name, points);
+      return row;
+    });
+    if (playerRows.length === 0) {
+      const emptyRow = document.createElement('li');
+      emptyRow.className = 'ranking-empty';
+      emptyRow.textContent = emptyMessage;
+      playerRows.push(emptyRow);
     }
-    const points = document.createElement('strong');
-    points.textContent = formatPoints(player.total);
-    const unit = document.createElement('small');
-    unit.textContent = ' PTS';
-    points.append(unit);
-    row.append(rank, avatar, name, points);
-    return row;
-  });
-  if (playerRows.length === 0) {
-    const emptyRow = document.createElement('li');
-    emptyRow.className = 'ranking-empty';
-    emptyRow.textContent = '아직 등록된 플레이어가 없어요.';
-    playerRows.push(emptyRow);
+    container.replaceChildren(...playerRows);
   }
-  rankingList.replaceChildren(...playerRows);
+
+  renderRankingList(
+    document.querySelector('#score-rankings'),
+    data.players,
+    'total',
+    'PTS',
+    '아직 최고 기록이 등록되지 않았어요.',
+    true
+  );
+  renderRankingList(
+    document.querySelector('#credit-rankings'),
+    data.creditPlayers || [],
+    'credits',
+    'CR',
+    '아직 등록된 플레이어가 없어요.'
+  );
 
   const gameBreakdown = document.querySelector('#score-game-breakdown');
   gameBreakdown.replaceChildren(...scoreGames.map((game) => {
@@ -334,6 +372,7 @@ async function awardScore(game, points) {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || '점수 저장에 실패했습니다.');
     handleInvestmentProgress(result);
+    showMissionResult(game, earned, result);
     await refreshScoreboard();
     setShopMessage(`임무 보상으로 ${formatPoints(result.creditsEarned)} CR을 획득했습니다.`);
   } catch (error) {
@@ -570,6 +609,9 @@ document.querySelector('#investment-next-game').addEventListener('click', async 
 });
 document.querySelector('#investment-result-confirm').addEventListener('click', () => {
   document.querySelector('#investment-result-dialog').close();
+});
+document.querySelector('#mission-result-confirm').addEventListener('click', () => {
+  document.querySelector('#mission-result-dialog').close();
 });
 loadShopItems().catch((error) => setShopMessage(error.message || '상점에 연결할 수 없습니다.', true));
 loadInvestmentOptions().catch((error) => setInvestmentMessage(error.message || '투자 옵션을 불러올 수 없습니다.', true));

@@ -187,17 +187,37 @@ const getPlayers = database.prepare(`
     users.title_id,
     users.background_id,
     users.created_at,
-    COALESCE(SUM(score_events.points), 0) AS total,
-    COALESCE(SUM(CASE WHEN score_events.game = 'snake' THEN score_events.points ELSE 0 END), 0) AS snake,
-    COALESCE(SUM(CASE WHEN score_events.game = 'memory' THEN score_events.points ELSE 0 END), 0) AS memory,
-    COALESCE(SUM(CASE WHEN score_events.game = 'reaction' THEN score_events.points ELSE 0 END), 0) AS reaction,
-    COALESCE(SUM(CASE WHEN score_events.game = 'mole' THEN score_events.points ELSE 0 END), 0) AS mole,
-    COALESCE(SUM(CASE WHEN score_events.game = 'baseball' THEN score_events.points ELSE 0 END), 0) AS baseball,
-    COALESCE(SUM(CASE WHEN score_events.game = 'rocket' THEN score_events.points ELSE 0 END), 0) AS rocket
+    COALESCE(SUM(best_scores.best_points), 0) AS total,
+    COALESCE(MAX(CASE WHEN best_scores.game = 'snake' THEN best_scores.best_points ELSE 0 END), 0) AS snake,
+    COALESCE(MAX(CASE WHEN best_scores.game = 'memory' THEN best_scores.best_points ELSE 0 END), 0) AS memory,
+    COALESCE(MAX(CASE WHEN best_scores.game = 'reaction' THEN best_scores.best_points ELSE 0 END), 0) AS reaction,
+    COALESCE(MAX(CASE WHEN best_scores.game = 'mole' THEN best_scores.best_points ELSE 0 END), 0) AS mole,
+    COALESCE(MAX(CASE WHEN best_scores.game = 'baseball' THEN best_scores.best_points ELSE 0 END), 0) AS baseball,
+    COALESCE(MAX(CASE WHEN best_scores.game = 'rocket' THEN best_scores.best_points ELSE 0 END), 0) AS rocket
   FROM users
-  LEFT JOIN score_events ON score_events.user_id = users.id
+  LEFT JOIN (
+    SELECT user_id, game, MAX(points) AS best_points
+    FROM score_events
+    GROUP BY user_id, game
+  ) AS best_scores ON best_scores.user_id = users.id
   GROUP BY users.id
   ORDER BY total DESC, users.created_at ASC, users.id ASC
+`);
+const getUserBestScores = database.prepare(`
+  SELECT
+    COALESCE(SUM(best_scores.best_points), 0) AS total,
+    COALESCE(MAX(CASE WHEN best_scores.game = 'snake' THEN best_scores.best_points ELSE 0 END), 0) AS snake,
+    COALESCE(MAX(CASE WHEN best_scores.game = 'memory' THEN best_scores.best_points ELSE 0 END), 0) AS memory,
+    COALESCE(MAX(CASE WHEN best_scores.game = 'reaction' THEN best_scores.best_points ELSE 0 END), 0) AS reaction,
+    COALESCE(MAX(CASE WHEN best_scores.game = 'mole' THEN best_scores.best_points ELSE 0 END), 0) AS mole,
+    COALESCE(MAX(CASE WHEN best_scores.game = 'baseball' THEN best_scores.best_points ELSE 0 END), 0) AS baseball,
+    COALESCE(MAX(CASE WHEN best_scores.game = 'rocket' THEN best_scores.best_points ELSE 0 END), 0) AS rocket
+  FROM (
+    SELECT game, MAX(points) AS best_points
+    FROM score_events
+    WHERE user_id = ?
+    GROUP BY game
+  ) AS best_scores
 `);
 
 function sendJson(response, status, data) {
@@ -225,11 +245,11 @@ function readJson(request) {
 
 function serializePlayer(row, rank, includeCosmetics = false) {
   const title = titles.find((option) => option.id === row.title_id);
+  const total = Number(row.total || 0);
   return {
     id: row.id,
     name: row.display_name || row.name,
     accountName: row.name,
-    credits: Number(row.credits),
     avatarId: row.avatar_id,
     avatar: avatars.find((avatar) => avatar.id === row.avatar_id)?.emoji || avatars[0].emoji,
     titleId: row.title_id || '',
@@ -237,9 +257,18 @@ function serializePlayer(row, rank, includeCosmetics = false) {
     backgroundId: row.background_id || '',
     ...(includeCosmetics ? { ownedCosmetics: getUserCosmetics.all(row.id).map((item) => item.item_id) } : {}),
     rank,
-    total: Number(row.total),
-    scores: Object.fromEntries(games.map((game) => [game, Number(row[game])]))
+    total,
+    tier: getTier(total),
+    credits: Number(row.credits || 0),
+    scores: Object.fromEntries(games.map((game) => [game, Number(row[game] || 0)]))
   };
+}
+
+function getTier(score) {
+  if (score >= 3500) return '함장';
+  if (score >= 2000) return '개척자';
+  if (score >= 1000) return '항해사';
+  return '훈련생';
 }
 
 function updateUserCredits(userId, credits) {
@@ -373,13 +402,22 @@ async function handleApi(request, response, url) {
 
   if (request.method === 'GET' && url.pathname === '/api/leaderboard') {
     const rows = getPlayers.all();
-    const players = rows.map((row) => serializePlayer(row, null));
-    players.forEach((player, index) => { player.rank = index + 1; });
+    const scorePlayers = rows.map((row, index) => serializePlayer(row, index + 1));
+    const creditsById = new Map(
+      [...scorePlayers]
+        .sort((left, right) => right.credits - left.credits || left.id - right.id)
+        .map((player, index) => [player.id, index + 1])
+    );
+    scorePlayers.forEach((player) => { player.creditRank = creditsById.get(player.id); });
+    const creditPlayers = [...scorePlayers]
+      .sort((left, right) => right.credits - left.credits || left.id - right.id)
+      .map((player, index) => ({ ...player, rank: index + 1 }));
     const userId = Number(url.searchParams.get('userId'));
-    const currentUser = Number.isInteger(userId) ? players.find((player) => player.id === userId) || null : null;
+    const currentUser = Number.isInteger(userId) ? scorePlayers.find((player) => player.id === userId) || null : null;
     if (currentUser) currentUser.ownedCosmetics = getUserCosmetics.all(currentUser.id).map((item) => item.item_id);
     sendJson(response, 200, {
-      players: players.slice(0, 10),
+      players: scorePlayers.slice(0, 10),
+      creditPlayers: creditPlayers.slice(0, 10),
       currentUser
     });
     return;
@@ -398,6 +436,7 @@ async function handleApi(request, response, url) {
       return;
     }
     const creditsEarned = Math.max(1, Math.floor(points / 100));
+    const previousBest = Number(getUserBestScores.get(userId)?.[payload.game] || 0);
     const activeRun = getActiveInvestment.get(userId);
     let investment = serializeInvestment(activeRun);
     let reroll = null;
@@ -437,10 +476,16 @@ async function handleApi(request, response, url) {
       database.exec('ROLLBACK');
       throw error;
     }
+    const updatedBestScores = getUserBestScores.get(userId);
     sendJson(response, 201, {
       saved: true,
+      score: points,
       creditsEarned,
       credits: Number(findUserById.get(userId).credits),
+      bestScore: Math.max(previousBest, points),
+      isNewBest: points > previousBest,
+      totalBestScore: Number(updatedBestScores.total),
+      tier: getTier(Number(updatedBestScores.total)),
       investment,
       reroll
     });
