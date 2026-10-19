@@ -64,9 +64,10 @@
         <section class="scoreboard" aria-label="누적 게임 점수판">
           <div class="scoreboard-summary">
             <div class="scoreboard-kicker"><span>✳</span> CREW PERFORMANCE</div>
-            <div class="scoreboard-label">MISSION DATA · TOTAL SCORE</div>
+            <div class="scoreboard-label">TIER / RANK SCORE · PTS</div>
             <div class="scoreboard-total"><strong id="total-score">0</strong><span>PTS</span></div>
             <div class="scoreboard-foot" id="current-player-label">이름을 등록하면 순위에 참여할 수 있어요.</div>
+            <span class="profile-title-badge" id="profile-title-badge" hidden></span>
             <form class="scoreboard-player-form" id="player-form">
               <label class="sr-only" for="player-name">계정 이름</label>
               <input id="player-name" name="name" type="text" maxlength="24" autocomplete="nickname" placeholder="계정 이름" required>
@@ -132,28 +133,33 @@
           <div class="investment-hero-mark" aria-hidden="true"><span>◇</span><small>RESOURCE<br>EXCHANGE</small></div>
         </div>
 
-        <section class="investment-status-panel" aria-label="투자 시스템 상태">
+        <section class="investment-status-panel" id="investment-panel" aria-label="투자 설정">
           <div class="investment-status-icon">↗</div>
-          <div>
+          <div class="investment-panel-content">
             <span class="investment-status-kicker">INVESTMENT SYSTEM</span>
-            <h2>투자 시스템 준비 중</h2>
-            <p>미니게임과 분리된 투자 공간입니다. 투자 기능이 준비되면 이곳에서 이용할 수 있어요.</p>
+            <h2 id="investment-panel-title">투자 규모와 위험 옵션 선택</h2>
+            <p id="investment-panel-copy">3~5개의 무작위 임무를 완료하면 서버에서 확률에 따라 투자 결과를 정산합니다.</p>
+            <form id="investment-form">
+              <label class="investment-amount-label" for="investment-amount">투자 재화 <strong><span id="investment-amount-value">1</span> CR</strong></label>
+              <div class="investment-amount-input"><input id="investment-stake-number" type="number" min="1" max="500" value="1" aria-label="투자할 재화 수량"><span>CR</span></div>
+              <input id="investment-amount" name="stake" type="range" min="1" max="500" value="1">
+              <div class="investment-range-labels"><span>1 CR</span><span>보유량 <b id="investment-credit-limit">—</b> CR</span></div>
+              <div class="investment-options-heading"><strong>위험 옵션</strong><button class="text-button" id="investment-reroll" type="button">↻ 옵션 리롤</button></div>
+              <div class="investment-options" id="investment-options" role="radiogroup" aria-label="투자 위험 옵션"></div>
+              <button class="primary-button investment-start-button" id="investment-start" type="submit">투자 시작 <span>↗</span></button>
+            </form>
+            <p class="investment-message" id="investment-message" role="status" aria-live="polite">플레이어를 등록하면 투자를 시작할 수 있어요.</p>
           </div>
-          <span class="investment-status-badge"><i></i> STANDBY</span>
         </section>
 
-        <div class="investment-section-heading">
-          <div><span class="section-kicker">HOW IT WORKS</span><h2>투자 진행 방식</h2></div>
-          <span class="section-note">재화와 점수는 별도로 관리됩니다</span>
-        </div>
-        <div class="investment-flow">
-          <article class="investment-step"><span class="investment-step-number">01</span><span class="investment-step-icon">◇</span><h3>재화 선택</h3><p>보유한 재화 중 투자할 수량을 정합니다.</p></article>
-          <span class="investment-flow-arrow" aria-hidden="true">→</span>
-          <article class="investment-step"><span class="investment-step-number">02</span><span class="investment-step-icon">◎</span><h3>게임 진행</h3><p>안내된 횟수만큼 미니게임을 플레이합니다.</p></article>
-          <span class="investment-flow-arrow" aria-hidden="true">→</span>
-          <article class="investment-step"><span class="investment-step-number">03</span><span class="investment-step-icon">✧</span><h3>결과 확인</h3><p>결과에 따라 투자 재화를 잃거나 배수 보상을 받습니다.</p></article>
-        </div>
-        <div class="investment-note"><span>i</span><p>투자 재화는 미니게임 점수 및 랭킹 점수와 별도의 항목입니다.</p></div>
+        <section class="investment-progress-panel" id="investment-progress" hidden aria-live="polite">
+          <div class="investment-progress-heading"><div><span class="section-kicker">ACTIVE INVESTMENT</span><h2>진행 중인 투자 임무</h2></div><strong id="investment-progress-count"></strong></div>
+          <p id="investment-progress-copy"></p>
+          <ol id="investment-sequence" class="investment-sequence"></ol>
+          <button class="primary-button investment-next-button" id="investment-next-game" type="button">다음 임무 시작 <span>↗</span></button>
+        </section>
+
+        <div class="investment-note"><span>i</span><p>게임별 티어 점수와 임무 크레딧은 투자 재화와 별도로 기록됩니다. 투자 원금은 시작 시 차감되며 정산 보상은 완료 후 지급됩니다.</p></div>
       </section>
 
       <section class="view shop-view" id="view-shop">
@@ -166,7 +172,7 @@
           <div class="shop-wallet" aria-label="보유 크레딧"><span>보유 크레딧</span><strong><i>◇</i> <b id="shop-balance">—</b><small>CR</small></strong></div>
         </div>
         <div class="shop-notice" id="shop-message" role="status" aria-live="polite">상점 정보를 불러오는 중...</div>
-        <div class="shop-section-heading"><div><span class="section-kicker">PROFILE ITEMS</span><h2>크루 프로필 꾸미기</h2></div><span class="section-note">구매한 아이콘은 언제든 장착할 수 있어요</span></div>
+        <div class="shop-section-heading"><div><span class="section-kicker">PROFILE ITEMS</span><h2>아바타 · 칭호 · 랭킹 배경</h2></div><span class="section-note">구매한 아이템은 언제든 장착할 수 있어요</span></div>
         <div class="shop-grid" id="shop-items" aria-live="polite"></div>
         <div class="shop-footnote"><span>i</span><p>새 크루 등록 시 환영 크레딧 500 CR이 지급됩니다. 기존 계정은 상점 적용 시 500 CR을 한 번 지급받습니다. 미니게임 점수 100점마다 1 CR, 게임 완료 시 최소 1 CR을 획득합니다.</p></div>
       </section>
@@ -230,5 +236,13 @@
       <footer class="page-footer"><span>TRAIN THE AI. SECURE THE MISSION.</span><span>© SCORE X OPERATIONS</span></footer>
     </main>
   </div>
+  <dialog class="investment-result-dialog" id="investment-result-dialog">
+    <form method="dialog"><button class="dialog-close" aria-label="닫기">×</button></form>
+    <span class="section-kicker">INVESTMENT SETTLEMENT</span>
+    <h2 id="investment-result-title">정산 결과</h2>
+    <p id="investment-result-copy"></p>
+    <strong class="investment-result-amount" id="investment-result-amount"></strong>
+    <button class="primary-button" id="investment-result-confirm" type="button">확인 <span>↗</span></button>
+  </dialog>
 </body>
 </html>
