@@ -15,8 +15,11 @@ function resetBaseball() {
   document.querySelector('#baseball-status').textContent = 'PLAYING';
   document.querySelector('#baseball-attempts').textContent = '0';
   document.querySelector('#baseball-remaining').textContent = '09';
-  document.querySelector('#baseball-message').textContent = '좌표 보안 코드 3자리를 입력하세요.';
-  document.querySelector('#guess-log').innerHTML = '<li class="guess-empty">보안 터미널 대기 중...</li>';
+  document.querySelector('#baseball-message').textContent = '1~9 중 서로 다른 숫자 3개로 보안 코드를 입력하세요.';
+  document.querySelector('#guess-log').replaceChildren(Object.assign(document.createElement('li'), {
+    className: 'guess-empty',
+    textContent: '터미널 응답 대기 중 · 첫 코드를 입력하세요.'
+  }));
   document.querySelector('#baseball-input').focus();
 }
 
@@ -26,40 +29,54 @@ async function submitBaseballGuess(event) {
   const guess = baseballInput.value.trim();
   const message = document.querySelector('#baseball-message');
   if (!/^[1-9]{3}$/.test(guess) || new Set(guess).size !== 3) {
-    message.textContent = '1부터 9까지 서로 다른 숫자 세 개로 코드를 입력하세요.';
+    message.textContent = '1~9 중 서로 다른 숫자 3개를 입력해야 합니다.';
     baseballInput.focus();
     return;
   }
 
   baseballAttempts += 1;
-  let strikes = 0;
-  let balls = 0;
+  let positionMatches = 0;
+  let coordinateSignals = 0;
   [...guess].forEach((digit, index) => {
-    if (digit === baseballAnswer[index]) strikes += 1;
-    else if (baseballAnswer.includes(digit)) balls += 1;
+    if (digit === baseballAnswer[index]) positionMatches += 1;
+    else if (baseballAnswer.includes(digit)) coordinateSignals += 1;
   });
   const log = document.querySelector('#guess-log');
-  if (baseballAttempts === 1) log.innerHTML = '';
+  if (baseballAttempts === 1) log.replaceChildren();
   const row = document.createElement('li');
-  row.innerHTML = `<span class="guess-number">${String(baseballAttempts).padStart(2, '0')}</span><strong>${guess}</strong><span class="guess-result">${strikes ? `${strikes} 스트라이크` : ''}${strikes && balls ? ' · ' : ''}${balls ? `${balls} 볼` : ''}${!strikes && !balls ? '아웃' : ''}</span>`;
+  const attempt = document.createElement('span');
+  attempt.className = 'guess-number';
+  attempt.textContent = String(baseballAttempts).padStart(2, '0');
+  const code = document.createElement('strong');
+  code.textContent = guess;
+  const result = document.createElement('span');
+  result.className = 'guess-result';
+  result.textContent = [
+    positionMatches ? `좌표 일치 ${positionMatches}` : '',
+    coordinateSignals ? `신호 검출 ${coordinateSignals}` : ''
+  ].filter(Boolean).join(' · ') || '미검출 · 일치 좌표 없음';
+  row.append(attempt, code, result);
   log.prepend(row);
   baseballInput.value = '';
   document.querySelector('#baseball-attempts').textContent = String(baseballAttempts);
   document.querySelector('#baseball-remaining').textContent = String(9 - baseballAttempts).padStart(2, '0');
 
-  if (strikes === 3) {
+  if (positionMatches === 3) {
     baseballFinished = true;
     document.querySelector('#baseball-status').textContent = 'WIN';
     const earned = await awardScore('baseball', (10 - baseballAttempts) * 100);
-    const receipt = earned === null ? '이름 등록 후 점수를 저장할 수 있어요.' : `+${earned}P 적립`;
+    const receipt = earned === null ? '이름 등록 후 점수를 저장할 수 있어요.' : `${earned} PTS 기록`;
     message.textContent = `${baseballAttempts}회 만에 좌표 코드를 해독했습니다. ${receipt}`;
     if (baseballAttempts < Number(getBest('baseball') || Infinity)) saveBest('baseball', baseballAttempts);
   } else if (baseballAttempts === 9) {
     baseballFinished = true;
     document.querySelector('#baseball-status').textContent = 'GAME OVER';
-    message.textContent = `해독 시도가 끝났습니다. 접근 코드는 ${baseballAnswer}입니다.`;
+    await awardScore('baseball', 0);
+    message.textContent = `해독 실패 · 보안 코드 ${baseballAnswer}를 확보하지 못했습니다.`;
   } else {
-    message.textContent = strikes || balls ? `터미널 응답 · ${strikes} 스트라이크, ${balls} 볼` : '접근 거부 · 일치하는 좌표가 없습니다.';
+    message.textContent = positionMatches || coordinateSignals
+      ? `터미널 응답 · 좌표 일치 ${positionMatches} · 신호 검출 ${coordinateSignals}`
+      : '터미널 응답 · 코드와 일치하는 좌표 신호가 없습니다.';
   }
   if (baseballFinished) {
     baseballInput.disabled = true;

@@ -77,7 +77,7 @@ async function finishSnake() {
   if (snakePoints > previousBest) saveBest('snake', snakePoints);
   const earned = await awardScore('snake', snakePoints * 100);
   document.querySelector('#snake-overlay-title').textContent = '수거 임무 종료';
-  const receipt = earned === null ? '이름 등록 후 기록돼요.' : `+${earned}P 적립`;
+  const receipt = earned === null ? '이름 등록 후 기록돼요.' : `${earned} PTS 기록`;
   document.querySelector('#snake-overlay-copy').textContent = `회수한 파편 ${snakePoints}개 · ${receipt}`;
   document.querySelector('#snake-start').textContent = '다시 출격 ↗';
   snakeOverlay.classList.remove('is-hidden');

@@ -195,11 +195,13 @@ async function finishRocket(safeLanding) {
     document.querySelector('#rocket-overlay-title').textContent = '착륙 성공!';
     document.querySelector('#rocket-overlay-copy').textContent = earned === null
       ? `속도 ${verticalSpeed.toFixed(1)} m/s · 이름 등록 후 점수를 저장할 수 있어요.`
-      : `속도 ${verticalSpeed.toFixed(1)} m/s · +${earned}P 적립`;
+      : `속도 ${verticalSpeed.toFixed(1)} m/s · ${earned} PTS 기록`;
   } else {
     document.querySelector('#rocket-score').textContent = '0';
     document.querySelector('#rocket-overlay-title').textContent = '부스터 회수 실패';
+    const earned = await awardScore('rocket', 0);
     document.querySelector('#rocket-overlay-copy').textContent = '패드 중앙에서 기체를 수평으로 하고 하강 속도를 낮춰보세요.';
+    if (earned !== null) document.querySelector('#rocket-overlay-copy').textContent += ' 결과 보상은 정산되었습니다.';
   }
   document.querySelector('#rocket-start').textContent = '회수 재시도 ↗';
   document.querySelector('#rocket-overlay').classList.remove('is-hidden');

@@ -63,7 +63,7 @@ h1, h2, h3, p { margin-top: 0; }
 .day-badge { width: 112px; height: 112px; margin-right: 13px; border: 1px solid #e2ded0; border-radius: 50%; position: relative; display: flex; justify-content: center; align-items: center; flex-direction: column; color: #65675e; font-size: 11px; line-height: 1.3; transform: rotate(8deg); }
 .day-badge-star { position: absolute; top: 9px; right: 15px; color: var(--orange); font-size: 16px; }
 .day-badge strong { margin-top: 4px; color: #30322c; font: 19px "Jua", sans-serif; }
-.scoreboard { display: grid; grid-template-columns: minmax(205px, .8fr) minmax(0, 1.4fr); overflow: hidden; margin: 0 0 27px; border-radius: 5px; background: #29352c; color: #f3f2e9; }
+.scoreboard { display: grid; grid-template-columns: minmax(205px, .8fr) repeat(2, minmax(0, 1.2fr)); overflow: hidden; margin: 0 0 27px; border-radius: 5px; background: #29352c; color: #f3f2e9; }
 .scoreboard-summary { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-height: 222px; padding: 18px 23px; border-right: 1px solid #ffffff1e; background: radial-gradient(ellipse at 10% 100%, #64764b 0, transparent 65%); }
 .scoreboard-kicker { color: #d1d3c2; font: 8px "DM Mono", monospace; letter-spacing: .8px; }
 .scoreboard-kicker span { margin-right: 5px; color: #c5eb7c; font-size: 13px; }
@@ -71,6 +71,7 @@ h1, h2, h3, p { margin-top: 0; }
 .scoreboard-total { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; }
 .scoreboard-total strong { color: #f7f5e9; font: 36px/1.1 "DM Mono", monospace; letter-spacing: 0; }
 .scoreboard-total > span { color: #c5eb7c; font: 9px "DM Mono", monospace; }
+.tier-badge { margin: 5px 0 3px; border: 1px solid #c5eb7c66; border-radius: 999px; padding: 2px 8px; color: #d8f6a2; font-size: 9px; }
 .scoreboard-foot { color: #b7bbae; font-size: 9px; }
 .scoreboard-player-form { width: 100%; display: flex; gap: 5px; margin-top: 10px; }
 .scoreboard-player-form input { min-width: 0; width: 100%; height: 32px; border: 1px solid #ffffff35; border-radius: 3px; padding: 0 8px; background: #ffffff12; color: #fffdf3; font: 10px "Gowun Dodum", sans-serif; }
@@ -81,11 +82,11 @@ h1, h2, h3, p { margin-top: 0; }
 .scoreboard-player-form button span { margin-left: 3px; }
 .scoreboard-message { min-height: 13px; margin: 6px 0 0; color: #d0d5c3; font-size: 8px; line-height: 1.5; }
 .scoreboard-message.is-error { color: #ffd0b9; }
-.scoreboard-ranking { padding: 17px 22px 13px; }
+.scoreboard-ranking { min-width: 0; border-left: 1px solid #ffffff1e; padding: 17px 16px 13px; }
 .ranking-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .ranking-heading h2 { margin: 0; color: #f3f2e9; font: 14px "Jua", sans-serif; }
 .ranking-heading > span { color: #a8aea1; font: 7px "DM Mono", monospace; letter-spacing: .7px; }
-#score-rankings { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; max-height: 232px; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+#score-rankings, #credit-rankings { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; max-height: 232px; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
 .ranking-row { min-width: 0; min-height: 25px; display: flex; align-items: center; gap: 7px; border-top: 1px solid #ffffff18; }
 .ranking-number { width: 14px; color: #9ca394; font: 8px "DM Mono", monospace; }
 .ranking-row:first-child .ranking-number { color: #c5eb7c; }
@@ -280,6 +281,12 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 18px; 
 .baseball-example > span { display: flex; justify-content: space-between; }
 .baseball-example b { color: #62564b; font: 10px "DM Mono", monospace; letter-spacing: 2px; }
 .baseball-example > strong { border-top: 1px solid #e9dccc; padding-top: 6px; color: #a3654f; font-size: 9px; font-weight: normal; }
+.baseball-rules { display: grid; gap: 7px; margin: 0 0 10px; }
+.baseball-rules > div { border-left: 2px solid #34744e; padding-left: 8px; }
+.baseball-rules strong { color: #9bffb1; font-size: 10px; }
+.baseball-rules p { margin: 2px 0 0; color: #83b992; font-size: 9px; line-height: 1.5; }
+.baseball-instruction-note { margin: 0 0 12px; color: #83b992; font-size: 9px; line-height: 1.6; }
+.baseball-instruction-note b, .baseball-instruction-note strong { color: #b4ffc6; }
 .card-rocket .game-art { background: #d9e0d3; }
 .rocket-art-orbit { position: absolute; width: 108px; height: 58px; top: 42px; left: calc(50% - 54px); border: 1px solid #899e85; border-radius: 50%; transform: rotate(-17deg); }
 .rocket-art-moon { position: absolute; top: 20px; right: 23%; width: 35px; height: 35px; border-radius: 50%; background: #d0a85e; box-shadow: inset -7px -3px 0 #be9550; }
@@ -346,7 +353,8 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 18px; 
   .scoreboard-player-form { margin-top: 8px; }
   .scoreboard-message { min-height: 12px; }
   .scoreboard-ranking { padding: 13px 16px 12px; }
-  #score-rankings { max-height: 205px; }
+  .scoreboard-ranking { border-left: 0; border-bottom: 1px solid #ffffff1e; }
+  #score-rankings, #credit-rankings { max-height: 205px; }
   .ranking-row { min-height: 27px; }
   .scoreboard-game-breakdown { padding: 12px 16px; }
   #score-game-breakdown { grid-template-columns: 1fr; gap: 0; }
@@ -409,6 +417,74 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 18px; 
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
+.scoreboard-label { color: #91a8c5; }
+.scoreboard-total > span { color: #65e6d1; }
+.profile-title-badge { display: inline-flex; align-items: center; margin-top: 5px; border: 1px solid #65e6d155; border-radius: 999px; padding: 2px 8px; color: #9af4e5; font-size: 9px; }
+.ranking-row { border-radius: 4px; padding-right: 5px; }
+.ranking-row.ranking-bg-background-aurora { background: linear-gradient(90deg, #164c6444, transparent); }
+.ranking-row.ranking-bg-background-nebula { background: linear-gradient(90deg, #49336655, transparent); }
+.ranking-row.ranking-bg-background-solar { background: linear-gradient(90deg, #61422655, transparent); }
+.ranking-title { display: block; overflow: hidden; color: #8ea3bd; font-size: 7px; text-overflow: ellipsis; }
+.ranking-tier { display: block; color: #9af4e5; font-size: 7px; }
+.investment-panel-content { flex: 1; min-width: 0; }
+.investment-status-panel { align-items: flex-start; }
+.investment-panel-content > h2 { margin: 7px 0 5px; color: #e9f3ff; font: 21px "Jua", sans-serif; }
+.investment-panel-content > p { color: #91a5bf; font-size: 11px; line-height: 1.6; }
+#investment-form { max-width: 760px; }
+.investment-amount-label { display: flex; justify-content: space-between; align-items: center; margin: 17px 0 8px; color: #bdcde0; font-size: 12px; }
+.investment-amount-label strong { color: #8ff5e5; font: 15px "DM Mono", monospace; }
+.investment-amount-input { display: flex; align-items: center; gap: 8px; width: 136px; border: 1px solid #304965; border-radius: 5px; padding: 0 10px; background: #081525; color: #83a0bd; }
+.investment-amount-input input { width: 100%; height: 37px; border: 0; outline: 0; background: transparent; color: #e7f2ff; font: 14px "DM Mono", monospace; }
+.investment-amount-input input:focus-visible { outline: 0; }
+#investment-amount { display: block; width: 100%; margin: 10px 0 0; accent-color: #65e6d1; }
+.investment-range-labels { display: flex; justify-content: space-between; color: #7890ab; font-size: 9px; }
+.investment-range-labels b { color: #c1d1e4; font-weight: normal; }
+.investment-options-heading { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 9px; color: #dce9f8; font-size: 12px; }
+.investment-options-heading .text-button { margin: 0; }
+.investment-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.investment-option { display: flex; flex-direction: column; min-width: 0; min-height: 145px; gap: 7px; border: 1px solid #29415d; border-radius: 6px; padding: 12px; background: #0b192a; color: #dce9f8; text-align: left; cursor: pointer; }
+.investment-option:hover { border-color: #4f8c95; }
+.investment-option.is-selected { border-color: #65e6d1; background: linear-gradient(145deg, #153847, #0b192a 75%); box-shadow: 0 0 18px #65e6d11c; }
+.investment-option > strong { color: #8ff5e5; font: 15px "Jua", sans-serif; }
+.investment-option-description { color: #9aacc3; font-size: 10px; line-height: 1.5; }
+.investment-outcomes { margin-top: auto; color: #8298b4; font-size: 8px; line-height: 1.6; }
+.investment-start-button { margin-top: 15px; padding: 10px 17px; }
+.investment-message { min-height: 17px; margin: 10px 0 0 !important; color: #91a5bf; font-size: 10px !important; }
+.investment-message.is-error { color: #ff9cac; }
+.investment-progress-panel { margin-top: 18px; border: 1px solid #29415d; border-radius: 8px; padding: 20px; background: linear-gradient(145deg, #102036, #0b1727 78%); }
+.investment-progress-panel[hidden] { display: none; }
+.investment-progress-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.investment-progress-heading h2 { margin: 5px 0 0; color: #ecf4ff; font: 20px "Jua", sans-serif; }
+.investment-progress-heading > strong { color: #8ff5e5; font: 17px "DM Mono", monospace; }
+.investment-progress-panel > p { margin: 12px 0; color: #9aacc3; font-size: 11px; }
+.investment-sequence { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; margin: 0; padding: 0; list-style: none; }
+.investment-sequence li { border: 1px solid #2a4058; border-radius: 4px; padding: 9px 7px; color: #7f95af; font-size: 9px; line-height: 1.5; }
+.investment-sequence li.is-complete { border-color: #286b65; color: #8ff5e5; }
+.investment-sequence li.is-current { border-color: #78baff; color: #dceeff; box-shadow: 0 0 13px #78baff20; }
+.investment-next-button { margin-top: 13px; }
+.investment-result-dialog { width: min(420px, calc(100% - 32px)); border: 1px solid #36536e; border-radius: 10px; padding: 27px; background: #0c1b2d; color: #e6f0ff; box-shadow: 0 24px 90px #000b; }
+.investment-result-dialog::backdrop { background: #020914c9; backdrop-filter: blur(4px); }
+.investment-result-dialog h2 { margin: 10px 0; font: 26px "Jua", sans-serif; }
+.investment-result-dialog p { color: #9aacc3; font-size: 12px; line-height: 1.6; }
+.investment-result-amount { display: block; margin: 18px 0; color: #8ff5e5; font: 27px "DM Mono", monospace; }
+.investment-result-dialog > .primary-button { padding: 9px 16px; cursor: pointer; }
+.investment-result-dialog form { position: absolute; top: 10px; right: 11px; }
+.dialog-close { border: 0; background: transparent; color: #91a5bf; font-size: 24px; cursor: pointer; }
+.mission-result-reward { display: flex; align-items: baseline; justify-content: space-between; border-top: 1px solid #263d55; border-bottom: 1px solid #263d55; padding: 12px 0; color: #9aacc3; font-size: 12px; }
+.mission-result-reward strong { color: #8ff5e5; font: 18px "DM Mono", monospace; }
+.investment-result-dialog .mission-result-total { margin: 12px 0 18px; font-size: 10px; }
+.shop-item-category { color: #8ff5e5; }
+
+@media (max-width: 760px) {
+  .investment-status-panel { display: flex; gap: 13px; padding: 17px 14px; }
+  .investment-panel-content > h2 { font-size: 18px; }
+  .investment-options { grid-template-columns: 1fr; }
+  .investment-option { min-height: 0; }
+  .investment-outcomes { margin-top: 0; }
+  .investment-sequence { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .investment-progress-panel { padding: 15px; }
+}
+
 /* Score X spacecraft-console visual theme */
 body {
   color: var(--ink);
@@ -455,12 +531,14 @@ button:focus-visible, a:focus-visible { outline-color: var(--green); }
 .scoreboard-label { color: #8299b7; }
 .scoreboard-total strong { color: #f0f7ff; }
 .scoreboard-foot, .scoreboard-message { color: #a9bad0; }
+.tier-badge { border-color: #65e6d155; color: #9af4e5; }
 .scoreboard-player-form input { border-color: #35516e; background: #091726; color: #f0f7ff; }
 .scoreboard-player-form input::placeholder { color: #7187a2; }
 .scoreboard-player-form input:focus { outline-color: var(--green); }
 .scoreboard-player-form button { background: var(--green); color: #06222b; font-weight: bold; }
 .scoreboard-message.is-error { color: #ffacbc; }
 .scoreboard-ranking { background: #0b192a; }
+.scoreboard-ranking { border-color: #ffffff18; }
 .ranking-heading h2 { color: #e5efff; }
 .ranking-heading > span { color: #7991af; }
 .ranking-row { border-color: #ffffff14; }
@@ -833,3 +911,5 @@ kbd { border-color: #314965; background: #14253a; color: #bfcee0; }
   .shop-item-price { font-size: 8px; }
   .shop-item-price strong { font-size: 9px; }
 }
+
+.profile-title-badge[hidden], .investment-next-button[hidden] { display: none; }

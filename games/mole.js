@@ -44,7 +44,7 @@ async function finishMole() {
   moleActiveIndex = -1;
   document.querySelector('#mole-status').textContent = 'COMPLETE';
   const earned = await awardScore('mole', moleScore * 20);
-  const receipt = earned === null ? '이름 등록 후 저장' : `+${earned}P 적립`;
+  const receipt = earned === null ? '이름 등록 후 저장' : `${earned} PTS 기록`;
   document.querySelector('#mole-start').textContent = `${moleScore}회 차단 · ${receipt}`;
   if (moleScore > Number(getBest('mole') || 0)) saveBest('mole', moleScore);
   renderMole();
