@@ -936,3 +936,11 @@ kbd { border-color: #314965; background: #14253a; color: #bfcee0; }
 
 .profile-title-badge[hidden], .investment-next-button[hidden] { display: none; }
 .record-row.is-danger > strong { color: #ff6b6b; }
+
+.scoreboard-player-form { flex-wrap: wrap; }
+.scoreboard-player-form input { flex: 1 1 calc(50% - 3px); }
+.scoreboard-player-form input[name="nickname"] { flex-basis: 100%; }
+.scoreboard-player-form [hidden] { display: none; }
+.auth-actions { display: flex; flex: 1 1 100%; gap: 5px; }
+.scoreboard-player-form button.auth-secondary { background: transparent; color: var(--green); border: 1px solid var(--green); font-weight: normal; }
+.scoreboard-player-form[hidden] { display: none; }

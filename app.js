@@ -63,7 +63,7 @@ let shopItems = [];
 let investmentOptions = [];
 let selectedRisk = null;
 let activeInvestment = null;
-try { activePlayer = JSON.parse(localStorage.getItem('playground-player') || 'null'); } catch { activePlayer = null; }
+let authMode = 'login';
 
 document.querySelector('#today-date').textContent = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
 
@@ -105,14 +105,18 @@ function setPlayerMessage(message, isError = false) {
 function showMissionResult(game, points, result) {
   const gameName = getGame(game).title;
   const dialog = document.querySelector('#mission-result-dialog');
+  const isGuest = result.saved === false;
   document.querySelector('#mission-result-title').textContent = `${gameName} 완료`;
-  document.querySelector('#mission-result-copy').textContent = result.isNewBest
-    ? '새로운 게임별 최고 점수를 기록했습니다.'
-    : '이번 임무 결과와 보상을 확인하세요.';
+  document.querySelector('#mission-result-copy').textContent = isGuest
+    ? '게스트 플레이라 기록과 CR은 저장되지 않습니다. 로그인하면 보상이 쌓여요.'
+    : result.isNewBest
+      ? '새로운 게임별 최고 점수를 기록했습니다.'
+      : '이번 임무 결과와 보상을 확인하세요.';
   document.querySelector('#mission-result-score').textContent = `${formatPoints(points)} PTS`;
-  document.querySelector('#mission-result-credits').textContent = `+${formatPoints(result.creditsEarned)} CR`;
-  document.querySelector('#mission-result-total').textContent =
-    `최고 기록 합산 ${formatPoints(result.totalBestScore)} PTS · ${result.tier}`;
+  document.querySelector('#mission-result-credits').textContent = `${isGuest ? '' : '+'}${formatPoints(result.creditsEarned)} CR${isGuest ? ' (미저장)' : ''}`;
+  document.querySelector('#mission-result-total').textContent = isGuest
+    ? '게스트 기록 · 순위에 반영되지 않음'
+    : `최고 기록 합산 ${formatPoints(result.totalBestScore)} PTS · ${result.tier}`;
   if (!dialog.open) dialog.showModal();
 }
 
@@ -129,7 +133,9 @@ function renderScoreboard(data) {
   document.querySelector('#total-tier').textContent = currentUser?.tier || '훈련생';
   document.querySelector('#current-player-label').textContent = currentUser
     ? `${currentUser.name} · 기록 ${currentUser.rank}위 · 자산 ${currentUser.creditRank}위`
-    : activePlayer ? `${activePlayer.name} · 기록을 불러오는 중` : '이름을 등록하면 순위에 참여할 수 있어요.';
+    : '로그인하면 순위에 참여할 수 있어요. 게스트 기록은 저장되지 않아요.';
+  document.querySelector('#player-form').hidden = Boolean(currentUser);
+  document.querySelector('#auth-session').hidden = !currentUser;
   const profileAvatar = document.querySelector('.avatar');
   profileAvatar.textContent = currentUser?.avatar || '🚀';
   profileAvatar.setAttribute('aria-label', currentUser ? `${currentUser.name} 프로필` : '크루 프로필');
@@ -271,9 +277,10 @@ function renderShopItems() {
       const input = document.createElement('input');
       input.name = 'displayName';
       input.type = 'text';
-      input.maxLength = 24;
-      input.placeholder = currentProfile?.name || '새 점수판 이름';
-      input.setAttribute('aria-label', '변경할 점수판 이름');
+      input.minLength = 2;
+      input.maxLength = 16;
+      input.placeholder = currentProfile?.name || '새 닉네임 (2~16자)';
+      input.setAttribute('aria-label', '변경할 닉네임');
       form.append(input);
     }
     const button = document.createElement('button');
@@ -288,14 +295,14 @@ function renderShopItems() {
     const itemValue = item.avatarId || item.titleId || item.backgroundId;
     const isEquipped = item.type !== 'display-name' && equippedValue === itemValue;
     const hasEnoughCredits = currentProfile && currentProfile.credits >= item.price;
-    button.textContent = item.type === 'display-name' ? '이름 변경권 구매' : isEquipped ? '장착 중' : isOwned ? '장착하기' : hasEnoughCredits ? '구매하기' : '크레딧 부족';
+    button.textContent = item.type === 'display-name' ? '닉네임 변경권 구매' : isEquipped ? '장착 중' : isOwned ? '장착하기' : hasEnoughCredits ? '구매하기' : '크레딧 부족';
     button.disabled = !currentProfile || (item.type !== 'display-name' && isEquipped) || (item.type !== 'display-name' && !isOwned && !hasEnoughCredits) || (item.type === 'display-name' && !hasEnoughCredits);
     form.append(button);
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       const displayName = form.elements.displayName?.value || '';
       if (item.type === 'display-name' && !displayName.trim()) {
-        setShopMessage('새 점수판 이름을 입력해 주세요.', true);
+        setShopMessage('새 닉네임을 입력해 주세요.', true);
         form.elements.displayName?.focus();
         return;
       }
@@ -317,13 +324,13 @@ async function loadShopItems() {
   if (!response.ok) throw new Error(result.error || '상점 상품을 불러오지 못했습니다.');
   shopItems = result.items;
   renderShopItems();
-  if (!currentProfile) setShopMessage('상점을 이용하려면 먼저 관제실에서 플레이어 이름을 등록하세요.');
+  if (!currentProfile) setShopMessage('상점을 이용하려면 먼저 관제실에서 로그인하세요.');
   else setShopMessage('미니게임에서 크레딧을 모아 크루 프로필을 꾸며보세요.');
 }
 
 async function purchaseShopItem(itemId, displayName, button) {
   if (!activePlayer) {
-    setShopMessage('상점을 이용하려면 먼저 관제실에서 플레이어 이름을 등록하세요.', true);
+    setShopMessage('상점을 이용하려면 먼저 관제실에서 로그인하세요.', true);
     return;
   }
   button.disabled = true;
@@ -333,7 +340,7 @@ async function purchaseShopItem(itemId, displayName, button) {
     const response = await fetch('/api/shop/purchase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: activePlayer.id, itemId, displayName })
+      body: JSON.stringify({ itemId, displayName })
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || '구매를 완료하지 못했습니다.');
@@ -356,7 +363,7 @@ async function equipCosmetic(itemId, button) {
     const response = await fetch('/api/profile/equip', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: activePlayer.id, itemId })
+      body: JSON.stringify({ itemId })
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || '프로필 아이템을 적용하지 못했습니다.');
@@ -371,64 +378,92 @@ async function equipCosmetic(itemId, button) {
 }
 
 async function refreshScoreboard() {
-  const query = activePlayer ? `?userId=${encodeURIComponent(activePlayer.id)}` : '';
   ensureScoreServer();
-  const response = await fetch(`/api/leaderboard${query}`);
+  const response = await fetch('/api/leaderboard');
   if (!response.ok) throw new Error('점수판을 불러오지 못했습니다.');
   const data = await response.json();
+  activePlayer = data.currentUser;
   renderScoreboard(data);
   setPlayerMessage(data.currentUser
     ? `${data.currentUser.name}님의 점수판을 불러왔어요.`
-    : '서버 연결됨 · 이름을 등록해 순위에 참여하세요.');
-  if (activePlayer) await loadActiveInvestment();
+    : '서버 연결됨 · 로그인 없이 플레이하면 게스트로 기록이 저장되지 않아요.');
+  await loadActiveInvestment();
 }
 
-async function registerPlayer(event) {
+function setAuthMode(mode) {
+  authMode = mode;
+  const isRegister = mode === 'register';
+  document.querySelector('#auth-nickname').hidden = !isRegister;
+  document.querySelector('#auth-nickname').required = isRegister;
+  document.querySelector('#auth-password').autocomplete = isRegister ? 'new-password' : 'current-password';
+  document.querySelector('#auth-submit').firstChild.textContent = isRegister ? '가입하기 ' : '로그인 ';
+  document.querySelector('#auth-toggle').textContent = isRegister ? '로그인으로' : '회원가입';
+}
+
+async function submitAuth(event) {
   event.preventDefault();
   const form = document.querySelector('#player-form');
-  const input = document.querySelector('#player-name');
-  const button = form.querySelector('button');
-  button.disabled = true;
-  setPlayerMessage('이름을 확인하고 있습니다.');
+  const submit = document.querySelector('#auth-submit');
+  const isRegister = authMode === 'register';
+  const body = {
+    loginId: form.elements.loginId.value.trim(),
+    password: form.elements.password.value
+  };
+  if (isRegister) body.nickname = form.elements.nickname.value.trim();
+  submit.disabled = true;
+  setPlayerMessage(isRegister ? '계정을 만들고 있습니다.' : '로그인하고 있습니다.');
   try {
     ensureScoreServer();
-    const response = await fetch('/api/users', {
+    const response = await fetch(isRegister ? '/api/auth/register' : '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: input.value.trim() })
+      body: JSON.stringify(body)
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error || '이름 등록에 실패했습니다.');
-    activePlayer = result.user;
-    localStorage.setItem('playground-player', JSON.stringify(activePlayer));
-    setPlayerMessage(`${activePlayer.name}님, 기록을 불러왔어요.`);
+    if (!response.ok) throw new Error(result.error || '인증에 실패했습니다.');
+    form.reset();
+    setAuthMode('login');
     await refreshScoreboard();
+    setPlayerMessage(isRegister
+      ? `${result.user.name}님, 가입을 환영합니다. 환영 보상 500 CR을 지급했어요.`
+      : `${result.user.name}님, 다시 오신 것을 환영합니다.`);
   } catch (error) {
     setPlayerMessage(error.message || '점수 서버에 연결할 수 없습니다.', true);
   } finally {
-    button.disabled = false;
+    submit.disabled = false;
+  }
+}
+
+async function logout() {
+  try {
+    ensureScoreServer();
+    await fetch('/api/auth/logout', { method: 'POST' });
+    await refreshScoreboard();
+    setPlayerMessage('로그아웃했습니다.');
+  } catch (error) {
+    setPlayerMessage(error.message || '로그아웃하지 못했습니다.', true);
   }
 }
 
 async function awardScore(game, points) {
   const earned = Math.max(0, Math.floor(points));
-  if (!activePlayer) {
-    setPlayerMessage('점수를 저장하려면 먼저 플레이어 이름을 등록하세요.', true);
-    return null;
-  }
   try {
     ensureScoreServer();
     const response = await fetch('/api/scores', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: activePlayer.id, game, points: earned })
+      body: JSON.stringify({ game, points: earned })
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || '점수 저장에 실패했습니다.');
     handleInvestmentProgress(result);
     showMissionResult(game, earned, result);
-    await refreshScoreboard();
-    setShopMessage(`임무 보상으로 ${formatPoints(result.creditsEarned)} CR을 획득했습니다.`);
+    if (result.saved) {
+      await refreshScoreboard();
+      setShopMessage(`임무 보상으로 ${formatPoints(result.creditsEarned)} CR을 획득했습니다.`);
+    } else {
+      setPlayerMessage('게스트 플레이 결과는 저장되지 않아요. 로그인하면 기록과 보상이 쌓입니다.');
+    }
   } catch (error) {
     setPlayerMessage(error.message || '점수 서버에 연결할 수 없습니다.', true);
     return null;
@@ -550,7 +585,7 @@ async function loadActiveInvestment() {
     return;
   }
   ensureScoreServer();
-  const response = await fetch(`/api/investment/active?userId=${encodeURIComponent(activePlayer.id)}`);
+  const response = await fetch('/api/investment/active');
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || '진행 중인 투자 임무를 불러오지 못했습니다.');
   activeInvestment = result.run;
@@ -560,7 +595,7 @@ async function loadActiveInvestment() {
 async function startInvestment(event) {
   event.preventDefault();
   if (!activePlayer || !selectedRisk) {
-    setInvestmentMessage('플레이어를 등록하고 위험 옵션을 선택해 주세요.', true);
+    setInvestmentMessage('투자는 로그인 후 이용할 수 있어요. 위험 옵션도 선택해 주세요.', true);
     return;
   }
   const button = document.querySelector('#investment-start');
@@ -572,7 +607,6 @@ async function startInvestment(event) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        userId: activePlayer.id,
         stake: Number(document.querySelector('#investment-stake-number').value),
         risk: selectedRisk
       })
@@ -711,7 +745,8 @@ document.querySelector('#mission-result-confirm').addEventListener('click', () =
 loadShopItems().catch((error) => setShopMessage(error.message || '상점에 연결할 수 없습니다.', true));
 loadInvestmentOptions().catch((error) => setInvestmentMessage(error.message || '투자 옵션을 불러올 수 없습니다.', true));
 renderBests();
-document.querySelector('#player-name').value = activePlayer?.accountName || activePlayer?.name || '';
-document.querySelector('#player-form').addEventListener('submit', registerPlayer);
+document.querySelector('#player-form').addEventListener('submit', submitAuth);
+document.querySelector('#auth-toggle').addEventListener('click', () => setAuthMode(authMode === 'login' ? 'register' : 'login'));
+document.querySelector('#logout-button').addEventListener('click', logout);
 renderScoreboard({ players: [], currentUser: null });
 refreshScoreboard().catch((error) => setPlayerMessage(error.message || 'SQLite 서버를 실행해 주세요: node server.js', true));

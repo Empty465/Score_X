@@ -62,13 +62,23 @@
             <div class="scoreboard-label">최고 기록 합산 점수 · PTS</div>
             <div class="scoreboard-total"><strong id="total-score">0</strong><span>PTS</span></div>
             <span class="tier-badge" id="total-tier">훈련생</span>
-            <div class="scoreboard-foot" id="current-player-label">이름을 등록하면 순위에 참여할 수 있어요.</div>
+            <div class="scoreboard-foot" id="current-player-label">로그인하면 순위에 참여할 수 있어요.</div>
             <span class="profile-title-badge" id="profile-title-badge" hidden></span>
             <form class="scoreboard-player-form" id="player-form">
-              <label class="sr-only" for="player-name">계정 이름</label>
-              <input id="player-name" name="name" type="text" maxlength="24" autocomplete="nickname" placeholder="계정 이름" required>
-              <button type="submit">등록 / 불러오기 <span>↗</span></button>
+              <label class="sr-only" for="auth-login-id">아이디</label>
+              <input id="auth-login-id" name="loginId" type="text" maxlength="20" autocomplete="username" placeholder="아이디" required>
+              <label class="sr-only" for="auth-password">비밀번호</label>
+              <input id="auth-password" name="password" type="password" maxlength="64" autocomplete="current-password" placeholder="비밀번호" required>
+              <label class="sr-only" for="auth-nickname">닉네임</label>
+              <input id="auth-nickname" name="nickname" type="text" minlength="2" maxlength="16" autocomplete="nickname" placeholder="닉네임 (2~16자, 점수판에 표시)" hidden>
+              <div class="auth-actions">
+                <button type="submit" id="auth-submit">로그인 <span>↗</span></button>
+                <button type="button" class="auth-secondary" id="auth-toggle">회원가입</button>
+              </div>
             </form>
+            <div class="scoreboard-player-form" id="auth-session" hidden>
+              <button type="button" class="auth-secondary" id="logout-button">로그아웃</button>
+            </div>
             <p class="scoreboard-message" id="player-message" role="status" aria-live="polite">SQLite 점수 서버에 연결하는 중...</p>
           </div>
           <div class="scoreboard-ranking">

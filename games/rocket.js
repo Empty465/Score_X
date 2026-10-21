@@ -194,7 +194,7 @@ async function finishRocket(safeLanding) {
     const earned = await awardScore('rocket', rocketPoints);
     document.querySelector('#rocket-overlay-title').textContent = '착륙 성공!';
     document.querySelector('#rocket-overlay-copy').textContent = earned === null
-      ? `속도 ${verticalSpeed.toFixed(1)} m/s · 이름 등록 후 점수를 저장할 수 있어요.`
+      ? `속도 ${verticalSpeed.toFixed(1)} m/s · 점수 서버에 연결하지 못했어요.`
       : `속도 ${verticalSpeed.toFixed(1)} m/s · ${earned} PTS 기록`;
   } else {
     document.querySelector('#rocket-score').textContent = '0';

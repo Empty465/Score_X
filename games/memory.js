@@ -83,7 +83,7 @@ async function finishMemory() {
   const previousBest = Number(getBest('memory') || Infinity);
   if (memoryMoves < previousBest) saveBest('memory', memoryMoves);
   const earned = await awardScore('memory', Math.max(100, 1200 - memoryMoves * 40 - memorySeconds * 5));
-  const receipt = earned === null ? '이름 등록 후 저장' : `${earned} PTS 기록`;
+  const receipt = earned === null ? '점수 서버 연결 실패' : `${earned} PTS 기록`;
   document.querySelector('#memory-start').textContent = `복구 완료 · ${receipt}`;
 }
 

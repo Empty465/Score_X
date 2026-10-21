@@ -241,7 +241,7 @@ async function finishClop(reachedGoal, timedOut = false) {
   const earned = await awardScore('clop', points);
   document.querySelector('#clop-overlay-title').textContent = reachedGoal ? '목적지 도착!' : (timedOut ? '시간 종료' : '로버가 뒤집혔습니다');
   document.querySelector('#clop-overlay-copy').textContent = earned === null
-    ? `${meters.toFixed(1)} m · 이름 등록 후 점수를 저장할 수 있어요.`
+    ? `${meters.toFixed(1)} m · 점수 서버에 연결하지 못했어요.`
     : `${meters.toFixed(1)} m · ${earned} PTS 기록`;
   document.querySelector('#clop-start').textContent = '다시 도전 ↗';
   document.querySelector('#clop-overlay').classList.remove('is-hidden');

@@ -65,7 +65,7 @@ async function submitBaseballGuess(event) {
     baseballFinished = true;
     document.querySelector('#baseball-status').textContent = 'WIN';
     const earned = await awardScore('baseball', (10 - baseballAttempts) * 100);
-    const receipt = earned === null ? '이름 등록 후 점수를 저장할 수 있어요.' : `${earned} PTS 기록`;
+    const receipt = earned === null ? '점수 서버에 연결하지 못했어요.' : `${earned} PTS 기록`;
     message.textContent = `${baseballAttempts}회 만에 좌표 코드를 해독했습니다. ${receipt}`;
     if (baseballAttempts < Number(getBest('baseball') || Infinity)) saveBest('baseball', baseballAttempts);
   } else if (baseballAttempts === 9) {

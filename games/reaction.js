@@ -58,7 +58,7 @@ reactionArena.addEventListener('click', async () => {
   if (elapsed < previousBest) saveBest('reaction', elapsed);
   const earned = await awardScore('reaction', Math.max(1, 1000 - elapsed));
   document.querySelector('#reaction-hint').textContent = earned === null
-    ? '이름 등록 후 점수를 저장할 수 있어요.'
+    ? '점수 서버에 연결하지 못했어요.'
     : `${earned} PTS 기록 · 다시 도전해 기록을 줄여봐요`;
 });
 
