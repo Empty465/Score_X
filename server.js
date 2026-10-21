@@ -201,8 +201,9 @@ const getPlayers = database.prepare(`
     COALESCE(MAX(CASE WHEN best_scores.game = 'reaction' THEN best_scores.best_points ELSE 0 END), 0) AS reaction,
     COALESCE(MAX(CASE WHEN best_scores.game = 'mole' THEN best_scores.best_points ELSE 0 END), 0) AS mole,
     COALESCE(MAX(CASE WHEN best_scores.game = 'baseball' THEN best_scores.best_points ELSE 0 END), 0) AS baseball,
-    COALESCE(MAX(CASE WHEN best_scores.game = 'rocket' THEN best_scores.best_points ELSE 0 END), 0) AS rocket
-  FROM users
+    COALESCE(MAX(CASE WHEN best_scores.game = 'rocket' THEN best_scores.best_points ELSE 0 END), 0)     AS rocket,
+        COALESCE(MAX(CASE WHEN best_scores.game = 'clop' THEN best_scores.best_points ELSE 0 END), 0) AS clop
+      FROM users
   LEFT JOIN (
     SELECT user_id, game, MAX(points) AS best_points
     FROM score_events
@@ -219,8 +220,9 @@ const getUserBestScores = database.prepare(`
     COALESCE(MAX(CASE WHEN best_scores.game = 'reaction' THEN best_scores.best_points ELSE 0 END), 0) AS reaction,
     COALESCE(MAX(CASE WHEN best_scores.game = 'mole' THEN best_scores.best_points ELSE 0 END), 0) AS mole,
     COALESCE(MAX(CASE WHEN best_scores.game = 'baseball' THEN best_scores.best_points ELSE 0 END), 0) AS baseball,
-    COALESCE(MAX(CASE WHEN best_scores.game = 'rocket' THEN best_scores.best_points ELSE 0 END), 0) AS rocket
-  FROM (
+    COALESCE(MAX(CASE WHEN best_scores.game = 'rocket' THEN best_scores.best_points ELSE 0 END), 0)     AS rocket,
+        COALESCE(MAX(CASE WHEN best_scores.game = 'clop' THEN best_scores.best_points ELSE 0 END), 0) AS clop
+      FROM (
     SELECT game, MAX(points) AS best_points
     FROM score_events
     WHERE user_id = ?

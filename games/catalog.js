@@ -76,6 +76,19 @@ const gameCatalog = [
     artClass: 'rocket-art',
     artMarkup: '<span class="rocket-art-orbit"></span><span class="rocket-art-moon"></span><span class="rocket-art-pad"></span><span class="rocket-art-ship">▲</span><span class="rocket-art-flame">▾</span>',
     bestDefault: '—'
+  },
+  {
+    id: 'clop',
+    module: './games/clop.js',
+    title: '4족 보행 시험',
+    icon: '🐾',
+    shortTitle: '보행시험',
+    category: 'QUADRUPED TRIAL',
+    description: 'Q·W·O·P로 4족 로버의 다리를 움직여 목적지까지 가세요.',
+    cardClass: 'clop',
+    artClass: 'clop-art',
+    artMarkup: '<span class="clop-art-ground"></span><span class="clop-art-flag">⚑</span><span class="clop-art-walker">🤖</span>',
+    bestDefault: '—'
   }
 ];
 

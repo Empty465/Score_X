@@ -593,7 +593,28 @@ button:focus-visible, a:focus-visible { outline-color: var(--green); }
 .rocket-art-pad { background: #65e6d1; box-shadow: 0 0 12px #65e6d180; }
 .rocket-art-ship { color: #ff718b; text-shadow: 0 0 14px #ff718b; }
 .rocket-art-flame { color: #ffd27d; }
-.mole-mark, .baseball-mark, .rocket-mark { color: var(--green); }
+.mole-mark, .baseball-mark, .rocket-mark, .clop-mark { color: var(--green); }
+.card-clop .game-art { background: linear-gradient(180deg, #102342 0%, #174a65 75%, #09263b 100%); }
+.clop-art-ground { position: absolute; left: 0; right: 0; bottom: 0; height: 28px; background: #26485f; }
+.clop-art-flag { position: absolute; right: 18%; bottom: 24px; color: #65e6d1; font-size: 26px; text-shadow: 0 0 12px #65e6d1; }
+.clop-art-walker { position: absolute; left: 22%; bottom: 22px; font-size: 30px; }
+.clop-board-wrap { min-width: 0; position: relative; overflow: hidden; border: 1px solid #314a65; border-radius: 5px; background: #091626; }
+#clop-canvas { display: block; width: 100%; height: auto; aspect-ratio: 12 / 7; }
+.clop-progress { padding: 12px 16px 16px; border-top: 1px solid #314a65; background: #0b1a2c; }
+.clop-progress-labels { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #91a5bf; font: 10px "DM Mono", monospace; }
+.clop-progress-labels strong { color: #8ff5e5; font-size: 11px; }
+.clop-progress-track { position: relative; height: 6px; margin: 0 10px; border-radius: 4px; background: #263a52; }
+.clop-progress-fill { height: 100%; width: 0; border-radius: 4px; background: #65e6d1; }
+.clop-progress-marker { position: absolute; top: -9px; left: 0; width: 24px; height: 24px; margin-left: -12px; display: grid; place-items: center; font-size: 17px; line-height: 1; }
+.clop-controls { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; margin: 2px 0 8px; }
+.clop-controls .rocket-control { flex-direction: column; gap: 0; }
+.clop-tilt { margin: 2px 0 6px; color: #91a5bf; font-size: 10px; }
+.clop-tilt > div { display: flex; justify-content: space-between; margin-bottom: 5px; }
+.clop-tilt strong { color: #dce9f8; font: 10px "DM Mono", monospace; }
+.clop-tilt progress { display: block; width: 100%; height: 6px; appearance: none; border: 0; border-radius: 4px; overflow: hidden; background: #263a52; }
+.clop-tilt progress::-webkit-progress-bar { background: #263a52; }
+.clop-tilt progress::-webkit-progress-value { background: #65e6d1; transition: width 80ms linear; }
+.clop-tilt.is-danger progress::-webkit-progress-value { background: #ff718b; }
 .card-title-row h3 { color: #eff6ff; }
 .game-category { color: #7892b1; }
 .card-info p { color: #91a5bf; }
