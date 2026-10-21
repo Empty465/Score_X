@@ -1,92 +1,39 @@
+// 궤도 진입 좌표 해독: 게임 본체는 games/baseball/ (iframe)에서 실행되고, 이 파일은 점수 제출과 사이드 패널 표시만 담당합니다.
+import { mountGame } from '/shell/game-host.js';
+
 const { getBest, saveBest, awardScore } = window.Playground;
+const resetButton = document.querySelector('#baseball-reset');
+const remaining = document.querySelector('#baseball-remaining');
+let started = false;
 
-let baseballAnswer = '';
-let baseballAttempts = 0;
-let baseballFinished = false;
-const baseballInput = document.querySelector('#baseball-input');
+function setButton(label) { resetButton.innerHTML = `${label} <span>↻</span>`; }
 
-function resetBaseball() {
-  baseballAnswer = [...'123456789'].sort(() => Math.random() - .5).slice(0, 3).join('');
-  baseballAttempts = 0;
-  baseballFinished = false;
-  baseballInput.value = '';
-  baseballInput.disabled = false;
-  document.querySelector('#baseball-form button').disabled = false;
-  document.querySelector('#baseball-status').textContent = 'PLAYING';
-  document.querySelector('#baseball-attempts').textContent = '0';
-  document.querySelector('#baseball-remaining').textContent = '09';
-  document.querySelector('#baseball-message').textContent = '1~9 중 서로 다른 숫자 3개로 보안 코드를 입력하세요.';
-  document.querySelector('#guess-log').replaceChildren(Object.assign(document.createElement('li'), {
-    className: 'guess-empty',
-    textContent: '터미널 응답 대기 중 · 첫 코드를 입력하세요.'
-  }));
-  document.querySelector('#baseball-input').focus();
+const game = mountGame({
+  id: 'baseball',
+  host: document.querySelector('#baseball-host'),
+  onHud: (items) => {
+    if (items.lives !== undefined) remaining.textContent = String(Math.max(0, items.lives)).padStart(2, '0');
+  },
+  onError: (message) => setButton(message),
+  async onGameOver({ playId, score, durationMs, meta, result }) {
+    const attempts = meta && typeof meta.attempts === 'number' ? meta.attempts : 9;
+    const best = Number(getBest('baseball') || 0);
+    if (result === 'clear' && (!best || attempts < best)) saveBest('baseball', attempts);
+    const earned = await awardScore('baseball', score, { playId, durationMs });
+    setButton(earned === null ? '점수 서버 연결 실패 · 새 코드 발급' : '새 보안 코드 발급');
+  }
+});
+
+async function begin() {
+  remaining.textContent = '09';
+  setButton('새 보안 코드 발급');
+  if (!await game.start()) setButton('다시 시도');
 }
 
-async function submitBaseballGuess(event) {
-  event.preventDefault();
-  if (baseballFinished) return;
-  const guess = baseballInput.value.trim();
-  const message = document.querySelector('#baseball-message');
-  if (!/^[1-9]{3}$/.test(guess) || new Set(guess).size !== 3) {
-    message.textContent = '1~9 중 서로 다른 숫자 3개를 입력해야 합니다.';
-    baseballInput.focus();
-    return;
-  }
+resetButton.addEventListener('click', begin);
 
-  baseballAttempts += 1;
-  let positionMatches = 0;
-  let coordinateSignals = 0;
-  [...guess].forEach((digit, index) => {
-    if (digit === baseballAnswer[index]) positionMatches += 1;
-    else if (baseballAnswer.includes(digit)) coordinateSignals += 1;
-  });
-  const log = document.querySelector('#guess-log');
-  if (baseballAttempts === 1) log.replaceChildren();
-  const row = document.createElement('li');
-  const attempt = document.createElement('span');
-  attempt.className = 'guess-number';
-  attempt.textContent = String(baseballAttempts).padStart(2, '0');
-  const code = document.createElement('strong');
-  code.textContent = guess;
-  const result = document.createElement('span');
-  result.className = 'guess-result';
-  result.textContent = [
-    positionMatches ? `좌표 일치 ${positionMatches}` : '',
-    coordinateSignals ? `신호 검출 ${coordinateSignals}` : ''
-  ].filter(Boolean).join(' · ') || '미검출 · 일치 좌표 없음';
-  row.append(attempt, code, result);
-  log.prepend(row);
-  baseballInput.value = '';
-  document.querySelector('#baseball-attempts').textContent = String(baseballAttempts);
-  document.querySelector('#baseball-remaining').textContent = String(9 - baseballAttempts).padStart(2, '0');
-
-  if (positionMatches === 3) {
-    baseballFinished = true;
-    document.querySelector('#baseball-status').textContent = 'WIN';
-    const earned = await awardScore('baseball', (10 - baseballAttempts) * 100);
-    const receipt = earned === null ? '점수 서버에 연결하지 못했어요.' : `${earned} PTS 기록`;
-    message.textContent = `${baseballAttempts}회 만에 좌표 코드를 해독했습니다. ${receipt}`;
-    if (baseballAttempts < Number(getBest('baseball') || Infinity)) saveBest('baseball', baseballAttempts);
-  } else if (baseballAttempts === 9) {
-    baseballFinished = true;
-    document.querySelector('#baseball-status').textContent = 'GAME OVER';
-    await awardScore('baseball', 0);
-    message.textContent = `해독 실패 · 보안 코드 ${baseballAnswer}를 확보하지 못했습니다.`;
-  } else {
-    message.textContent = positionMatches || coordinateSignals
-      ? `터미널 응답 · 좌표 일치 ${positionMatches} · 신호 검출 ${coordinateSignals}`
-      : '터미널 응답 · 코드와 일치하는 좌표 신호가 없습니다.';
-  }
-  if (baseballFinished) {
-    baseballInput.disabled = true;
-    document.querySelector('#baseball-form button').disabled = true;
-  } else {
-    baseballInput.focus();
-  }
-}
-
-document.querySelector('#baseball-form').addEventListener('submit', submitBaseballGuess);
-document.querySelector('#baseball-reset').addEventListener('click', resetBaseball);
-resetBaseball();
-window.Playground.registerGame('baseball', { onLaunch: () => { resetBaseball(); setTimeout(() => baseballInput.focus(), 0); } });
+export default {
+onLaunch: () => { game.ensure(); },
+onShow: () => { game.ensure(); game.resume(); },
+onHide: () => game.pause()
+};

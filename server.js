@@ -3,19 +3,22 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { randomInt, randomBytes, createHash, scryptSync, timingSafeEqual } = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
-const gameCatalog = require('./games/catalog.js');
+const { createGameRegistry, resolveGameAsset, DIFFICULTIES } = require('./lib/game-registry.js');
 
 const host = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT || 3000);
 const databasePath = process.env.DB_PATH || path.join(__dirname, 'DB', 'scorex.sqlite');
 fs.mkdirSync(path.dirname(databasePath), { recursive: true });
 const database = new DatabaseSync(databasePath);
-if (!Array.isArray(gameCatalog) || gameCatalog.length === 0 ||
-    gameCatalog.some((game) => !/^[a-z0-9-]+$/.test(game.id) || game.module !== `./games/${game.id}.js`) ||
-    new Set(gameCatalog.map((game) => game.id)).size !== gameCatalog.length) {
-  throw new Error('게임 카탈로그가 비어 있거나 잘못 구성되었습니다.');
-}
-const games = gameCatalog.map((game) => game.id);
+const gamesDirectory = process.env.GAMES_DIR || path.join(__dirname, 'games');
+const gameRegistry = createGameRegistry({
+  gamesDir: gamesDirectory,
+  ttlMs: Number(process.env.GAMES_RESCAN_MS) > 0 ? Number(process.env.GAMES_RESCAN_MS) : Infinity,
+  log: (message) => console.warn(message)
+});
+const allGameIds = () => gameRegistry.ids();
+const PLAY_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+const DURATION_TOLERANCE_MS = 2000;
 const SESSION_COOKIE = 'sx_session';
 const SESSION_DAYS = 30;
 const WELCOME_CREDITS = 500;
@@ -111,8 +114,12 @@ const publicFiles = new Map([
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/games/index.js', ['games/index.js', 'text/javascript; charset=utf-8']],
-  ['/games/catalog.js', ['games/catalog.js', 'text/javascript; charset=utf-8']],
-  ['/node_modules/matter-js/build/matter.min.js', ['node_modules/matter-js/build/matter.min.js', 'text/javascript; charset=utf-8']]
+  ['/sdk/scorex-sdk.js', ['sdk/scorex-sdk.js', 'text/javascript; charset=utf-8']],
+  ['/shell/scorex-game.js', ['shell/scorex-game.js', 'text/javascript; charset=utf-8']],
+  ['/shell/game-host.js', ['shell/game-host.js', 'text/javascript; charset=utf-8']],
+  ['/shell/generic-game.js', ['shell/generic-game.js', 'text/javascript; charset=utf-8']],
+  ['/shell/card-art.js', ['shell/card-art.js', 'text/javascript; charset=utf-8']],
+  ['/tools/harness.html', ['tools/harness.html', 'text/html; charset=utf-8']]
 ]);
 
 // 이름 기반의 이전 스키마(users)는 계정 체계와 호환되지 않으므로 폐기하고 새로 만든다.
@@ -196,6 +203,15 @@ database.exec(`
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     completed_at TEXT
   );
+  CREATE TABLE IF NOT EXISTS play_sessions (
+    play_id TEXT PRIMARY KEY,
+    account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+    game TEXT NOT NULL,
+    difficulty TEXT NOT NULL,
+    seed INTEGER NOT NULL,
+    started_at INTEGER NOT NULL,
+    used_at INTEGER
+  );
   CREATE INDEX IF NOT EXISTS score_events_account_game_idx ON score_events(account_id, game);
   CREATE INDEX IF NOT EXISTS credit_ledger_account_idx ON credit_ledger(account_id, id);
   CREATE INDEX IF NOT EXISTS sessions_account_idx ON sessions(account_id);
@@ -230,6 +246,48 @@ const getAccountBests = database.prepare('SELECT game, best_points FROM best_sco
 const getAllBests = database.prepare('SELECT account_id, game, best_points FROM best_scores');
 const getUserCosmetics = database.prepare('SELECT item_id FROM user_cosmetics WHERE account_id = ?');
 const getActiveInvestment = database.prepare("SELECT * FROM investment_runs WHERE account_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
+const insertPlay = database.prepare('INSERT INTO play_sessions (play_id, account_id, game, difficulty, seed, started_at) VALUES (?, ?, ?, ?, ?, ?)');
+const findPlay = database.prepare('SELECT * FROM play_sessions WHERE play_id = ?');
+const markPlayUsed = database.prepare('UPDATE play_sessions SET used_at = ? WHERE play_id = ? AND used_at IS NULL');
+const deleteStalePlays = database.prepare('DELETE FROM play_sessions WHERE started_at < ?');
+
+class ScoreRejection extends Error {
+  constructor(message, status = 400) {
+    super(message);
+    this.status = status;
+  }
+}
+
+// 제출된 점수가 서버가 발급한 플레이 세션과 매니페스트 규칙에 맞는지 검사한다. 사용 처리는 하지 않는다.
+function validatePlay(payload, points, game, accountId) {
+  const manifest = gameRegistry.get(game);
+  if (payload.playId === undefined || payload.playId === null) {
+    if (manifest) throw new ScoreRejection('이 게임은 플레이 세션(playId)이 필요합니다.');
+    return null;
+  }
+  const play = typeof payload.playId === 'string' ? findPlay.get(payload.playId) : null;
+  const now = Date.now();
+  const reject = (message, status = 400) => {
+    console.warn(`[score-rejected] game=${game} account=${accountId ?? 'guest'} points=${points} reason=${message}`);
+    throw new ScoreRejection(message, status);
+  };
+  if (!play || play.game !== game || (play.account_id ?? null) !== (accountId ?? null)) reject('유효하지 않은 플레이 세션입니다.');
+  if (play.used_at !== null) reject('이미 제출된 플레이 세션입니다.', 409);
+  const elapsed = now - Number(play.started_at);
+  if (elapsed > PLAY_MAX_AGE_MS) reject('만료된 플레이 세션입니다.');
+  if (manifest) {
+    const durationMs = payload.durationMs;
+    if (!Number.isInteger(durationMs) || durationMs < 0) reject('플레이 시간(durationMs) 형식이 올바르지 않습니다.');
+    if (points > manifest.maxScore) reject('게임의 최대 점수를 초과했습니다.');
+    if (elapsed < manifest.minDurationMs || durationMs < manifest.minDurationMs) reject('플레이 시간이 너무 짧습니다.');
+    if (durationMs > elapsed + DURATION_TOLERANCE_MS) reject('보고된 플레이 시간이 실제 경과 시간보다 깁니다.');
+  }
+  return play;
+}
+
+function consumePlay(play) {
+  if (play && markPlayUsed.run(Date.now(), play.play_id).changes !== 1) throw new ScoreRejection('이미 제출된 플레이 세션입니다.', 409);
+}
 
 function runInTransaction(work) {
   database.exec('BEGIN IMMEDIATE');
@@ -325,7 +383,7 @@ function getTier(score) {
 }
 
 function bestsToScores(rows) {
-  const scores = Object.fromEntries(games.map((game) => [game, 0]));
+  const scores = Object.fromEntries(allGameIds().map((game) => [game, 0]));
   rows.forEach((row) => { if (row.game in scores) scores[row.game] = Number(row.best_points); });
   return scores;
 }
@@ -396,7 +454,7 @@ function chooseOutcome(riskId) {
 }
 
 function shuffledGames() {
-  const result = [...games];
+  const result = gameRegistry.ids();
   for (let index = result.length - 1; index > 0; index -= 1) {
     const other = randomInt(index + 1);
     [result[index], result[other]] = [result[other], result[index]];
@@ -509,23 +567,57 @@ async function handleApi(request, response, url) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/games') {
+    const games = gameRegistry.list().map((manifest) => ({
+      ...manifest,
+      adapter: fs.existsSync(path.join(gamesDirectory, `${manifest.id}.js`))
+    }));
+    sendJson(response, 200, { protocol: 1, games });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/plays') {
+    const payload = await readJson(request);
+    const manifest = gameRegistry.get(payload.game);
+    if (!manifest) {
+      sendJson(response, 400, { error: '알 수 없는 게임입니다.' });
+      return;
+    }
+    const allowed = manifest.difficulties;
+    const difficulty = payload.difficulty === undefined ? allowed[0] : payload.difficulty;
+    if (!DIFFICULTIES.includes(difficulty) || !allowed.includes(difficulty)) {
+      sendJson(response, 400, { error: '지원하지 않는 난이도입니다.' });
+      return;
+    }
+    const playId = randomBytes(16).toString('hex');
+    const seed = randomInt(1, 2 ** 31);
+    const now = Date.now();
+    deleteStalePlays.run(now - PLAY_MAX_AGE_MS);
+    insertPlay.run(playId, getAuthenticatedAccountId(request), payload.game, difficulty, seed, now);
+    sendJson(response, 201, { playId, game: payload.game, difficulty, seed, startedAt: now });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/scores') {
     const payload = await readJson(request);
     const points = Number(payload.points);
-    if (!games.includes(payload.game) || !Number.isInteger(points) || points < 0 || points > 100000) {
+    if (!allGameIds().includes(payload.game) || !Number.isInteger(points) || points < 0 || points > 100000) {
       sendJson(response, 400, { error: '게임 점수 정보가 올바르지 않습니다.' });
       return;
     }
     const creditsEarned = Math.max(1, Math.floor(points / 100));
     const accountId = getAuthenticatedAccountId(request);
+    const play = validatePlay(payload, points, payload.game, accountId);
     if (!accountId) {
       // 게스트 플레이: 결과 연출용 값만 돌려주고 아무것도 저장하지 않는다.
+      runInTransaction(() => consumePlay(play));
       sendJson(response, 200, { saved: false, guest: true, score: points, creditsEarned, reroll: null, investment: null });
       return;
     }
     let investment = null;
     let reroll = null;
     const outcome = runInTransaction(() => {
+      consumePlay(play);
       const previousBest = Number(getAccountBests.all(accountId).find((row) => row.game === payload.game)?.best_points || 0);
       const scoreId = Number(insertScore.run(accountId, payload.game, points, creditsEarned).lastInsertRowid);
       if (points > previousBest) upsertBestScore.run(accountId, payload.game, points);
@@ -698,7 +790,7 @@ const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${host}:${port}`);
   if (url.pathname.startsWith('/api/')) {
     try { await handleApi(request, response, url); } catch (error) {
-      if (!response.headersSent) sendJson(response, 400, { error: error.message || '요청을 처리하지 못했습니다.' });
+      if (!response.headersSent) sendJson(response, error.status || 400, { error: error.message || '요청을 처리하지 못했습니다.' });
       else response.destroy();
     }
     return;
@@ -711,7 +803,30 @@ const server = http.createServer(async (request, response) => {
   }
 
   const pathname = url.pathname === '/' ? '/index.html' : url.pathname;
-  const gameModule = gameCatalog.find((game) => pathname === game.module.slice(1));
+  const gameAsset = resolveGameAsset(gamesDirectory, gameRegistry, pathname);
+  if (gameAsset) {
+    // sandbox iframe의 출처는 null 이므로 게임 에셋은 CORS를 허용해야 한다.
+    fs.readFile(gameAsset.filePath, (error, contents) => {
+      if (error) {
+        response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+        response.end('Not found');
+        return;
+      }
+      response.writeHead(200, {
+        'Content-Type': gameAsset.contentType,
+        'Cache-Control': 'no-cache',
+        'Access-Control-Allow-Origin': '*',
+        'X-Content-Type-Options': 'nosniff'
+      });
+      response.end(request.method === 'HEAD' ? undefined : contents);
+    });
+    return;
+  }
+  // 화면 어댑터(games/<id>.js)는 저장소의 최상위 파일만 제공합니다. 외부 게임 폴더 안의 스크립트는 iframe 안에서만 실행됩니다.
+  const adapterMatch = /^\/games\/([a-z][a-z0-9_]{1,31})\.js$/.exec(pathname);
+  const gameModule = adapterMatch && gameRegistry.get(adapterMatch[1]) && fs.existsSync(path.join(gamesDirectory, `${adapterMatch[1]}.js`))
+    ? { id: adapterMatch[1] }
+    : null;
   const asset = publicFiles.get(pathname) || (gameModule
     ? [`games/${gameModule.id}.js`, 'text/javascript; charset=utf-8']
     : null);

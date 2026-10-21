@@ -1,0 +1,17 @@
+{
+  "id": "mole",
+  "protocol": 1,
+  "title": "비상 경고등 진압",
+  "shortTitle": "경고",
+  "category": "EMERGENCY",
+  "description": "과부하 경고가 켜지면 빠르게 차단하세요.",
+  "icon": "⌁",
+  "difficulties": ["NORMAL"],
+  "maxScore": 4000,
+  "minDurationMs": 15000,
+  "aspectRatio": "4:3",
+  "input": ["pointer", "touch"],
+  "hud": ["time", "score"],
+  "version": "1.0.0",
+  "authors": ["score-x"]
+}

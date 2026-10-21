@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Score X 미니게임 하니스</title>
+  <style>
+    body { margin: 0; padding: 16px; background: #0b1420; color: #dbe8f5; font: 14px/1.5 system-ui, sans-serif; }
+    h1 { font-size: 18px; margin: 0 0 4px; }
+    .sub { color: #8aa2ba; margin: 0 0 12px; }
+    .layout { display: grid; grid-template-columns: minmax(320px, 2fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+    @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+    .controls { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+    button, select, input { font: inherit; padding: 6px 10px; border-radius: 5px; border: 1px solid #35516e; background: #12263a; color: inherit; }
+    button { cursor: pointer; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .panel { background: #101d2c; border: 1px solid #25405c; border-radius: 6px; padding: 10px; margin-bottom: 12px; }
+    .panel h2 { font-size: 13px; margin: 0 0 6px; color: #8fd3ff; }
+    #hud { margin: 0; font-family: ui-monospace, monospace; font-size: 12px; white-space: pre-wrap; }
+    #hud.is-danger { color: #ff8f8f; }
+    #log { height: 260px; overflow: auto; font: 11px/1.45 ui-monospace, monospace; white-space: pre-wrap; }
+    .ok { color: #7ee8a8; } .bad { color: #ff8f8f; } .dim { color: #7f93a8; }
+  </style>
+</head>
+<body>
+  <h1>Score X 미니게임 하니스</h1>
+  <p class="sub">서버·DB 없이 게임을 단독 실행해 프로토콜 동작과 점수 검증 규칙을 확인합니다. 점수는 어디에도 저장되지 않습니다.</p>
+  <form id="source" class="controls">
+    <label>게임 폴더 <input id="dir" name="dir" size="34" placeholder="../examples/hello_game"></label>
+    <button type="submit">불러오기</button>
+  </form>
+  <div class="layout">
+    <div>
+      <scorex-game id="game"></scorex-game>
+      <div class="controls">
+        <select id="difficulty" aria-label="난이도"></select>
+        <button id="btn-prepare" type="button" disabled>준비(init)</button>
+        <button id="btn-start" type="button" disabled>시작(start)</button>
+        <button id="btn-pause" type="button" disabled>일시정지</button>
+        <button id="btn-resume" type="button" disabled>재개</button>
+        <button id="btn-destroy" type="button" disabled>종료(destroy)</button>
+      </div>
+    </div>
+    <div>
+      <div class="panel"><h2>HUD</h2><pre id="hud">-</pre></div>
+      <div class="panel"><h2>결과 / 서버 검증 시뮬레이션</h2><pre id="result">-</pre></div>
+      <div class="panel"><h2>이벤트 로그</h2><div id="log"></div></div>
+    </div>
+  </div>
+  <script type="module">
+    import '../shell/scorex-game.js';
+
+    const game = document.querySelector('#game');
+    const logEl = document.querySelector('#log');
+    const hudEl = document.querySelector('#hud');
+    const resultEl = document.querySelector('#result');
+    const difficultyEl = document.querySelector('#difficulty');
+    const buttons = Object.fromEntries(['prepare', 'start', 'pause', 'resume', 'destroy'].map((name) => [name, document.querySelector(`#btn-${name}`)]));
+    const params = new URLSearchParams(location.search);
+    document.querySelector('#dir').value = params.get('dir') || '';
+    let playStartedAt = 0;
+    let usedPlayIds = new Set();
+
+    function log(text, cls = '') {
+      const line = document.createElement('div');
+      if (cls) line.className = cls;
+      line.textContent = `${new Date().toLocaleTimeString()} ${text}`;
+      logEl.append(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function syncButtons() {
+      const state = game.state;
+      buttons.prepare.disabled = !['ready', 'over'].includes(state);
+      buttons.start.disabled = state !== 'prepared';
+      buttons.pause.disabled = state !== 'playing';
+      buttons.resume.disabled = state !== 'paused';
+      buttons.destroy.disabled = !['ready', 'prepared', 'playing', 'paused', 'over'].includes(state);
+    }
+
+    // 서버가 하는 검증(maxScore, minDurationMs, 경과 시간 대비 durationMs, playId 1회 사용)을 흉내 냅니다.
+    function simulateServer(detail) {
+      const m = game.manifest;
+      const elapsed = Date.now() - playStartedAt;
+      const problems = [];
+      if (usedPlayIds.has(detail.playId)) problems.push('이미 제출된 playId');
+      if (detail.score > m.maxScore) problems.push(`maxScore(${m.maxScore}) 초과`);
+      if (elapsed < (m.minDurationMs || 0) || detail.durationMs < (m.minDurationMs || 0)) problems.push(`minDurationMs(${m.minDurationMs}) 미만`);
+      if (detail.durationMs > elapsed + 2000) problems.push(`보고 시간(${detail.durationMs}ms)이 실제 경과(${elapsed}ms)보다 김`);
+      usedPlayIds.add(detail.playId);
+      return problems;
+    }
+
+    for (const type of ['scorex-ready', 'scorex-prepared', 'scorex-started']) {
+      game.addEventListener(type, (event) => { log(`${type} ${JSON.stringify(event.detail)}`); syncButtons(); });
+    }
+    game.addEventListener('scorex-hud', (event) => {
+      hudEl.textContent = JSON.stringify(event.detail.items, null, 2);
+      hudEl.classList.toggle('is-danger', Boolean(event.detail.items.danger));
+    });
+    game.addEventListener('scorex-gameover', (event) => {
+      const problems = simulateServer(event.detail);
+      resultEl.textContent = `${JSON.stringify(event.detail, null, 2)}\n\n서버 검증: ${problems.length ? '거부 - ' + problems.join(', ') : '통과'}`;
+      log(`scorex-gameover score=${event.detail.score} result=${event.detail.result} → ${problems.length ? '거부' : '통과'}`, problems.length ? 'bad' : 'ok');
+      syncButtons();
+    });
+    game.addEventListener('scorex-error', (event) => { log(`scorex-error ${JSON.stringify(event.detail)}`, 'bad'); syncButtons(); });
+
+    // 서버 대신 로컬에서 플레이 세션을 발급합니다.
+    game.playProvider = async (_game, difficulty) => ({
+      playId: crypto.randomUUID().replaceAll('-', ''),
+      seed: 1 + Math.floor(Math.random() * 2 ** 31),
+      difficulty
+    });
+    game.user = { nickname: '하니스', guest: true };
+
+    async function run(action, label) {
+      try { await action(); log(label, 'dim'); } catch (error) { log(`${label} 실패: ${error.message}`, 'bad'); }
+      syncButtons();
+    }
+
+    buttons.prepare.addEventListener('click', () => run(async () => {
+      resultEl.textContent = '-';
+      await game.prepare(difficultyEl.value);
+    }, '준비'));
+    buttons.start.addEventListener('click', () => run(() => { playStartedAt = Date.now(); game.start(); }, '시작'));
+    buttons.pause.addEventListener('click', () => run(() => game.pause(), '일시정지'));
+    buttons.resume.addEventListener('click', () => run(() => game.resume(), '재개'));
+    buttons.destroy.addEventListener('click', () => run(() => game.destroy(), '종료'));
+
+    async function loadGame(dir) {
+      const base = new URL(dir.endsWith('/') ? dir : `${dir}/`, location.href);
+      logEl.replaceChildren();
+      hudEl.textContent = '-';
+      resultEl.textContent = '-';
+      try {
+        const response = await fetch(new URL('manifest.json', base));
+        if (!response.ok) throw new Error(`manifest.json을 읽지 못했습니다 (${response.status})`);
+        const manifest = await response.json();
+        manifest.entry = new URL('index.html', base).href;
+        difficultyEl.replaceChildren(...(manifest.difficulties || ['NORMAL']).map((value) => new Option(value, value)));
+        game.manifest = manifest;
+        log(`매니페스트 로드: ${manifest.id} v${manifest.version || '?'}, maxScore=${manifest.maxScore}`, 'dim');
+        await game.load();
+      } catch (error) {
+        log(error.message, 'bad');
+      }
+      syncButtons();
+    }
+
+    document.querySelector('#source').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const dir = document.querySelector('#dir').value.trim();
+      if (dir) loadGame(dir);
+    });
+    if (params.get('dir')) loadGame(params.get('dir'));
+    syncButtons();
+  </script>
+</body>
+</html>

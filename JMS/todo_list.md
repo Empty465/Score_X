@@ -86,6 +86,22 @@
   - [x] 연동: `games/catalog.js` 등록, `index.html` 화면(`view-clop`), `styles.css` 스타일, `server.js` 게임별 최고 점수 집계 컬럼 추가, 투자 시퀀스 자동 포함
   - [ ] 남은 확인: 실제 플레이 난이도 조정(`clopHills`의 `height`, `clopTimeLimit`), 3000번 포트 서버 재시작 후 점수·CR·랭킹 반영 확인
 
+### 5.3.1. iframe 핫플러그 구조 (명세: [MINIGAME_PROTOCOL.md](../MINIGAME_PROTOCOL.md))
+- [x] 통신 프로토콜·매니페스트 규격 문서화(v1 초안) — 완료: 2026-10-21
+- [x] 서버: `games/*/manifest.json` 스캔 및 `GET /api/games` 제공, 정적 서빙 경로 탈출 방지 — 완료: 2026-10-21 (`lib/game-registry.js`, 기본은 한 번만 스캔, `GAMES_RESCAN_MS`로 주기적 재스캔 선택)
+- [x] 서버: 플레이 세션(`playId`, `seed`) 발급(`POST /api/plays`)과 `maxScore`·`minDurationMs`·중복 제출 검증 — 완료: 2026-10-21 (매니페스트 게임은 playId 필수, 기존 게임은 선택)
+- [x] Shell: `<scorex-game>` Web Component(iframe 생성, MessageChannel 핸드셰이크, 타임아웃·오류 처리, `destroy`) — 완료: 2026-10-21 (`shell/scorex-game.js`, 하니스에서 핸드셰이크·HUD·일시정지·재도전·destroy·10초 타임아웃·sandbox 차단 확인)
+- [x] Shell 연동: `scorex-gameover` → `awardScore(game, points, {playId, durationMs})`, `scorex-hud` → 우측 패널 표시 — 완료: 2026-10-22 (`games/clop.js` 어댑터. 모든 게임 공용 연동은 나머지 이전 때 일반화 예정)
+- [x] `scorex-sdk.js`, 목업 하니스, 샘플 게임 작성 — 완료: 2026-10-21 (`sdk/scorex-sdk.js`, `tools/harness.html`, `examples/hello_game/`)
+- [x] 시범 이전: `clop` → iframe 게임으로 변환 및 검증 — 완료: 2026-10-22 (`games/clop/`. 서버는 카탈로그 `hotplug: true` 항목을 매니페스트 게임으로 취급. 브라우저에서 HUD·키 입력·게임오버·점수 제출(playId)·재도전 확인)
+- [x] 나머지 6개 게임 iframe 이전(`reaction`, `mole`, `memory`, `baseball`, `snake`, `rocket`) — 완료: 2026-10-22 (공용 도우미 `shell/game-host.js`, `rocket`은 `matter.min.js`를 `games/rocket/`에 포함. 서버의 `matter-js` 서빙 제거)
+- [x] 옛 게임별 CSS 제거, `mole` 브라우저 확인(`memory`는 카드 열기·시도 카운터까지 확인) — 완료: 2026-10-22
+- [x] 팀 가이드(`TEAM_DEVELOPMENT_GUIDE.md`, `TEAM_MINIGAME_GUIDE.txt`) 및 `MINIGAME_PROTOCOL.md` 갱신 — 완료: 2026-10-22
+- [x] 구 `catalog.js`/`registerGame` 제거 및 매니페스트 기반 메뉴 일반화 — 완료: 2026-10-22 (`GET /api/games`가 메뉴·카드·기본 화면의 출처, `shell/generic-game.js`·`shell/card-art.js`, 어댑터는 default export 생명주기. 샘플 게임을 폴더만 복사해 메뉴 등장·플레이·점수 제출 확인)
+- [x] `baseball` 점수 제출 거부 수정(`finish()`에서 `running=false` 이후 경과 시간을 계산해 `durationMs`가 1ms로 보고되던 문제) — 완료: 2026-10-22 (승리 흐름 브라우저 확인, 로그인 상태 저장은 재시작 후 확인 필요)
+- [x] `memory` 짝 맞추기·점수 제출 최종 확인 — 완료: 2026-10-22 (수동 확인)
+- [x] 운영에서 `/tools/harness.html` 차단 여부 결정 — 완료: 2026-10-22 (당분간 차단하지 않고 유지)
+
 ### 5.4. 점수 검증 및 데이터 신뢰성
 - [ ] 게임 시작 시 난이도(EASY/NORMAL/HARD), 서버 발급 seed 및 플레이 세션 식별자를 공통 인터페이스로 전달
 - [ ] 게임 종료 결과에 gameId, finalScore, playTimeSeconds, isCleared를 포함하고 서버에서 데이터 형식과 게임 ID를 검증
@@ -108,3 +124,11 @@
 - [ ] 인증, 게스트, Career, 최고 기록 합산 점수판, 보유 CR 점수판, 보상 지급, 출석, 투자, 상점 API 테스트 추가
 - [ ] 기존 게임별 점수 적립과 투자 임무 진행의 통합 회귀 테스트 수행
 - [ ] 개발 및 배포 환경을 `package.json`의 Node.js 24 이상 요구사항에 맞추고 실행 검증
+
+### 5.7. 플레이 경험 개선 (2026-10-22 추가)
+- [ ] 미니게임: 다른 탭(메뉴·랭킹·상점 등)으로 이동했다가 돌아오면 모든 게임을 초기 화면으로 초기화
+- [ ] UI: 데스크탑(QHD) 기준 페이지 전체 폰트 크기 확대
+- [ ] 투자: 투자 이후 수행해야 하는 미니게임을 끊기지 않고 연속으로 플레이할 수 있게 개선
+- [ ] 투자: 투자 옵션 선택 이후 선택을 취소할 수 있는 버튼 추가
+- [ ] 투자: 투자 시작 버튼을 누를 때 해당 금액·옵션으로 투자할지 확인 창 표시
+- [ ] 모바일: `rocket`(엔진 회수) 우주선이 너무 천천히 떨어지는 문제 해결(프레임 속도 의존 여부 확인)

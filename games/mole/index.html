@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>비상 경고등 진압</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #10232f; }
+    body { display: grid; place-items: center; }
+    #grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: min(92%, 440px); padding: 14px; box-sizing: border-box; background: radial-gradient(ellipse at center, #1b393b, #10232f 80%); }
+    .hole { aspect-ratio: 1.35; position: relative; border: 1px solid #613448; border-radius: 9px; background: linear-gradient(145deg, #241b2b, #101a28); box-shadow: inset 0 0 14px #0008; cursor: pointer; touch-action: manipulation; padding: 0; }
+    .hole:disabled { cursor: default; }
+    .hole span { display: grid; place-items: center; height: 100%; color: #ff536f; font: bold clamp(24px, 6vw, 40px) ui-monospace, monospace; text-shadow: 0 0 8px #ff315c, 0 0 24px #ff315c; opacity: 0; transition: opacity 100ms ease; }
+    .hole.active { border-color: #ff536f; background: #491d32; box-shadow: inset 0 0 16px #ff315c38, 0 0 16px #ff315c48; }
+    .hole.active span { opacity: 1; }
+    .hole:not(:disabled):active { transform: scale(.96); }
+  </style>
+</head>
+<body>
+  <div id="grid" aria-label="선내 비상 경고 스위치"></div>
+  <script src="../../sdk/scorex-sdk.js"></script>
+  <script>
+    const DURATION_SEC = 20;
+    const grid = document.querySelector('#grid');
+    const holes = Array.from({ length: 9 }, (_, index) => {
+      const button = document.createElement('button');
+      button.className = 'hole';
+      button.type = 'button';
+      button.disabled = true;
+      button.setAttribute('aria-label', `${index + 1}번 비상 스위치`);
+      button.innerHTML = '<span>!</span>';
+      button.addEventListener('click', () => hit(index));
+      grid.append(button);
+      return button;
+    });
+    let rng = Math.random;
+    let active = -1;
+    let score = 0;
+    let ticks = 0;
+    let running = false;
+    let paused = false;
+    let timer = null;
+    let spawn = null;
+
+    function seeded(seed) {
+      let a = seed >>> 0;
+      return function () {
+        a = (a + 0x6D2B79F5) >>> 0;
+        let t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function render() {
+      holes.forEach((button, index) => {
+        button.classList.toggle('active', index === active);
+        button.disabled = !running || paused;
+      });
+    }
+
+    function stopTimers() { clearInterval(timer); clearTimeout(spawn); timer = null; spawn = null; }
+
+    function next() {
+      if (!running || paused) return;
+      const candidate = Math.floor(rng() * holes.length);
+      active = candidate === active ? (candidate + 1) % holes.length : candidate;
+      render();
+      spawn = setTimeout(next, 650 + rng() * 500);
+    }
+
+    function hit(index) {
+      if (!running || paused || index !== active) return;
+      score += 1;
+      active = -1;
+      clearTimeout(spawn);
+      render();
+      Scorex.hud({ score: score * 20 });
+      spawn = setTimeout(next, 120);
+    }
+
+    function startTimers() {
+      next();
+      timer = setInterval(() => {
+        ticks += 1;
+        Scorex.hud({ time: DURATION_SEC - ticks, score: score * 20, danger: DURATION_SEC - ticks <= 5 });
+        if (ticks >= DURATION_SEC) finish();
+      }, 1000);
+    }
+
+    function finish() {
+      stopTimers();
+      running = false;
+      active = -1;
+      render();
+      Scorex.gameOver({ score: score * 20, durationMs: ticks * 1000, result: 'clear', meta: { hits: score } });
+    }
+
+    Scorex.onInit((init) => {
+      rng = seeded(init.seed);
+      stopTimers();
+      running = false; paused = false; active = -1; score = 0; ticks = 0;
+      render();
+    });
+    Scorex.onStart(() => {
+      running = true; paused = false; score = 0; ticks = 0;
+      render();
+      Scorex.started();
+      Scorex.hud({ time: DURATION_SEC, score: 0 });
+      startTimers();
+    });
+    Scorex.onPause(() => { if (!running) return; paused = true; stopTimers(); active = -1; render(); });
+    Scorex.onResume(() => { if (!running) return; paused = false; render(); startTimers(); });
+    Scorex.onDestroy(() => { stopTimers(); running = false; });
+    Scorex.connect({ gameId: 'mole', gameVersion: '1.0.0' });
+  </script>
+</body>
+</html>

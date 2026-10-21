@@ -1,0 +1,17 @@
+{
+  "id": "clop",
+  "protocol": 1,
+  "title": "4족 보행 로봇 운영",
+  "shortTitle": "보행시험",
+  "category": "QUADRUPED TRIAL",
+  "description": "Q·W·O·P로 4족 로버의 다리를 움직여 목적지까지 가세요.",
+  "icon": "🐾",
+  "difficulties": ["NORMAL"],
+  "maxScore": 1700,
+  "minDurationMs": 500,
+  "aspectRatio": "6:5",
+  "input": ["keyboard", "pointer", "touch"],
+  "hud": ["time", "score", "progress", "status"],
+  "version": "1.0.0",
+  "authors": ["score-x"]
+}

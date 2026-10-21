@@ -1,0 +1,17 @@
+{
+  "id": "baseball",
+  "protocol": 1,
+  "title": "궤도 진입 좌표 해독",
+  "shortTitle": "좌표",
+  "category": "SECURE TERMINAL",
+  "description": "터미널 신호를 분석해 9번 안에 숨겨진 보안 코드를 해독하세요.",
+  "icon": "#",
+  "difficulties": ["NORMAL"],
+  "maxScore": 900,
+  "minDurationMs": 2000,
+  "aspectRatio": "4:3",
+  "input": ["keyboard", "touch"],
+  "hud": ["lives", "status"],
+  "version": "1.0.0",
+  "authors": ["score-x"]
+}

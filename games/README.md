@@ -1,20 +1,27 @@
-# 게임 모듈 추가
+# 게임 추가하기
 
-게임 로직은 `games/<id>.js`에 두고, 앱의 화면·점수판과 호스트 API로 연결합니다. 모듈은 해당 게임을 처음 열 때 동적으로 로드됩니다. `template.js`를 복사해 시작할 수 있습니다.
+게임은 `games/<id>/` 폴더(iframe에서 실행)와 `manifest.json`만 있으면 메뉴·카드·기본 게임 화면이 자동으로 만들어집니다. 서버 재시작 없이 추가하려면 `GAMES_RESCAN_MS`를 설정합니다. 통신 규격은 [MINIGAME_PROTOCOL.md](../MINIGAME_PROTOCOL.md)를 따릅니다.
 
-## 모듈 규약
+## 최소 구성 (코드 수정 없음)
 
-- 게임 ID는 소문자 영문/숫자/하이픈으로 정하고, 화면 ID `view-<id>` 및 점수 키와 동일하게 씁니다.
-- `window.Playground`에서 `getBest(id)`, `saveBest(id, value)`, `awardScore(id, points)`, `registerGame(id, lifecycle)`를 사용할 수 있습니다.
-- 게임의 DOM 이벤트와 상태는 해당 모듈 안에 둡니다. `registerGame`의 `onLaunch`는 시작 화면 진입 시 초기화, `onShow`/`onHide`는 화면 표시/이탈 처리가 필요할 때 사용합니다.
-- 게임 ID, 모듈 경로, 화면/점수판 표시 정보는 `games/catalog.js` 한 곳에 등록합니다. 화면 본문은 `index.html`, 게임별 스타일은 `styles.css`에 추가합니다.
-- 서버의 게임 점수 허용 목록, SQLite 제약 및 모듈 제공 경로는 카탈로그에서 파생됩니다. `games/index.js`는 요청된 게임 모듈을 중복 없이 동적 로드합니다.
+1. `games/<id>/manifest.json`과 `games/<id>/index.html`을 만듭니다(`examples/hello_game/` 참고). ID는 `^[a-z][a-z0-9_]{1,31}$`이며 폴더 이름과 같아야 합니다.
+2. 서버가 `GET /api/games`로 목록을 내려주면 앱이 메뉴, 카드, 기본 게임 화면(시작 버튼, HUD, 최고 기록, 결과)을 생성합니다.
+3. 점수는 `game_over` 메시지로 보내면 Shell이 `playId`와 함께 서버에 제출합니다. 게임별 최고 점수는 `best_scores`에 게임 ID 단위로 저장되어 별도 서버 수정이 필요 없습니다.
 
-## 앱 연결 체크리스트
+기본 카드는 매니페스트의 `icon`을 큰 글리프로 보여 줍니다.
 
-1. `games/<id>.js`에 게임 로직과 `window.Playground.registerGame('<id>', ...)`를 작성합니다. 호스트 API를 통해서만 최고 기록을 저장하고 점수를 제출합니다.
-2. `games/catalog.js`에 고유한 ID, 모듈 경로, 화면·카드 표시 정보를 추가합니다. ID와 모듈 경로는 각각 `^[a-z0-9-]+$`, `./games/<id>.js` 규칙을 따라야 합니다.
-3. `index.html`에 `id="view-<id>"` 화면을 추가하고, 필요한 스타일을 `styles.css`에 작성합니다. 게임 ID, 카탈로그 중복, 모듈 등록 누락, 화면 누락은 앱/서버 검사와 `npm test`로 확인합니다.
-4. 선택한 게임만 지연 로드됩니다. 모듈 로드 또는 `registerGame` 등록에 실패하면 사용자에게 오류를 표시합니다.
+## 전용 화면이 필요한 경우 (선택)
 
-기존 게임 예시: `snake.js`, `memory.js`, `reaction.js`, `mole.js`, `baseball.js`, `rocket.js`.
+기본 화면 대신 게임별 사이드 패널·오버레이가 필요하면 다음을 추가합니다. 기본 게임 7종이 이 방식입니다.
+
+- `index.html`에 `id="view-<id>"` 화면을 추가합니다. 게임이 들어갈 자리에는 `<div class="game-host" id="<id>-host"></div>`를 둡니다.
+- `games/<id>.js` 어댑터를 만듭니다. `shell/game-host.js`의 `mountGame({ id, host, difficulty, onHud, onGameOver, onError })`로 게임을 올리고, 모듈의 **default export**로 생명주기 `{ onLaunch, onShow, onHide }`를 내보냅니다. `template.js`를 복사해 시작합니다.
+- `window.Playground`에서 `getBest(id)`, `saveBest(id, value)`, `awardScore(id, points, { playId, durationMs })`를 사용합니다.
+- 화면 `view-<id>`와 어댑터 `games/<id>.js`가 **둘 다** 있을 때만 전용 방식으로 동작하고, 아니면 기본 화면을 씁니다. 서버는 `GET /api/games`의 `adapter` 필드로 어댑터 존재 여부를 알려 줍니다.
+- 카드 장식(`shell/card-art.js`)은 선택 사항이며, 없으면 `icon` 기반 기본 카드가 사용됩니다.
+
+## 주의
+
+- iframe은 `sandbox="allow-scripts"`라 `<form>` 제출, `localStorage`, `window.parent`를 쓸 수 없습니다.
+- 어댑터는 저장소의 `games/<id>.js` 최상위 파일만 Shell 출처에서 실행됩니다. 외부 게임 폴더의 스크립트는 iframe 안에서만 실행됩니다.
+- 어댑터는 선택한 게임만 지연 로드되며, 로드에 실패하면 사용자에게 오류를 표시합니다.

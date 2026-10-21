@@ -1,78 +1,40 @@
+// 비상 경고등 진압: 게임 본체는 games/mole/ (iframe)에서 실행되고, 이 파일은 점수 제출과 사이드 패널 표시만 담당합니다.
+import { mountGame } from '/shell/game-host.js';
+
 const { getBest, saveBest, awardScore } = window.Playground;
+const startButton = document.querySelector('#mole-start');
+const text = (selector, value) => { document.querySelector(selector).textContent = value; };
 
-const moleButtons = [...document.querySelectorAll('.mole-hole')];
-let moleActiveIndex = -1;
-let moleScore = 0;
-let moleSecondsLeft = 20;
-let moleTimer = null;
-let moleSpawnTimer = null;
-let moleRunning = false;
+function setButton(label) { startButton.innerHTML = `${label} <span>↗</span>`; }
 
-function renderMole() {
-  moleButtons.forEach((button, index) => {
-    button.classList.toggle('is-active', index === moleActiveIndex);
-    button.disabled = !moleRunning;
-  });
-}
+const game = mountGame({
+  id: 'mole',
+  host: document.querySelector('#mole-host'),
+  onHud: (items) => {
+    if (items.time !== undefined) document.querySelector('#mole-time').innerHTML = `${String(Math.max(0, Math.ceil(items.time))).padStart(2, '0')}<small> 초</small>`;
+    if (items.score !== undefined) text('#mole-score', String(Math.round(items.score / 20)).padStart(2, '0'));
+  },
+  onError: (message) => { text('#mole-status', 'ERROR'); setButton(message); },
+  async onGameOver({ playId, score, durationMs, meta }) {
+    const hits = meta && typeof meta.hits === 'number' ? meta.hits : Math.round(score / 20);
+    text('#mole-status', 'COMPLETE');
+    text('#mole-score', String(hits).padStart(2, '0'));
+    if (hits > Number(getBest('mole') || 0)) saveBest('mole', hits);
+    const earned = await awardScore('mole', score, { playId, durationMs });
+    setButton(`${hits}회 차단 · ${earned === null ? '점수 서버 연결 실패' : `${earned} PTS 기록`}`);
+  }
+});
 
-function resetMole() {
-  clearInterval(moleTimer);
-  clearTimeout(moleSpawnTimer);
-  moleRunning = false;
-  moleActiveIndex = -1;
-  moleScore = 0;
-  moleSecondsLeft = 20;
-  document.querySelector('#mole-score').textContent = '00';
+startButton.addEventListener('click', async () => {
+  text('#mole-status', 'PLAYING');
+  text('#mole-score', '00');
   document.querySelector('#mole-time').innerHTML = '20<small> 초</small>';
-  document.querySelector('#mole-status').textContent = 'READY';
-  document.querySelector('#mole-start').textContent = '임무 시작 ↗';
-  renderMole();
-}
+  setButton('경고를 차단하세요!');
+  if (!await game.start()) { text('#mole-status', 'READY'); setButton('다시 시도'); }
+});
 
-function showNextMole() {
-  if (!moleRunning) return;
-  const nextIndex = Math.floor(Math.random() * moleButtons.length);
-  moleActiveIndex = nextIndex === moleActiveIndex ? (nextIndex + 1) % moleButtons.length : nextIndex;
-  renderMole();
-  moleSpawnTimer = setTimeout(showNextMole, 650 + Math.random() * 500);
-}
-
-async function finishMole() {
-  clearInterval(moleTimer);
-  clearTimeout(moleSpawnTimer);
-  moleRunning = false;
-  moleActiveIndex = -1;
-  document.querySelector('#mole-status').textContent = 'COMPLETE';
-  const earned = await awardScore('mole', moleScore * 20);
-  const receipt = earned === null ? '점수 서버 연결 실패' : `${earned} PTS 기록`;
-  document.querySelector('#mole-start').textContent = `${moleScore}회 차단 · ${receipt}`;
-  if (moleScore > Number(getBest('mole') || 0)) saveBest('mole', moleScore);
-  renderMole();
-}
-
-function startMole() {
-  if (moleRunning) return;
-  resetMole();
-  moleRunning = true;
-  document.querySelector('#mole-status').textContent = 'PLAYING';
-  document.querySelector('#mole-start').textContent = '경고를 차단하세요!';
-  showNextMole();
-  moleTimer = setInterval(() => {
-    moleSecondsLeft -= 1;
-    document.querySelector('#mole-time').innerHTML = `${String(moleSecondsLeft).padStart(2, '0')}<small> 초</small>`;
-    if (moleSecondsLeft <= 0) finishMole();
-  }, 1000);
-}
-
-moleButtons.forEach((button, index) => button.addEventListener('click', () => {
-  if (!moleRunning || index !== moleActiveIndex) return;
-  moleScore += 1;
-  document.querySelector('#mole-score').textContent = String(moleScore).padStart(2, '0');
-  clearTimeout(moleSpawnTimer);
-  moleActiveIndex = -1;
-  renderMole();
-  moleSpawnTimer = setTimeout(showNextMole, 120);
-}));
-document.querySelector('#mole-start').addEventListener('click', startMole);
-resetMole();
-window.Playground.registerGame('mole', { onLaunch: resetMole });
+export default {
+onLaunch: () => { game.ensure(); },
+onShow: () => { game.ensure(); game.resume(); },
+onHide: () => game.pause()
+};

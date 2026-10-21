@@ -67,4 +67,5 @@
 ### **5.4. 모듈형 개발 기술 지침**
 
 * 메인 웹페이지(Shell) 개발자와 각 미니게임 모듈 개발자로 역할을 분담합니다.  
-* **표준 API 작성:** 미니게임 시작(`startGame(난이도)`), 게임 종료 및 점수 반환(`endGame(최종점수)`) 등 메인 페이지와 통신할 자바스크립트 함수 규칙을 명확히 정의한 뒤 개발을 시작합니다. (iframe 또는 컴포넌트 임포트 방식 활용)
+* **표준 API:** 미니게임은 sandbox iframe(`<scorex-game>` Web Component)에서 실행되며, 메인 페이지와는 함수 호출 대신 `postMessage`/`MessageChannel` 이벤트(시작 `init`: 난이도·seed·playId, 종료 `game_over`: 점수·플레이 시간)로만 통신합니다. 규격은 [MINIGAME_PROTOCOL.md](./MINIGAME_PROTOCOL.md)를 따릅니다.
+* **핫플러그:** `games/<id>/manifest.json`과 `index.html`만 추가하면 메뉴에 자동으로 나타납니다. 점수는 서버가 발급한 playId로 검증합니다(최대 점수·최소 플레이 시간·중복 제출).
