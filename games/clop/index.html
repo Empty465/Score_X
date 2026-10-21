@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>4족 보행 로봇 운영</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #091626; color: #dce9f8; font: 12px system-ui, sans-serif; overflow: hidden; }
+    body { display: grid; grid-template-rows: minmax(0, 1fr) auto auto auto; }
+    #canvas { display: block; width: 100%; height: 100%; min-height: 0; object-fit: contain; background: #091626; }
+    .bar { padding: 6px 14px 8px; border-top: 1px solid #314a65; background: #0b1a2c; color: #91a5bf; font: 10px ui-monospace, monospace; }
+    .bar .labels { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .bar strong { color: #8ff5e5; font-size: 11px; }
+    .track { position: relative; height: 6px; margin: 0 10px; border-radius: 4px; background: #263a52; }
+    .fill { height: 100%; width: 0; border-radius: 4px; background: #65e6d1; }
+    .marker { position: absolute; top: -9px; left: 0; width: 24px; height: 24px; margin-left: -12px; display: grid; place-items: center; font-size: 16px; line-height: 1; }
+    .tilt { padding: 4px 14px 6px; background: #0b1a2c; color: #91a5bf; font-size: 10px; }
+    .tilt div { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .tilt strong { color: #dce9f8; font: 10px ui-monospace, monospace; }
+    progress { display: block; width: 100%; height: 6px; appearance: none; border: 0; border-radius: 4px; overflow: hidden; background: #263a52; }
+    progress::-webkit-progress-bar { background: #263a52; }
+    progress::-webkit-progress-value { background: #65e6d1; transition: width 80ms linear; }
+    .tilt.danger progress::-webkit-progress-value { background: #ff718b; }
+    .controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 0 10px 8px; background: #0b1a2c; }
+    .controls button { height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #314a65; border-radius: 4px; background: #14253a; color: #b9d0e7; font: 16px system-ui, sans-serif; cursor: pointer; touch-action: none; user-select: none; }
+    .controls button small { font-size: 9px; }
+    .controls button.is-held { border-color: #65e6d1; background: #163b45; color: #a6fff0; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="720" height="420" aria-label="4족 보행 로버 시험 시뮬레이션"></canvas>
+  <div class="bar">
+    <div class="labels"><span>🏁 출발 0m</span><strong id="now">현재 0m</strong><span>도착 120m 🚩</span></div>
+    <div class="track"><div class="fill" id="fill"></div><div class="marker" id="marker">🤖</div></div>
+  </div>
+  <div class="tilt" id="tilt"><div><span>기울기</span><strong id="tilt-label">수평</strong></div><progress id="tilt-meter" max="100" value="0">0</progress></div>
+  <div class="controls">
+    <button type="button" data-key="q">Q<small>앞왼다리</small></button>
+    <button type="button" data-key="w">W<small>앞오른다리</small></button>
+    <button type="button" data-key="o">O<small>뒤왼다리</small></button>
+    <button type="button" data-key="p">P<small>뒤오른다리</small></button>
+  </div>
+  <script src="../../sdk/scorex-sdk.js"></script>
+  <script>
+    const canvas = document.querySelector('#canvas');
+    const ctx = canvas.getContext('2d');
+    const GOAL = 120;
+    const PX_PER_METER = 46;
+    const BODY_X = 260;
+    const GROUND_Y = 330;
+    const LEG_LENGTH = 66;
+    const FLIP_LIMIT = 0.9;
+    const TIME_LIMIT = 100;
+    // 언덕: 시작 위치, 길이, 높이(음수는 골짜기). 코사인 곡선으로 부드럽게 이어진다.
+    const HILLS = [
+      { start: 14, length: 22, height: 1.5 },
+      { start: 44, length: 18, height: -1.3 },
+      { start: 68, length: 24, height: 2.6 },
+      { start: 96, length: 14, height: 1.8 },
+      { start: 110, length: 10, height: -1.0 }
+    ];
+    // 다리 순서: 앞왼(Q), 앞오(W), 뒤왼(O), 뒤오(P)
+    const LEG_KEYS = ['q', 'w', 'o', 'p'];
+    const held = { q: false, w: false, o: false, p: false };
+    const stars = Array.from({ length: 60 }, () => ({ x: Math.random() * 720, y: Math.random() * 230, size: .5 + Math.random() * 1.4, alpha: .25 + Math.random() * .6 }));
+    let state = createState();
+    let running = false;
+    let paused = false;
+    let frame = null;
+    let hudAt = 0;
+    let runMs = 0;
+    let lastTick = 0;
+
+    function heightAt(meter) {
+      let total = 0;
+      HILLS.forEach(({ start, length, height }) => {
+        if (meter > start && meter < start + length) total += height * (1 - Math.cos(2 * Math.PI * (meter - start) / length)) / 2;
+      });
+      return total;
+    }
+
+    function slopeAt(meter) {
+      let total = 0;
+      HILLS.forEach(({ start, length, height }) => {
+        if (meter > start && meter < start + length) total += height * Math.PI / length * Math.sin(2 * Math.PI * (meter - start) / length);
+      });
+      return total;
+    }
+
+    function createState() {
+      return { legs: [0.3, -0.3, -0.3, 0.3], theta: 0, omega: 0, distance: 0, flipped: 0, time: 0 };
+    }
+
+    // 누른 다리는 땅을 뒤로 밀며 전진하고, 뗀 다리는 스스로 앞으로 내딛는다.
+    // 앞·뒤 지지 다리 수가 다르면 몸이 기울고, 한계를 넘으면 뒤집힌다.
+    function step(s) {
+      if (s.flipped) {
+        s.theta += s.flipped * 0.07;
+        return;
+      }
+      const isHeld = LEG_KEYS.map((key) => held[key]);
+      const heldCount = isHeld.filter(Boolean).length;
+      const thrustScale = heldCount >= 3 ? 0.35 : 1;
+      const sweeps = [0, 0, 0, 0];
+      isHeld.forEach((on, index) => {
+        const before = s.legs[index];
+        s.legs[index] = on ? Math.max(-0.8, before - 0.05) : Math.min(0.8, before + 0.07);
+        if (on) sweeps[index] = before - s.legs[index];
+      });
+      s.distance += (sweeps[0] + sweeps[1] + sweeps[2] + sweeps[3]) * thrustScale * 0.5 * Math.max(0.3, Math.min(1.35, 1 - slopeAt(s.distance) * 1.2));
+
+      const frontHeld = Number(isHeld[0]) + Number(isHeld[1]);
+      const rearHeld = Number(isHeld[2]) + Number(isHeld[3]);
+      const imbalance = (rearHeld - frontHeld) / 2;
+      if (heldCount === 0) {
+        s.omega += (-1.5 * s.theta) / 60;
+        s.omega *= 0.9;
+      } else {
+        const thrustTorque = (sweeps[2] + sweeps[3] - sweeps[0] - sweeps[1]) * 0.06 * 60;
+        const restore = imbalance === 0 ? -1 * s.theta : 0;
+        s.omega += (imbalance * 6 + thrustTorque + restore - slopeAt(s.distance) * 1.6) / 60;
+        s.omega *= 0.985;
+      }
+      s.theta += s.omega / 60;
+      if (Math.abs(s.theta) > FLIP_LIMIT) s.flipped = Math.sign(s.theta);
+    }
+
+    function draw() {
+      const context = ctx;
+      context.clearRect(0, 0, 720, 420);
+      const sky = context.createLinearGradient(0, 0, 0, GROUND_Y);
+      sky.addColorStop(0, '#091626');
+      sky.addColorStop(1, '#174a65');
+      context.fillStyle = sky;
+      context.fillRect(0, 0, 720, GROUND_Y);
+      stars.forEach((star) => {
+        context.fillStyle = `rgba(220,240,255,${star.alpha})`;
+        context.fillRect(star.x, star.y, star.size, star.size);
+      });
+      const groundAt = (meter) => GROUND_Y - heightAt(meter) * PX_PER_METER;
+      context.fillStyle = '#1c3a52';
+      context.beginPath();
+      context.moveTo(0, 420);
+      for (let x = 0; x <= 720; x += 6) context.lineTo(x, groundAt(state.distance + (x - BODY_X) / PX_PER_METER));
+      context.lineTo(720, 420);
+      context.closePath();
+      context.fill();
+      context.strokeStyle = '#65e6d1';
+      context.lineWidth = 2;
+      context.beginPath();
+      for (let x = 0; x <= 720; x += 6) {
+        const y = groundAt(state.distance + (x - BODY_X) / PX_PER_METER);
+        if (x === 0) context.moveTo(x, y); else context.lineTo(x, y);
+      }
+      context.stroke();
+      context.font = '10px ui-monospace, monospace';
+      context.textAlign = 'center';
+      for (let meter = 0; meter <= GOAL; meter += 10) {
+        const x = BODY_X + (meter - state.distance) * PX_PER_METER;
+        if (x < -20 || x > 740) continue;
+        const y = groundAt(meter);
+        context.fillStyle = '#4a6c88';
+        context.fillRect(x, y, 1, 10);
+        context.fillText(`${meter}m`, x, y + 24);
+      }
+      const goalX = BODY_X + (GOAL - state.distance) * PX_PER_METER;
+      if (goalX < 760) {
+        const goalY = groundAt(GOAL);
+        context.fillStyle = '#65e6d1';
+        context.fillRect(goalX, goalY - 90, 3, 90);
+        context.fillStyle = '#ff718b';
+        context.beginPath();
+        context.moveTo(goalX + 3, goalY - 90);
+        context.lineTo(goalX + 38, goalY - 76);
+        context.lineTo(goalX + 3, goalY - 62);
+        context.fill();
+      }
+
+      const groundHere = groundAt(state.distance);
+      const rotation = state.theta - Math.atan(slopeAt(state.distance));
+      const attach = [{ x: 42, far: false }, { x: 42, far: true }, { x: -42, far: false }, { x: -42, far: true }];
+      const anyHeld = LEG_KEYS.some((key) => held[key]);
+      const legShapes = attach.map((leg, index) => {
+        const on = held[LEG_KEYS[index]];
+        const angle = state.legs[index];
+        const lift = on || !anyHeld ? 0 : 14;
+        const hip = { x: leg.x + (leg.far ? 6 : 0), y: 14 };
+        const knee = { x: hip.x + Math.sin(angle) * LEG_LENGTH * 0.55 + 6, y: hip.y + Math.cos(angle) * LEG_LENGTH * 0.55 - lift * 0.4 };
+        const foot = { x: hip.x + Math.sin(angle) * LEG_LENGTH, y: hip.y + Math.cos(angle) * LEG_LENGTH - lift };
+        return { index, far: leg.far, isHeld: on, hip, knee, foot, grounded: lift === 0 };
+      });
+      // 지면에 닿은 다리 중 가장 낮은 발이 땅에 닿도록 몸통 높이를 정한다
+      const lowestFoot = Math.max(...legShapes.filter((leg) => leg.grounded).map((leg) => leg.foot.x * Math.sin(rotation) + leg.foot.y * Math.cos(rotation)));
+      const standingY = groundHere - lowestFoot;
+      const fallProgress = state.flipped ? Math.min(1, (Math.abs(state.theta) - FLIP_LIMIT) / 1.4) : 0;
+      const bodyY = standingY + fallProgress * (groundHere - 34 - standingY);
+      context.save();
+      context.translate(BODY_X, bodyY);
+      context.rotate(rotation);
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      [1, 3, 0, 2].forEach((index) => {
+        const { far, isHeld, hip, knee, foot } = legShapes[index];
+        context.strokeStyle = far ? '#3d7f93' : (isHeld ? '#a6fff0' : '#65e6d1');
+        context.lineWidth = 8;
+        context.beginPath();
+        context.moveTo(hip.x, hip.y);
+        context.lineTo(knee.x, knee.y);
+        context.lineTo(foot.x, foot.y);
+        context.stroke();
+        context.fillStyle = '#e8f0ef';
+        context.fillRect(foot.x - 5, foot.y - 2, 12, 5);
+      });
+      context.fillStyle = '#dce9f8';
+      context.beginPath();
+      context.roundRect(-62, -20, 124, 40, 10);
+      context.fill();
+      context.fillStyle = '#16384c';
+      context.fillRect(-48, -10, 56, 14);
+      context.fillStyle = '#ffd27d';
+      context.beginPath();
+      context.arc(42, -6, 9, 0, Math.PI * 2);
+      context.fill();
+      context.fillStyle = '#ff718b';
+      context.fillRect(-22, -30, 3, 12);
+      context.fillRect(-26, -34, 11, 5);
+      context.restore();
+    }
+
+    function meters() { return Math.max(0, Math.min(GOAL, state.distance)); }
+    function remainingSeconds() { return Math.max(0, Math.ceil(TIME_LIMIT - state.time)); }
+
+    function updateLocalReadout() {
+      const percent = meters() / GOAL * 100;
+      document.querySelector('#fill').style.width = `${percent}%`;
+      document.querySelector('#marker').style.left = `${percent}%`;
+      document.querySelector('#now').textContent = `현재 ${meters().toFixed(0)}m`;
+      const tilt = Math.min(100, Math.round(Math.abs(state.theta) / FLIP_LIMIT * 100));
+      document.querySelector('#tilt-meter').value = tilt;
+      document.querySelector('#tilt-label').textContent = tilt < 8 ? '수평' : `${state.theta > 0 ? '앞숙임' : '뒤들림'} ${tilt}%`;
+      document.querySelector('#tilt').classList.toggle('danger', tilt > 70);
+    }
+
+    function sendHud(status) {
+      const remaining = remainingSeconds();
+      Scorex.hud({
+        time: remaining,
+        score: Math.round(meters() * 10),
+        progress: meters() / GOAL,
+        status: status || `WALKING ${remaining}s`,
+        danger: remaining <= 10 || Math.abs(state.theta) / FLIP_LIMIT > 0.7
+      });
+    }
+
+    function clearInput() {
+      Object.keys(held).forEach((key) => {
+        held[key] = false;
+        document.querySelector(`[data-key="${key}"]`)?.classList.remove('is-held');
+      });
+    }
+
+    function setControl(key, isPressed) {
+      if (!running || paused) return;
+      held[key] = isPressed;
+      document.querySelector(`[data-key="${key}"]`)?.classList.toggle('is-held', isPressed);
+    }
+
+    function reset() {
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = null;
+      running = false;
+      paused = false;
+      runMs = 0;
+      clearInput();
+      state = createState();
+      updateLocalReadout();
+      draw();
+    }
+
+    function finish(reachedGoal, timedOut) {
+      if (!running) return;
+      running = false;
+      frame = null;
+      clearInput();
+      const points = Math.round(meters() * 10) + (reachedGoal ? 500 : 0);
+      updateLocalReadout();
+      draw();
+      Scorex.gameOver({
+        score: points,
+        durationMs: Math.round(runMs),
+        result: reachedGoal ? 'clear' : (timedOut ? 'timeout' : 'fail'),
+        meta: { meters: Math.round(meters() * 10) / 10 }
+      });
+    }
+
+    function animate(now) {
+      if (!running) { frame = null; return; }
+      if (paused) { frame = requestAnimationFrame(animate); lastTick = now; return; }
+      runMs += Math.min(100, now - lastTick);
+      lastTick = now;
+      step(state);
+      state.time += 1 / 60;
+      if (state.distance >= GOAL) { finish(true, false); return; }
+      if (!state.flipped && state.time >= TIME_LIMIT) { finish(false, true); return; }
+      if (state.flipped && Math.abs(state.theta) > 2.6) { draw(); finish(false, false); return; }
+      if (now - hudAt > 100) {
+        updateLocalReadout();
+        sendHud();
+        hudAt = now;
+      }
+      draw();
+      frame = requestAnimationFrame(animate);
+    }
+
+    document.querySelectorAll('[data-key]').forEach((button) => {
+      const key = button.dataset.key;
+      button.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        button.setPointerCapture(event.pointerId);
+        setControl(key, true);
+      });
+      ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((name) => button.addEventListener(name, () => setControl(key, false)));
+    });
+    window.addEventListener('keydown', (event) => {
+      const key = event.key.toLowerCase();
+      if (!(key in held)) return;
+      event.preventDefault();
+      setControl(key, true);
+    });
+    window.addEventListener('keyup', (event) => {
+      const key = event.key.toLowerCase();
+      if (key in held) setControl(key, false);
+    });
+    window.addEventListener('blur', clearInput);
+
+    Scorex.onInit(() => reset());
+    Scorex.onStart(() => {
+      reset();
+      running = true;
+      lastTick = performance.now();
+      Scorex.started();
+      window.focus();
+      frame = requestAnimationFrame(animate);
+    });
+    Scorex.onPause(() => { paused = true; clearInput(); });
+    Scorex.onResume(() => { paused = false; lastTick = performance.now(); });
+    Scorex.onDestroy(() => { running = false; if (frame !== null) cancelAnimationFrame(frame); frame = null; });
+
+    reset();
+    Scorex.connect({ gameId: 'clop', gameVersion: '1.0.0' });
+  </script>
+</body>
+</html>

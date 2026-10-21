@@ -76,12 +76,12 @@ git status --short
 ## 3. 파일 소유 범위와 동시 작업
 
 - 원칙적으로 본인 브랜치에서 맡은 기능과 관련된 파일만 수정합니다.
-- 게임 모듈을 맡았다면 `games/<게임ID>.js`와 `games/catalog.js`에 게임을 등록하고, 필요 시 관련 게임 화면·스타일을 변경합니다. 다른 게임 파일은 담당자와 조율 없이 건드리지 않습니다.
-- 공용 파일인 `app.js`, `server.js`, `index.html`, `styles.css`, `games/index.js`, `games/catalog.js`, `package.json`은 여러 기능이 함께 의존합니다. 이 파일을 수정하기 전 담당자와 변경 범위 및 인터페이스를 공유합니다.
+- 게임 모듈을 맡았다면 `games/<게임ID>/`(manifest.json, index.html)를 만들고, 전용 화면이 필요할 때만 `games/<게임ID>.js` 어댑터와 관련 화면·스타일을 변경합니다. 다른 게임 파일은 담당자와 조율 없이 건드리지 않습니다.
+- 공용 파일인 `app.js`, `server.js`, `index.html`, `styles.css`, `games/index.js`, `shell/*`, `package.json`은 여러 기능이 함께 의존합니다. 이 파일을 수정하기 전 담당자와 변경 범위 및 인터페이스를 공유합니다.
 - 다른 사람의 기능과 같은 공용 파일을 동시에 수정할 예정이면, 먼저 작업 시점과 담당 구간을 조율합니다. 임의로 상대방 변경을 합치거나 삭제하지 않습니다.
 - API, 데이터베이스 스키마, 점수·재화 규칙, 게임 ID, DOM ID, 이벤트 규약처럼 여러 영역에 영향을 주는 계약을 바꾸기 전에 관련 작업자에게 알리고 합의합니다.
 - 기능 범위에 필요하지 않은 대규모 포맷 변경, 파일 이동, 이름 변경, 기존 코드 정리는 같은 변경 묶음에 섞지 않습니다.
-- 데이터베이스 파일(`scores.sqlite`)을 직접 편집하거나 테스트 데이터로 오염시키지 않습니다. 스키마 변경은 코드 기반 마이그레이션으로 작성하고, 테스트에는 별도 임시 DB를 사용합니다.
+- 데이터베이스 파일(`DB/scorex.sqlite`)을 직접 편집하거나 테스트 데이터로 오염시키지 않습니다. 스키마 변경은 코드 기반 마이그레이션으로 작성하고, 테스트에는 별도 임시 DB를 사용합니다.
 
 ## 4. Score X 구현 기준
 
@@ -89,9 +89,9 @@ git status --short
 
 - 프로젝트 요구사항과 게임 기획은 `README.md`, `Technical_Feature.md`, `games/games_thema.md`를 참고합니다.
 - 게임 모듈 연결 방법은 `games/README.md`를 참고합니다.
-- 현재 게임 모듈은 `games/catalog.js`를 기준으로 화면 목록, 점수판 메타데이터, 서버 허용 목록 및 모듈 경로를 연결하고, 게임 선택 시 ES Module로 지연 로드합니다. 새 게임은 카탈로그에 고유한 ID와 메타데이터를 추가하고 `index.html`에 `id="view-<게임ID>"` 화면 및 필요한 스타일을 연결합니다.
-- 동적 import와 `window.Playground.registerGame`은 코드·생명주기 분리를 위한 구조이며 실행 환경 보안 격리는 아닙니다. Shell과 게임 모듈은 같은 문서와 JavaScript 실행 환경을 공유합니다. 현재 iframe 격리와 `postMessage` 통신은 구현되어 있지 않으므로, 이를 도입하거나 통신 계약을 변경할 때는 관련 작업자와 먼저 합의하고 허용 출처·메시지 형식 검증을 함께 설계합니다.
-- 각 게임은 고유하고 일관된 게임 ID를 사용합니다. 카탈로그 ID, 화면 ID, `data-view`, `data-launch`, 등록 ID, 서버 허용 목록 및 점수 저장 키가 서로 맞는지 확인합니다.
+- 게임 목록은 `games/*/manifest.json`을 서버가 `GET /api/games`로 제공하고, 앱이 메뉴·카드·기본 게임 화면을 생성합니다. 전용 화면이 있는 게임은 `index.html`의 `id="view-<게임ID>"`와 `games/<게임ID>.js` 어댑터(default export 생명주기)를 함께 두며, 어댑터는 선택 시 ES Module로 지연 로드됩니다.
+- 미니게임 7종은 모두 `sandbox="allow-scripts"` iframe(`<scorex-game>`)에서 실행되며, Shell과는 `postMessage`/`MessageChannel` 규격으로만 통신합니다. 게임 폴더는 `games/<id>/`(`manifest.json`, `index.html`)이고, Shell 쪽은 `games/<id>.js` 어댑터가 `shell/game-host.js`를 사용합니다. 어댑터는 `export default { onLaunch, onShow, onHide }`로 Shell과 생명주기를 연결합니다. 통신 규격·매니페스트·점수 검증은 [MINIGAME_PROTOCOL.md](./MINIGAME_PROTOCOL.md)를 따르고, 이를 변경할 때는 관련 작업자와 먼저 합의합니다. sandbox 안에서는 `<form>` 제출, `localStorage`, `window.parent` 접근이 불가능합니다.
+- 각 게임은 고유하고 일관된 게임 ID를 사용합니다. 매니페스트 ID, 폴더 이름, 화면 ID(`view-<id>`), `data-view`, `data-launch`, 어댑터 파일 이름, 점수 저장 키가 서로 맞는지 확인합니다.
 - 현재 점수판 규칙:
   - 완료 결과에는 해당 임무 점수와 획득 투자 재화를 함께 표시합니다.
   - 투자 재화는 점수 100점마다 1 CR, 임무 완료 시 최소 1 CR을 지급합니다.
@@ -119,7 +119,7 @@ git status --short
 - 정상 경로뿐 아니라 잘못된 입력, 0점·최소 보상, 반복 제출, 재화 부족, 기존 사용자 데이터 등 영향받는 경계 조건을 확인합니다.
 - 가능한 한 변경에 가장 가까운 검증부터 실행하고, 결과와 완료 날짜를 TODO와 변경 설명에 기록합니다.
 - 현재 프로젝트는 `package.json`에서 Node.js 24 이상을 요구합니다. 실행·테스트 환경도 이 버전에 맞춥니다.
-- 서버/API 또는 데이터베이스를 검증할 때 실제 `scores.sqlite`를 사용하지 말고 별도의 임시 데이터베이스와 테스트 사용자로 확인합니다. 검증 후 임시 서버와 테스트 파일을 정리합니다.
+- 서버/API 또는 데이터베이스를 검증할 때 실제 `DB/scorex.sqlite`를 사용하지 말고 별도의 임시 데이터베이스와 테스트 사용자로 확인합니다. 검증 후 임시 서버와 테스트 파일을 정리합니다.
 - 테스트가 없다면 최소한 문법 검사, 수동 실행 또는 재현 가능한 API 확인을 수행하고, 테스트가 없다는 사실도 통합 기록에 씁니다.
 - 기존 동작을 바꾸거나 마이그레이션을 추가했다면 이전 데이터와 기존 기능에 미치는 영향을 설명하고 검증합니다.
 

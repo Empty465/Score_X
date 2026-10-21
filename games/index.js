@@ -1,16 +1,17 @@
 const moduleLoads = new Map();
 
-export function loadGameModule(modulePath) {
-  if (!/^\.\/games\/[a-z0-9-]+\.js$/.test(modulePath)) {
-    return Promise.reject(new Error(`잘못된 게임 모듈 경로입니다: ${modulePath}`));
+// games/<id>.js 어댑터를 처음 열 때 한 번만 동적으로 불러옵니다. 모듈의 default export가 생명주기({ onLaunch, onShow, onHide })입니다.
+export function loadGameModule(id) {
+  if (!/^[a-z][a-z0-9_]{1,31}$/.test(id)) {
+    return Promise.reject(new Error(`잘못된 게임 ID입니다: ${id}`));
   }
 
-  if (!moduleLoads.has(modulePath)) {
-    const moduleUrl = new URL(modulePath, document.baseURI).href;
-    moduleLoads.set(modulePath, import(moduleUrl).catch((error) => {
-      moduleLoads.delete(modulePath);
+  if (!moduleLoads.has(id)) {
+    const moduleUrl = new URL(`/games/${id}.js`, document.baseURI).href;
+    moduleLoads.set(id, import(moduleUrl).catch((error) => {
+      moduleLoads.delete(id);
       throw error;
     }));
   }
-  return moduleLoads.get(modulePath);
+  return moduleLoads.get(id);
 }

@@ -74,6 +74,17 @@ window.parent.postMessage({
 
 }, '\*');
 
+### **실제 구현 (2026-10-22 기준)**
+
+위 예시는 초기 기획안이며, 실제 구현은 아래와 같이 더 안전한 방식으로 바뀌었습니다. 상세 규격은 [MINIGAME_PROTOCOL.md](./MINIGAME_PROTOCOL.md)를 따릅니다.
+
+* **연결:** 미니게임은 `allow-scripts`만 허용한 sandbox iframe에서 실행되고, Shell은 `<scorex-game>` Web Component로 이를 감쌉니다. `window.parent.postMessage(..., '*')` 대신 핸드셰이크 후 MessageChannel 포트로만 통신합니다.
+* **시작 페이로드:** `init`에 `difficulty`, `seed`, `playId`를 담아 Shell이 게임에 전달합니다. `seed`와 `playId`는 서버(`POST /api/plays`)가 발급합니다.
+* **종료 페이로드:** `SCORE_X_GAME_END` 대신 `scorex-gameover` 이벤트를 쓰며 값은 `points`, `durationMs`입니다(`finalScore`→`points`, `playTimeSeconds`→`durationMs`). Shell이 `awardScore(game, points, {playId, durationMs})`로 `/api/scores`에 제출합니다.
+* **게임 등록:** `games/<id>/manifest.json`(`maxScore`, `minDurationMs` 포함)을 두면 `GET /api/games`가 메뉴·카드·기본 화면의 출처가 됩니다. 코드 수정이나 재배포 없이 폴더만 추가/삭제합니다(서버는 기본적으로 시작 시 한 번 스캔하며 `GAMES_RESCAN_MS`로 주기적 재스캔).
+* **개발 도구:** `sdk/scorex-sdk.js`, 목업 하니스 `tools/harness.html`, 샘플 `examples/hello_game/`.
+* **서버 검증(부분 구현):** `playId` 필수·재사용 거부, `maxScore`, `minDurationMs`, 보고 시간과 서버 경과 시간 비교, 거부 로그. 액션 타임스탬프와 체크섬 검증은 아직 미구현입니다.
+
 ---
 
 # **2\. 유사 게임 분석 및 기획적 차별화 요소**

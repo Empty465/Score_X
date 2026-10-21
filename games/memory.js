@@ -1,97 +1,56 @@
+// 시스템 오류 복구: 게임 본체는 games/memory/ (iframe)에서 실행되고, 이 파일은 점수 제출과 사이드 패널 표시만 담당합니다.
+import { mountGame } from '/shell/game-host.js';
+
 const { getBest, saveBest, awardScore } = window.Playground;
+const startButton = document.querySelector('#memory-start');
+const text = (selector, value) => { document.querySelector(selector).textContent = value; };
+const pad = (value) => String(value).padStart(2, '0');
 
-const memorySymbols = ['⚙', '◉', '⌁', '✦', '◇', '☼', '▱', '⬡'];
-let memoryOpen = [];
-let memoryMatched = 0;
-let memoryMoves = 0;
-let memorySeconds = 0;
-let memoryTimer = null;
-let memoryLocked = false;
-let memoryStarted = false;
+function setButton(label) { startButton.innerHTML = `${label} <span>↗</span>`; }
 
-function formatTime(seconds) {
-  return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+function resetPanel() {
+  text('#memory-moves', '00');
+  text('#memory-time', '00:00');
+  text('#memory-pairs', '08');
+  text('#memory-status', 'READY');
 }
 
-function resetMemory() {
-  clearInterval(memoryTimer);
-  memoryOpen = [];
-  memoryMatched = 0;
-  memoryMoves = 0;
-  memorySeconds = 0;
-  memoryLocked = false;
-  memoryStarted = false;
-  document.querySelector('#memory-moves').textContent = '00';
-  document.querySelector('#memory-time').textContent = '00:00';
-  document.querySelector('#memory-pairs').textContent = '08';
-  document.querySelector('#memory-status').textContent = 'READY';
-  document.querySelector('#memory-start').textContent = '복구 시작 ↗';
-  const deck = [...memorySymbols, ...memorySymbols].sort(() => Math.random() - .5);
-  document.querySelector('#memory-grid').innerHTML = deck.map((symbol, index) => `<button class="memory-card" data-symbol="${symbol}" aria-label="${index + 1}번째 카드, 뒤집혀 있음">?</button>`).join('');
-  document.querySelectorAll('.memory-card').forEach((card) => card.addEventListener('click', () => flipMemoryCard(card)));
-}
-
-function beginMemoryTimer() {
-  if (memoryStarted) return;
-  memoryStarted = true;
-  document.querySelector('#memory-status').textContent = 'PLAYING';
-  document.querySelector('#memory-start').textContent = '회로 복구 중';
-  memoryTimer = setInterval(() => {
-    memorySeconds += 1;
-    document.querySelector('#memory-time').textContent = formatTime(memorySeconds);
-  }, 1000);
-}
-
-function flipMemoryCard(card) {
-  if (memoryLocked || card.classList.contains('is-open') || card.classList.contains('is-matched')) return;
-  beginMemoryTimer();
-  card.classList.add('is-open');
-  card.textContent = card.dataset.symbol;
-  card.setAttribute('aria-label', `${card.dataset.symbol}, 열린 카드`);
-  memoryOpen.push(card);
-  if (memoryOpen.length < 2) return;
-  memoryMoves += 1;
-  document.querySelector('#memory-moves').textContent = String(memoryMoves).padStart(2, '0');
-  const [first, second] = memoryOpen;
-  if (first.dataset.symbol === second.dataset.symbol) {
-    first.classList.add('is-matched');
-    second.classList.add('is-matched');
-    first.disabled = true;
-    second.disabled = true;
-    memoryMatched += 1;
-    document.querySelector('#memory-pairs').textContent = String(8 - memoryMatched).padStart(2, '0');
-    memoryOpen = [];
-    if (memoryMatched === 8) finishMemory();
-  } else {
-    memoryLocked = true;
-    setTimeout(() => {
-      [first, second].forEach((openCard) => {
-        openCard.classList.remove('is-open');
-        openCard.textContent = '?';
-        openCard.setAttribute('aria-label', '뒤집힌 카드');
-      });
-      memoryOpen = [];
-      memoryLocked = false;
-    }, 750);
+const game = mountGame({
+  id: 'memory',
+  host: document.querySelector('#memory-host'),
+  onHud: (items) => {
+    if (items.score !== undefined) text('#memory-moves', pad(items.score));
+    if (items.progress !== undefined) text('#memory-pairs', pad(8 - Math.round(items.progress * 8)));
+    if (items.status !== undefined) text('#memory-time', items.status);
+  },
+  onError: (message) => { text('#memory-status', 'ERROR'); setButton(message); },
+  async onGameOver({ playId, score, durationMs, meta }) {
+    const moves = meta && typeof meta.moves === 'number' ? meta.moves : 0;
+    text('#memory-status', 'COMPLETE');
+    text('#memory-moves', pad(moves));
+    text('#memory-pairs', '00');
+    setButton('시스템 복구 완료');
+    if (moves < Number(getBest('memory') || Infinity)) saveBest('memory', moves);
+    const earned = await awardScore('memory', score, { playId, durationMs });
+    setButton(`복구 완료 · ${earned === null ? '점수 서버 연결 실패' : `${earned} PTS 기록`}`);
   }
-}
-
-async function finishMemory() {
-  clearInterval(memoryTimer);
-  document.querySelector('#memory-status').textContent = 'COMPLETE';
-  document.querySelector('#memory-start').textContent = '시스템 복구 완료';
-  const previousBest = Number(getBest('memory') || Infinity);
-  if (memoryMoves < previousBest) saveBest('memory', memoryMoves);
-  const earned = await awardScore('memory', Math.max(100, 1200 - memoryMoves * 40 - memorySeconds * 5));
-  const receipt = earned === null ? '이름 등록 후 저장' : `${earned} PTS 기록`;
-  document.querySelector('#memory-start').textContent = `복구 완료 · ${receipt}`;
-}
-
-document.querySelector('#memory-reset').addEventListener('click', resetMemory);
-document.querySelector('#memory-start').addEventListener('click', () => {
-  if (memoryStarted) return;
-  const firstCard = document.querySelector('.memory-card:not(.is-matched)');
-  if (firstCard) flipMemoryCard(firstCard);
 });
-resetMemory();
-window.Playground.registerGame('memory', { onLaunch: resetMemory });
+
+startButton.addEventListener('click', async () => {
+  resetPanel();
+  text('#memory-status', 'PLAYING');
+  setButton('회로 복구 중');
+  if (!await game.start()) { text('#memory-status', 'READY'); setButton('다시 시도'); }
+});
+
+document.querySelector('#memory-reset').addEventListener('click', () => {
+  game.reload();
+  resetPanel();
+  setButton('복구 시작');
+});
+
+export default {
+onLaunch: () => { game.ensure(); },
+onShow: () => { game.ensure(); game.resume(); },
+onHide: () => game.pause()
+};

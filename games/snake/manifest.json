@@ -1,0 +1,17 @@
+{
+  "id": "snake",
+  "protocol": 1,
+  "title": "우주 쓰레기 수거",
+  "shortTitle": "수거",
+  "category": "ORBITAL DEBRIS",
+  "description": "궤도 파편과 에너지 코어를 회수하세요.",
+  "icon": "↝",
+  "difficulties": ["NORMAL"],
+  "maxScore": 43800,
+  "minDurationMs": 1000,
+  "aspectRatio": "10:11",
+  "input": ["keyboard", "touch"],
+  "hud": ["score", "status"],
+  "version": "1.0.0",
+  "authors": ["score-x"]
+}

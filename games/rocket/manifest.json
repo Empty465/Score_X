@@ -1,0 +1,17 @@
+{
+  "id": "rocket",
+  "protocol": 1,
+  "title": "1단 부스터 회수",
+  "shortTitle": "부스터",
+  "category": "BOOSTER RECOVERY",
+  "description": "고도와 속도를 조절해 수직 착륙하세요.",
+  "icon": "▲",
+  "difficulties": ["NORMAL"],
+  "maxScore": 1200,
+  "minDurationMs": 1000,
+  "aspectRatio": "3:2",
+  "input": ["keyboard", "touch"],
+  "hud": ["score", "progress", "status"],
+  "version": "1.0.0",
+  "authors": ["score-x"]
+}

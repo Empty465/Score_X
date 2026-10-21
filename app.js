@@ -1,61 +1,74 @@
-const registeredGames = window.PlaygroundGameCatalog;
-if (!Array.isArray(registeredGames) || registeredGames.length === 0) {
-  throw new Error('게임 카탈로그를 불러오지 못했습니다.');
-}
+import { cardArt, builtinOrder } from '/shell/card-art.js';
 
 const gameCatalogById = new Map();
-registeredGames.forEach((game) => {
-  const requiredText = ['title', 'icon', 'shortTitle', 'category', 'description', 'cardClass', 'artClass', 'bestDefault'];
-  if (!/^[a-z0-9-]+$/.test(game.id) || game.module !== `./games/${game.id}.js` ||
-      gameCatalogById.has(game.id) ||
-      requiredText.some((key) => typeof game[key] !== 'string' || game[key].length === 0) ||
-      typeof game.artMarkup !== 'string' ||
-      !/^[a-z0-9-]+$/.test(game.cardClass) || !/^[a-z0-9-]+$/.test(game.artClass)) {
-    throw new Error(`잘못되었거나 중복된 게임 카탈로그 항목입니다: ${game.id}`);
-  }
-  if (!document.querySelector(`#view-${game.id}`)) {
-    throw new Error(`${game.id} 게임 화면(view-${game.id})이 index.html에 없습니다.`);
-  }
-  gameCatalogById.set(game.id, game);
-});
-
-const scoreGames = registeredGames;
+let scoreGames = [];
 const titles = {
   home: '임무 관제실',
   investment: '투자 관제실',
-  shop: '재화 상점',
-  ...Object.fromEntries(scoreGames.map((game) => [game.id, game.title]))
+  shop: '재화 상점'
 };
 const gameNav = document.querySelector('.game-nav');
 const gameGrid = document.querySelector('.game-grid');
 
-scoreGames.forEach((game, index) => {
-  const navItem = document.createElement('button');
-  navItem.className = 'nav-item';
-  navItem.dataset.view = game.id;
-  navItem.setAttribute('aria-label', game.title);
-  navItem.title = game.title;
-  navItem.innerHTML = '<span class="nav-icon"></span><span class="nav-full"></span><span class="nav-short" aria-hidden="true"></span>';
-  navItem.querySelector('.nav-icon').textContent = game.icon;
-  navItem.querySelector('.nav-full').textContent = game.title;
-  navItem.querySelector('.nav-short').textContent = game.shortTitle;
-  gameNav.append(navItem);
+// 서버의 /api/games(games/*/manifest.json)가 게임 목록의 유일한 출처입니다.
+function sortGames(games) {
+  const rank = (id) => (builtinOrder.includes(id) ? builtinOrder.indexOf(id) : builtinOrder.length);
+  return games.map((game, index) => ({ game, index }))
+    .sort((a, b) => rank(a.game.id) - rank(b.game.id) || a.index - b.index)
+    .map(({ game }) => game);
+}
 
-  const card = document.createElement('article');
-  card.className = `game-card card-${game.cardClass}`;
-  card.innerHTML = `
-    <div class="card-topline"><span class="game-number"></span><span class="best-chip"><span>★</span> 최고 <b data-best="${game.id}"></b></span></div>
-    <div class="game-art ${game.artClass}" aria-hidden="true">${game.artMarkup}</div>
-    <div class="card-info"><div class="card-title-row"><h3></h3><span class="game-category"></span></div><p></p><button class="play-link" data-launch="${game.id}">임무 시작 <span>↗</span></button></div>`;
-  card.querySelector('.game-number').textContent = `NO. ${String(index + 1).padStart(2, '0')}`;
-  card.querySelector('h3').textContent = game.title;
-  card.querySelector('.game-category').textContent = game.category;
-  card.querySelector('.card-info p').textContent = game.description;
-  gameGrid.append(card);
-});
+function buildGenericArt(game) {
+  const art = document.createElement('span');
+  art.className = 'generic-art-icon';
+  art.textContent = game.icon;
+  return art;
+}
 
-const views = [...document.querySelectorAll('.view')];
-const navItems = [...document.querySelectorAll('.nav-item')];
+function renderGameMenu(games) {
+  scoreGames = sortGames(games);
+  scoreGames.forEach((game, index) => {
+    const decor = cardArt[game.id];
+    gameCatalogById.set(game.id, { ...game, bestDefault: decor?.bestDefault ?? '—' });
+    titles[game.id] = game.title;
+
+    const navItem = document.createElement('button');
+    navItem.className = 'nav-item';
+    navItem.dataset.view = game.id;
+    navItem.setAttribute('aria-label', game.title);
+    navItem.title = game.title;
+    navItem.innerHTML = '<span class="nav-icon"></span><span class="nav-full"></span><span class="nav-short" aria-hidden="true"></span>';
+    navItem.querySelector('.nav-icon').textContent = game.icon;
+    navItem.querySelector('.nav-full').textContent = game.title;
+    navItem.querySelector('.nav-short').textContent = game.shortTitle;
+    gameNav.append(navItem);
+
+    const card = document.createElement('article');
+    card.className = `game-card card-${decor?.cardClass ?? 'generic'}`;
+    card.innerHTML = `
+      <div class="card-topline"><span class="game-number"></span><span class="best-chip"><span>★</span> 최고 <b></b></span></div>
+      <div class="game-art ${decor?.artClass ?? 'generic-art'}" aria-hidden="true"></div>
+      <div class="card-info"><div class="card-title-row"><h3></h3><span class="game-category"></span></div><p></p><button class="play-link">임무 시작 <span>↗</span></button></div>`;
+    card.querySelector('.best-chip b').dataset.best = game.id;
+    card.querySelector('.play-link').dataset.launch = game.id;
+    if (decor) card.querySelector('.game-art').innerHTML = decor.artMarkup;
+    else card.querySelector('.game-art').append(buildGenericArt(game));
+    card.querySelector('.game-number').textContent = `NO. ${String(index + 1).padStart(2, '0')}`;
+    card.querySelector('h3').textContent = game.title;
+    card.querySelector('.game-category').textContent = game.category;
+    card.querySelector('.card-info p').textContent = game.description;
+    gameGrid.append(card);
+  });
+  renderBests();
+}
+
+async function loadGameMenu() {
+  ensureScoreServer();
+  const response = await fetch('/api/games');
+  if (!response.ok) throw new Error('게임 목록을 불러오지 못했습니다.');
+  renderGameMenu((await response.json()).games);
+}
+
 const breadcrumbCurrent = document.querySelector('#breadcrumb-current');
 let activePlayer = null;
 let currentProfile = null;
@@ -63,7 +76,7 @@ let shopItems = [];
 let investmentOptions = [];
 let selectedRisk = null;
 let activeInvestment = null;
-try { activePlayer = JSON.parse(localStorage.getItem('playground-player') || 'null'); } catch { activePlayer = null; }
+let authMode = 'login';
 
 document.querySelector('#today-date').textContent = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
 
@@ -87,6 +100,7 @@ function saveBest(game, value) {
 function renderBests() {
   document.querySelectorAll('[data-best]').forEach((element) => {
     const game = element.dataset.best;
+    if (!gameCatalogById.has(game)) return;
     const value = getBest(game);
     element.textContent = value === null ? getGame(game).bestDefault : value;
   });
@@ -105,20 +119,24 @@ function setPlayerMessage(message, isError = false) {
 function showMissionResult(game, points, result) {
   const gameName = getGame(game).title;
   const dialog = document.querySelector('#mission-result-dialog');
+  const isGuest = result.saved === false;
   document.querySelector('#mission-result-title').textContent = `${gameName} 완료`;
-  document.querySelector('#mission-result-copy').textContent = result.isNewBest
-    ? '새로운 게임별 최고 점수를 기록했습니다.'
-    : '이번 임무 결과와 보상을 확인하세요.';
+  document.querySelector('#mission-result-copy').textContent = isGuest
+    ? '게스트 플레이라 기록과 CR은 저장되지 않습니다. 로그인하면 보상이 쌓여요.'
+    : result.isNewBest
+      ? '새로운 게임별 최고 점수를 기록했습니다.'
+      : '이번 임무 결과와 보상을 확인하세요.';
   document.querySelector('#mission-result-score').textContent = `${formatPoints(points)} PTS`;
-  document.querySelector('#mission-result-credits').textContent = `+${formatPoints(result.creditsEarned)} CR`;
-  document.querySelector('#mission-result-total').textContent =
-    `최고 기록 합산 ${formatPoints(result.totalBestScore)} PTS · ${result.tier}`;
+  document.querySelector('#mission-result-credits').textContent = `${isGuest ? '' : '+'}${formatPoints(result.creditsEarned)} CR${isGuest ? ' (미저장)' : ''}`;
+  document.querySelector('#mission-result-total').textContent = isGuest
+    ? '게스트 기록 · 순위에 반영되지 않음'
+    : `최고 기록 합산 ${formatPoints(result.totalBestScore)} PTS · ${result.tier}`;
   if (!dialog.open) dialog.showModal();
 }
 
 function ensureScoreServer() {
-  if (location.protocol !== 'http:' || location.port !== '3000') {
-    throw new Error('점수 저장은 http://127.0.0.1:3000 에서 이용할 수 있어요.');
+  if (location.protocol !== 'http:' && location.protocol !== 'https:') {
+    throw new Error('점수 저장은 점수 서버(node server.js)를 통해 접속해야 이용할 수 있어요.');
   }
 }
 
@@ -129,7 +147,9 @@ function renderScoreboard(data) {
   document.querySelector('#total-tier').textContent = currentUser?.tier || '훈련생';
   document.querySelector('#current-player-label').textContent = currentUser
     ? `${currentUser.name} · 기록 ${currentUser.rank}위 · 자산 ${currentUser.creditRank}위`
-    : activePlayer ? `${activePlayer.name} · 기록을 불러오는 중` : '이름을 등록하면 순위에 참여할 수 있어요.';
+    : '로그인하면 순위에 참여할 수 있어요. 게스트 기록은 저장되지 않아요.';
+  document.querySelector('#player-form').hidden = Boolean(currentUser);
+  document.querySelector('#auth-session').hidden = !currentUser;
   const profileAvatar = document.querySelector('.avatar');
   profileAvatar.textContent = currentUser?.avatar || '🚀';
   profileAvatar.setAttribute('aria-label', currentUser ? `${currentUser.name} 프로필` : '크루 프로필');
@@ -271,9 +291,10 @@ function renderShopItems() {
       const input = document.createElement('input');
       input.name = 'displayName';
       input.type = 'text';
-      input.maxLength = 24;
-      input.placeholder = currentProfile?.name || '새 점수판 이름';
-      input.setAttribute('aria-label', '변경할 점수판 이름');
+      input.minLength = 2;
+      input.maxLength = 16;
+      input.placeholder = currentProfile?.name || '새 닉네임 (2~16자)';
+      input.setAttribute('aria-label', '변경할 닉네임');
       form.append(input);
     }
     const button = document.createElement('button');
@@ -288,14 +309,14 @@ function renderShopItems() {
     const itemValue = item.avatarId || item.titleId || item.backgroundId;
     const isEquipped = item.type !== 'display-name' && equippedValue === itemValue;
     const hasEnoughCredits = currentProfile && currentProfile.credits >= item.price;
-    button.textContent = item.type === 'display-name' ? '이름 변경권 구매' : isEquipped ? '장착 중' : isOwned ? '장착하기' : hasEnoughCredits ? '구매하기' : '크레딧 부족';
+    button.textContent = item.type === 'display-name' ? '닉네임 변경권 구매' : isEquipped ? '장착 중' : isOwned ? '장착하기' : hasEnoughCredits ? '구매하기' : '크레딧 부족';
     button.disabled = !currentProfile || (item.type !== 'display-name' && isEquipped) || (item.type !== 'display-name' && !isOwned && !hasEnoughCredits) || (item.type === 'display-name' && !hasEnoughCredits);
     form.append(button);
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       const displayName = form.elements.displayName?.value || '';
       if (item.type === 'display-name' && !displayName.trim()) {
-        setShopMessage('새 점수판 이름을 입력해 주세요.', true);
+        setShopMessage('새 닉네임을 입력해 주세요.', true);
         form.elements.displayName?.focus();
         return;
       }
@@ -317,13 +338,13 @@ async function loadShopItems() {
   if (!response.ok) throw new Error(result.error || '상점 상품을 불러오지 못했습니다.');
   shopItems = result.items;
   renderShopItems();
-  if (!currentProfile) setShopMessage('상점을 이용하려면 먼저 관제실에서 플레이어 이름을 등록하세요.');
+  if (!currentProfile) setShopMessage('상점을 이용하려면 먼저 관제실에서 로그인하세요.');
   else setShopMessage('미니게임에서 크레딧을 모아 크루 프로필을 꾸며보세요.');
 }
 
 async function purchaseShopItem(itemId, displayName, button) {
   if (!activePlayer) {
-    setShopMessage('상점을 이용하려면 먼저 관제실에서 플레이어 이름을 등록하세요.', true);
+    setShopMessage('상점을 이용하려면 먼저 관제실에서 로그인하세요.', true);
     return;
   }
   button.disabled = true;
@@ -333,7 +354,7 @@ async function purchaseShopItem(itemId, displayName, button) {
     const response = await fetch('/api/shop/purchase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: activePlayer.id, itemId, displayName })
+      body: JSON.stringify({ itemId, displayName })
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || '구매를 완료하지 못했습니다.');
@@ -356,7 +377,7 @@ async function equipCosmetic(itemId, button) {
     const response = await fetch('/api/profile/equip', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: activePlayer.id, itemId })
+      body: JSON.stringify({ itemId })
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || '프로필 아이템을 적용하지 못했습니다.');
@@ -371,64 +392,92 @@ async function equipCosmetic(itemId, button) {
 }
 
 async function refreshScoreboard() {
-  const query = activePlayer ? `?userId=${encodeURIComponent(activePlayer.id)}` : '';
   ensureScoreServer();
-  const response = await fetch(`/api/leaderboard${query}`);
+  const response = await fetch('/api/leaderboard');
   if (!response.ok) throw new Error('점수판을 불러오지 못했습니다.');
   const data = await response.json();
+  activePlayer = data.currentUser;
   renderScoreboard(data);
   setPlayerMessage(data.currentUser
     ? `${data.currentUser.name}님의 점수판을 불러왔어요.`
-    : '서버 연결됨 · 이름을 등록해 순위에 참여하세요.');
-  if (activePlayer) await loadActiveInvestment();
+    : '서버 연결됨 · 로그인 없이 플레이하면 게스트로 기록이 저장되지 않아요.');
+  await loadActiveInvestment();
 }
 
-async function registerPlayer(event) {
+function setAuthMode(mode) {
+  authMode = mode;
+  const isRegister = mode === 'register';
+  document.querySelector('#auth-nickname').hidden = !isRegister;
+  document.querySelector('#auth-nickname').required = isRegister;
+  document.querySelector('#auth-password').autocomplete = isRegister ? 'new-password' : 'current-password';
+  document.querySelector('#auth-submit').firstChild.textContent = isRegister ? '가입하기 ' : '로그인 ';
+  document.querySelector('#auth-toggle').textContent = isRegister ? '로그인으로' : '회원가입';
+}
+
+async function submitAuth(event) {
   event.preventDefault();
   const form = document.querySelector('#player-form');
-  const input = document.querySelector('#player-name');
-  const button = form.querySelector('button');
-  button.disabled = true;
-  setPlayerMessage('이름을 확인하고 있습니다.');
+  const submit = document.querySelector('#auth-submit');
+  const isRegister = authMode === 'register';
+  const body = {
+    loginId: form.elements.loginId.value.trim(),
+    password: form.elements.password.value
+  };
+  if (isRegister) body.nickname = form.elements.nickname.value.trim();
+  submit.disabled = true;
+  setPlayerMessage(isRegister ? '계정을 만들고 있습니다.' : '로그인하고 있습니다.');
   try {
     ensureScoreServer();
-    const response = await fetch('/api/users', {
+    const response = await fetch(isRegister ? '/api/auth/register' : '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: input.value.trim() })
+      body: JSON.stringify(body)
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error || '이름 등록에 실패했습니다.');
-    activePlayer = result.user;
-    localStorage.setItem('playground-player', JSON.stringify(activePlayer));
-    setPlayerMessage(`${activePlayer.name}님, 기록을 불러왔어요.`);
+    if (!response.ok) throw new Error(result.error || '인증에 실패했습니다.');
+    form.reset();
+    setAuthMode('login');
     await refreshScoreboard();
+    setPlayerMessage(isRegister
+      ? `${result.user.name}님, 가입을 환영합니다. 환영 보상 500 CR을 지급했어요.`
+      : `${result.user.name}님, 다시 오신 것을 환영합니다.`);
   } catch (error) {
     setPlayerMessage(error.message || '점수 서버에 연결할 수 없습니다.', true);
   } finally {
-    button.disabled = false;
+    submit.disabled = false;
   }
 }
 
-async function awardScore(game, points) {
-  const earned = Math.max(0, Math.floor(points));
-  if (!activePlayer) {
-    setPlayerMessage('점수를 저장하려면 먼저 플레이어 이름을 등록하세요.', true);
-    return null;
+async function logout() {
+  try {
+    ensureScoreServer();
+    await fetch('/api/auth/logout', { method: 'POST' });
+    await refreshScoreboard();
+    setPlayerMessage('로그아웃했습니다.');
+  } catch (error) {
+    setPlayerMessage(error.message || '로그아웃하지 못했습니다.', true);
   }
+}
+
+async function awardScore(game, points, play = {}) {
+  const earned = Math.max(0, Math.floor(points));
   try {
     ensureScoreServer();
     const response = await fetch('/api/scores', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: activePlayer.id, game, points: earned })
+      body: JSON.stringify({ game, points: earned, ...(play.playId ? { playId: play.playId, durationMs: play.durationMs } : {}) })
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || '점수 저장에 실패했습니다.');
     handleInvestmentProgress(result);
     showMissionResult(game, earned, result);
-    await refreshScoreboard();
-    setShopMessage(`임무 보상으로 ${formatPoints(result.creditsEarned)} CR을 획득했습니다.`);
+    if (result.saved) {
+      await refreshScoreboard();
+      setShopMessage(`임무 보상으로 ${formatPoints(result.creditsEarned)} CR을 획득했습니다.`);
+    } else {
+      setPlayerMessage('게스트 플레이 결과는 저장되지 않아요. 로그인하면 기록과 보상이 쌓입니다.');
+    }
   } catch (error) {
     setPlayerMessage(error.message || '점수 서버에 연결할 수 없습니다.', true);
     return null;
@@ -550,7 +599,7 @@ async function loadActiveInvestment() {
     return;
   }
   ensureScoreServer();
-  const response = await fetch(`/api/investment/active?userId=${encodeURIComponent(activePlayer.id)}`);
+  const response = await fetch('/api/investment/active');
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || '진행 중인 투자 임무를 불러오지 못했습니다.');
   activeInvestment = result.run;
@@ -560,7 +609,7 @@ async function loadActiveInvestment() {
 async function startInvestment(event) {
   event.preventDefault();
   if (!activePlayer || !selectedRisk) {
-    setInvestmentMessage('플레이어를 등록하고 위험 옵션을 선택해 주세요.', true);
+    setInvestmentMessage('투자는 로그인 후 이용할 수 있어요. 위험 옵션도 선택해 주세요.', true);
     return;
   }
   const button = document.querySelector('#investment-start');
@@ -572,7 +621,6 @@ async function startInvestment(event) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        userId: activePlayer.id,
         stake: Number(document.querySelector('#investment-stake-number').value),
         risk: selectedRisk
       })
@@ -613,27 +661,42 @@ function handleInvestmentProgress(result) {
 const gameModules = new Map();
 const gameLoads = new Map();
 let gameLoader = null;
-window.Playground = {
-  getBest,
-  saveBest,
-  awardScore,
-  registerGame(id, lifecycle) {
-    getGame(id);
-    if (!lifecycle || typeof lifecycle !== 'object' ||
-        ['onLaunch', 'onShow', 'onHide'].some((method) => lifecycle[method] !== undefined && typeof lifecycle[method] !== 'function')) {
-      throw new Error(`잘못된 게임 생명주기 등록입니다: ${id}`);
-    }
-    if (gameModules.has(id)) throw new Error(`게임 모듈이 중복 등록되었습니다: ${id}`);
-    gameModules.set(id, lifecycle);
+window.Playground = { getBest, saveBest, awardScore };
+
+function validateLifecycle(id, lifecycle) {
+  if (!lifecycle || typeof lifecycle !== 'object' ||
+      ['onLaunch', 'onShow', 'onHide'].some((method) => lifecycle[method] !== undefined && typeof lifecycle[method] !== 'function')) {
+    throw new Error(`잘못된 게임 생명주기입니다: ${id}`);
   }
-};
+  return lifecycle;
+}
+
+// 전용 화면(index.html의 view-<id>)과 games/<id>.js 어댑터가 모두 있으면 그것을, 아니면 매니페스트만으로 기본 화면을 만듭니다.
+async function loadLifecycle(game) {
+  const customView = document.querySelector(`#view-${game.id}`);
+  if (customView && game.adapter) {
+    gameLoader ??= import('/games/index.js');
+    const loader = await gameLoader;
+    const module = await loader.loadGameModule(game.id);
+    return validateLifecycle(game.id, module.default);
+  }
+  const section = customView || document.createElement('section');
+  if (!customView) {
+    section.className = 'view game-view';
+    section.id = `view-${game.id}`;
+    document.querySelector('#view-shop').parentElement.append(section);
+  }
+  const { createGenericGame } = await import('/shell/generic-game.js');
+  return validateLifecycle(game.id, createGenericGame(game, section));
+}
 
 function showView(name) {
-  if (!Object.hasOwn(titles, name) || !document.querySelector(`#view-${name}`)) {
+  const target = document.querySelector(`#view-${name}`);
+  if (!Object.hasOwn(titles, name) || !target) {
     throw new Error(`등록되지 않은 화면입니다: ${name}`);
   }
-  views.forEach((view) => view.classList.toggle('is-visible', view.id === `view-${name}`));
-  navItems.forEach((item) => item.classList.toggle('is-active', item.dataset.view === name));
+  document.querySelectorAll('.view').forEach((view) => view.classList.toggle('is-visible', view === target));
+  document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('is-active', item.dataset.view === name));
   breadcrumbCurrent.textContent = titles[name];
   gameModules.forEach((lifecycle, id) => {
     if (id === name) lifecycle.onShow?.();
@@ -651,20 +714,14 @@ async function openGame(id, shouldLaunch, onError = (message) => {
   try {
     const game = getGame(id);
     if (!gameLoads.has(id) && !gameModules.has(id)) {
-      const loading = (async () => {
-        try {
-          if (!gameLoader) gameLoader = import('./games/index.js');
-          const loader = await gameLoader;
-          await loader.loadGameModule(game.module);
-          const lifecycle = gameModules.get(id);
-          if (!lifecycle) throw new Error('모듈이 registerGame으로 등록되지 않았습니다.');
-          return lifecycle;
-        } catch (error) {
-          gameLoads.delete(id);
-          const reason = error instanceof Error ? error.message : String(error);
-          throw new Error(`${game.title} 모듈 로드 실패: ${reason}`);
-        }
-      })();
+      const loading = loadLifecycle(game).then((lifecycle) => {
+        gameModules.set(id, lifecycle);
+        return lifecycle;
+      }).catch((error) => {
+        gameLoads.delete(id);
+        const reason = error instanceof Error ? error.message : String(error);
+        throw new Error(`${game.title} 모듈 로드 실패: ${reason}`);
+      });
       gameLoads.set(id, loading);
     }
     const lifecycle = gameModules.get(id) || await gameLoads.get(id);
@@ -676,14 +733,17 @@ async function openGame(id, shouldLaunch, onError = (message) => {
   }
 }
 
-document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => {
+document.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-view]');
+  if (!button) return;
   const view = button.dataset.view;
   if (gameCatalogById.has(view)) openGame(view, false);
   else showView(view);
-}));
-gameGrid.querySelectorAll('[data-launch]').forEach((button) => button.addEventListener('click', () => {
-  openGame(button.dataset.launch, true);
-}));
+});
+gameGrid.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-launch]');
+  if (button) openGame(button.dataset.launch, true);
+});
 document.querySelector('#investment-form').addEventListener('submit', startInvestment);
 document.querySelector('#investment-reroll').addEventListener('click', rerollInvestmentOption);
 document.querySelector('#investment-amount').addEventListener('input', (event) => {
@@ -710,8 +770,12 @@ document.querySelector('#mission-result-confirm').addEventListener('click', () =
 });
 loadShopItems().catch((error) => setShopMessage(error.message || '상점에 연결할 수 없습니다.', true));
 loadInvestmentOptions().catch((error) => setInvestmentMessage(error.message || '투자 옵션을 불러올 수 없습니다.', true));
-renderBests();
-document.querySelector('#player-name').value = activePlayer?.accountName || activePlayer?.name || '';
-document.querySelector('#player-form').addEventListener('submit', registerPlayer);
+document.querySelector('#player-form').addEventListener('submit', submitAuth);
+document.querySelector('#auth-toggle').addEventListener('click', () => setAuthMode(authMode === 'login' ? 'register' : 'login'));
+document.querySelector('#logout-button').addEventListener('click', logout);
 renderScoreboard({ players: [], currentUser: null });
-refreshScoreboard().catch((error) => setPlayerMessage(error.message || 'SQLite 서버를 실행해 주세요: node server.js', true));
+// 게임 목록을 먼저 받아야 점수판의 게임별 항목이 채워집니다.
+loadGameMenu()
+  .catch((error) => setPlayerMessage(error.message || '게임 목록을 불러오지 못했습니다.', true))
+  .then(() => refreshScoreboard())
+  .catch((error) => setPlayerMessage(error.message || 'SQLite 서버를 실행해 주세요: node server.js', true));
