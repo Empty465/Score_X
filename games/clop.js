@@ -197,7 +197,10 @@ function updateClopReadout() {
   updateClopProgress();
   const meters = Math.max(0, Math.floor(clopState.distance));
   document.querySelector('#clop-distance').innerHTML = `${meters}<small> m</small>`;
-  if (clopRunning) document.querySelector('#clop-status').textContent = `WALKING ${Math.max(0, Math.ceil(clopTimeLimit - (clopState.time || 0)))}s`;
+  const remaining = Math.max(0, Math.ceil(clopTimeLimit - (clopState.time || 0)));
+  document.querySelector('#clop-time').innerHTML = `${remaining}<small> s</small>`;
+  document.querySelector('#clop-time').parentElement.classList.toggle('is-danger', clopRunning && remaining <= 10);
+  if (clopRunning) document.querySelector('#clop-status').textContent = `WALKING ${remaining}s`;
   const tilt = Math.min(100, Math.round(Math.abs(clopState.theta) / clopFlipLimit * 100));
   document.querySelector('#clop-tilt-meter').value = tilt;
   document.querySelector('#clop-tilt-label').textContent = tilt < 8 ? '수평' : `${clopState.theta > 0 ? '앞숙임' : '뒤들림'} ${tilt}%`;

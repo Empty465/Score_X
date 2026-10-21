@@ -935,3 +935,4 @@ kbd { border-color: #314965; background: #14253a; color: #bfcee0; }
 }
 
 .profile-title-badge[hidden], .investment-next-button[hidden] { display: none; }
+.record-row.is-danger > strong { color: #ff6b6b; }

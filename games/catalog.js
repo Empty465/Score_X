@@ -80,7 +80,7 @@ const gameCatalog = [
   {
     id: 'clop',
     module: './games/clop.js',
-    title: '4족 보행 시험',
+    title: '4족 보행 로봇 운영',
     icon: '🐾',
     shortTitle: '보행시험',
     category: 'QUADRUPED TRIAL',
