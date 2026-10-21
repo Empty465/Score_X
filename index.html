@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="node_modules/matter-js/build/matter.min.js" defer></script>
+  <script src="games/catalog.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -23,12 +24,6 @@
       <div class="nav-label">MINI GAMES</div>
       <nav class="game-nav" aria-label="관제실 및 미니게임">
         <button class="nav-item is-active" data-view="home" aria-label="임무 관제실" title="임무 관제실"><span class="nav-icon">⌂</span><span class="nav-full">임무 관제실</span><span class="nav-short" aria-hidden="true">관제</span></button>
-        <button class="nav-item" data-view="snake" aria-label="우주 쓰레기 수거" title="우주 쓰레기 수거"><span class="nav-icon">↝</span><span class="nav-full">우주 쓰레기 수거</span><span class="nav-short" aria-hidden="true">수거</span></button>
-        <button class="nav-item" data-view="memory" aria-label="시스템 오류 복구" title="시스템 오류 복구"><span class="nav-icon">▦</span><span class="nav-full">시스템 오류 복구</span><span class="nav-short" aria-hidden="true">복구</span></button>
-        <button class="nav-item" data-view="reaction" aria-label="수동 도킹 시퀀스" title="수동 도킹 시퀀스"><span class="nav-icon">✳</span><span class="nav-full">수동 도킹 시퀀스</span><span class="nav-short" aria-hidden="true">도킹</span></button>
-        <button class="nav-item" data-view="mole" aria-label="비상 경고등 진압" title="비상 경고등 진압"><span class="nav-icon">⌁</span><span class="nav-full">비상 경고등 진압</span><span class="nav-short" aria-hidden="true">경고</span></button>
-        <button class="nav-item" data-view="baseball" aria-label="궤도 진입 좌표 해독" title="궤도 진입 좌표 해독"><span class="nav-icon">#</span><span class="nav-full">궤도 진입 좌표 해독</span><span class="nav-short" aria-hidden="true">좌표</span></button>
-        <button class="nav-item" data-view="rocket" aria-label="1단 부스터 회수" title="1단 부스터 회수"><span class="nav-icon">▲</span><span class="nav-full">1단 부스터 회수</span><span class="nav-short" aria-hidden="true">부스터</span></button>
       </nav>
       <div class="investment-nav-group">
         <div class="nav-label">RESOURCES</div>
@@ -92,38 +87,7 @@
 
         <div class="section-heading"><div><span class="section-kicker">SELECT YOUR MISSION</span><h2>임무 선택</h2></div><span class="section-note">새 임무가 계속 추가됩니다 <span>↘</span></span></div>
 
-        <div class="game-grid">
-          <article class="game-card card-snake">
-            <div class="card-topline"><span class="game-number">NO. 01</span><span class="best-chip"><span>★</span> 최고 <b data-best="snake">0</b></span></div>
-            <div class="game-art snake-art" aria-hidden="true"><span class="snake-orbit orbit-one"></span><span class="snake-orbit orbit-two"></span><span class="snake-piece piece-a"></span><span class="snake-piece piece-b"></span><span class="snake-piece piece-c"></span><span class="snake-piece piece-d"></span><span class="snake-food">✳</span></div>
-            <div class="card-info"><div class="card-title-row"><h3>우주 쓰레기 수거</h3><span class="game-category">ORBITAL DEBRIS</span></div><p>궤도 파편과 에너지 코어를 회수하세요.</p><button class="play-link" data-launch="snake">임무 시작 <span>↗</span></button></div>
-          </article>
-          <article class="game-card card-memory">
-            <div class="card-topline"><span class="game-number">NO. 02</span><span class="best-chip"><span>★</span> 최고 <b data-best="memory">—</b></span></div>
-            <div class="game-art memory-art" aria-hidden="true"><span class="memory-tile tile-one">✿</span><span class="memory-tile tile-two">☀</span><span class="memory-tile tile-three">✿</span><span class="memory-tile tile-four">?</span><span class="memory-spark">✦</span></div>
-            <div class="card-info"><div class="card-title-row"><h3>시스템 오류 복구</h3><span class="game-category">SYSTEM REBOOT</span></div><p>기억을 되살려 회로 짝을 맞추세요.</p><button class="play-link" data-launch="memory">임무 시작 <span>↗</span></button></div>
-          </article>
-          <article class="game-card card-reaction">
-            <div class="card-topline"><span class="game-number">NO. 03</span><span class="best-chip"><span>★</span> 최고 <b data-best="reaction">—</b></span></div>
-            <div class="game-art reaction-art" aria-hidden="true"><span class="reaction-ring ring-one"></span><span class="reaction-ring ring-two"></span><span class="reaction-bolt">↯</span><span class="reaction-dot"></span></div>
-            <div class="card-info"><div class="card-title-row"><h3>수동 도킹 시퀀스</h3><span class="game-category">MANUAL DOCKING</span></div><p>레이더 신호에 맞춰 도킹을 완료하세요.</p><button class="play-link" data-launch="reaction">임무 시작 <span>↗</span></button></div>
-          </article>
-          <article class="game-card card-mole">
-            <div class="card-topline"><span class="game-number">NO. 04</span><span class="best-chip"><span>★</span> 최고 <b data-best="mole">0</b></span></div>
-            <div class="game-art mole-art" aria-hidden="true"><span class="mole-hole-art hole-art-one">🐹</span><span class="mole-hole-art hole-art-two"></span><span class="mole-hole-art hole-art-three">🐹</span><span class="mole-art-spark">✦</span></div>
-            <div class="card-info"><div class="card-title-row"><h3>비상 경고등 진압</h3><span class="game-category">EMERGENCY</span></div><p>과부하 경고가 켜지면 빠르게 차단하세요.</p><button class="play-link" data-launch="mole">임무 시작 <span>↗</span></button></div>
-          </article>
-          <article class="game-card card-baseball">
-            <div class="card-topline"><span class="game-number">NO. 05</span><span class="best-chip"><span>★</span> 최고 <b data-best="baseball">—</b></span></div>
-            <div class="game-art baseball-art" aria-hidden="true"><span class="baseball-number number-one">3</span><span class="baseball-number number-two">7</span><span class="baseball-number number-three">1</span><span class="baseball-hint">?</span></div>
-            <div class="card-info"><div class="card-title-row"><h3>궤도 진입 좌표 해독</h3><span class="game-category">SECURE TERMINAL</span></div><p>터미널 신호를 분석해 9번 안에 숨겨진 보안 코드를 해독하세요.</p><button class="play-link" data-launch="baseball">임무 시작 <span>↗</span></button></div>
-          </article>
-          <article class="game-card card-rocket">
-            <div class="card-topline"><span class="game-number">NO. 06</span><span class="best-chip"><span>★</span> 최고 <b data-best="rocket">—</b></span></div>
-            <div class="game-art rocket-art" aria-hidden="true"><span class="rocket-art-orbit"></span><span class="rocket-art-moon"></span><span class="rocket-art-pad"></span><span class="rocket-art-ship">▲</span><span class="rocket-art-flame">▾</span></div>
-            <div class="card-info"><div class="card-title-row"><h3>1단 부스터 회수</h3><span class="game-category">BOOSTER RECOVERY</span></div><p>고도와 속도를 조절해 수직 착륙하세요.</p><button class="play-link" data-launch="rocket">임무 시작 <span>↗</span></button></div>
-          </article>
-        </div>
+        <div class="game-grid"></div>
 
         <div class="home-bottom"><div class="tip-icon">i</div><p><strong>모든 임무는 AI 학습 데이터가 됩니다.</strong> 크루 기록은 Score X 점수판에 저장돼요.</p><span class="bottom-doodle">✳</span></div>
       </section>

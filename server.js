@@ -3,11 +3,18 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { randomInt } = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
+const gameCatalog = require('./games/catalog.js');
 
 const host = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT || 3000);
 const database = new DatabaseSync(path.join(__dirname, 'scores.sqlite'));
-const games = ['snake', 'memory', 'reaction', 'mole', 'baseball', 'rocket'];
+if (!Array.isArray(gameCatalog) || gameCatalog.length === 0 ||
+    gameCatalog.some((game) => !/^[a-z0-9-]+$/.test(game.id) || game.module !== `./games/${game.id}.js`) ||
+    new Set(gameCatalog.map((game) => game.id)).size !== gameCatalog.length) {
+  throw new Error('게임 카탈로그가 비어 있거나 잘못 구성되었습니다.');
+}
+const games = gameCatalog.map((game) => game.id);
+const gameSqlList = games.map((game) => `'${game}'`).join(', ');
 const avatars = [
   { id: 'pilot', label: '조종사', emoji: '🚀', price: 0 },
   { id: 'moon', label: '달 탐사자', emoji: '🌙', price: 120 },
@@ -100,6 +107,7 @@ const publicFiles = new Map([
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/games/index.js', ['games/index.js', 'text/javascript; charset=utf-8']],
+  ['/games/catalog.js', ['games/catalog.js', 'text/javascript; charset=utf-8']],
   ['/node_modules/matter-js/build/matter.min.js', ['node_modules/matter-js/build/matter.min.js', 'text/javascript; charset=utf-8']]
 ]);
 
@@ -118,7 +126,7 @@ database.exec(`
   CREATE TABLE IF NOT EXISTS score_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    game TEXT NOT NULL CHECK (game IN ('snake', 'memory', 'reaction', 'mole', 'baseball', 'rocket')),
+    game TEXT NOT NULL CHECK (game IN (${gameSqlList})),
     points INTEGER NOT NULL CHECK (points > 0 AND points <= 100000),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -152,14 +160,14 @@ if (!userColumns.has('background_id')) database.exec("ALTER TABLE users ADD COLU
 database.exec("UPDATE users SET display_name = name WHERE display_name = ''");
 
 const scoreTable = database.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'score_events'").get();
-if (!scoreTable.sql.includes("'rocket'")) {
+if (games.some((game) => !scoreTable.sql.includes(`'${game}'`))) {
   database.exec(`
     BEGIN IMMEDIATE;
     ALTER TABLE score_events RENAME TO score_events_previous;
     CREATE TABLE score_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      game TEXT NOT NULL CHECK (game IN ('snake', 'memory', 'reaction', 'mole', 'baseball', 'rocket')),
+      game TEXT NOT NULL CHECK (game IN (${gameSqlList})),
       points INTEGER NOT NULL CHECK (points > 0 AND points <= 100000),
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
@@ -613,9 +621,9 @@ const server = http.createServer(async (request, response) => {
   }
 
   const pathname = url.pathname === '/' ? '/index.html' : url.pathname;
-  const gameModule = pathname.match(/^\/games\/([a-z0-9-]+)\.js$/);
+  const gameModule = gameCatalog.find((game) => pathname === game.module.slice(1));
   const asset = publicFiles.get(pathname) || (gameModule
-    ? [`games/${gameModule[1]}.js`, 'text/javascript; charset=utf-8']
+    ? [`games/${gameModule.id}.js`, 'text/javascript; charset=utf-8']
     : null);
   if (!asset) {
     response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
