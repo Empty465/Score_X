@@ -117,8 +117,8 @@ function showMissionResult(game, points, result) {
 }
 
 function ensureScoreServer() {
-  if (location.protocol !== 'http:' || location.port !== '3000') {
-    throw new Error('점수 저장은 http://127.0.0.1:3000 에서 이용할 수 있어요.');
+  if (location.protocol !== 'http:' && location.protocol !== 'https:') {
+    throw new Error('점수 저장은 점수 서버(node server.js)를 통해 접속해야 이용할 수 있어요.');
   }
 }
 

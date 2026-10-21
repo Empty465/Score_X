@@ -1,0 +1,6 @@
+1. nodejs 24 설치
+2. 터미널에 winget install Cloudflare.cloudflared 로 Cloudflared 설치
+3. vscode 재시작
+4. 터미널에 node server.js 입력 후 실행
+5. 새 터미널을 열고 cloudflared tunnel --url http://127.0.0.1:3000 입력 후 실행
+6. ...trycloudflare.com 주소 복사 후 브라우저에 붙여넣기
