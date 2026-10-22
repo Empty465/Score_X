@@ -164,10 +164,14 @@ function renderScoreboard(data) {
   renderShopItems();
   renderInvestment();
 
-  function renderRankingList(container, players, valueKey, unitLabel, emptyMessage, showTier = false) {
+  function renderRankingList(container, players, valueKey, unitLabel, emptyMessage, showTier = false, detailType = 'scores') {
     const playerRows = players.map((player) => {
       const row = document.createElement('li');
       row.className = 'ranking-row';
+      row.tabIndex = 0;
+      row.setAttribute('role', 'button');
+      row.setAttribute('aria-expanded', 'false');
+      row.setAttribute('aria-label', `${player.rank}위 ${player.name}, ${formatPoints(player[valueKey])} ${unitLabel}. 선택해 상세 정보 보기`);
       if (player.id === currentUser?.id) row.classList.add('is-current-player');
       if (player.backgroundId) row.classList.add(`ranking-bg-${player.backgroundId}`);
       const rank = document.createElement('span');
@@ -197,6 +201,60 @@ function renderScoreboard(data) {
       unit.textContent = ` ${unitLabel}`;
       points.append(unit);
       row.append(rank, avatar, name, points);
+      const details = document.createElement('div');
+      details.className = 'ranking-detail';
+      details.setAttribute('aria-hidden', 'true');
+      if (detailType === 'scores') {
+        const heading = document.createElement('strong');
+        heading.className = 'ranking-detail-heading';
+        heading.textContent = '미니게임별 최고 점수';
+        const scores = document.createElement('ul');
+        scores.className = 'ranking-detail-list';
+        scores.append(...scoreGames.map((game) => {
+          const item = document.createElement('li');
+          const label = document.createElement('span');
+          label.textContent = `${game.icon} ${game.title}`;
+          const score = document.createElement('strong');
+          score.textContent = formatPoints(player.scores?.[game.id] || 0);
+          item.append(label, score);
+          return item;
+        }));
+        details.append(heading, scores);
+      } else {
+        const investment = player.latestInvestment;
+        const heading = document.createElement('strong');
+        heading.className = 'ranking-detail-heading';
+        heading.textContent = investment ? '최근 투자 결과' : '투자 기록';
+        details.append(heading);
+        if (investment) {
+          const info = document.createElement('p');
+          info.className = 'ranking-investment-info';
+          info.textContent = `${investment.riskName} · ${formatPoints(investment.stake)} CR 투자`;
+          if (investment.status === 'completed') {
+            info.textContent += ` · ${formatPoints(investment.reward)} CR 정산`;
+            const result = document.createElement('p');
+            result.className = 'ranking-investment-result';
+            const netDescription = investment.net > 0
+              ? `순이익 +${formatPoints(investment.net)} CR`
+              : investment.net < 0
+                ? `순손실 ${formatPoints(Math.abs(investment.net))} CR`
+                : '손익 없음';
+            result.textContent = `${investment.outcomeName} · ×${investment.multiplier ?? '—'} · ${netDescription}`;
+            details.append(info, result);
+          } else {
+            const progress = document.createElement('p');
+            progress.className = 'ranking-investment-result';
+            progress.textContent = `진행 중 · 임무 ${investment.progress}/${investment.gameCount}`;
+            details.append(info, progress);
+          }
+        } else {
+          const empty = document.createElement('p');
+          empty.className = 'ranking-investment-info';
+          empty.textContent = '완료된 투자 기록이 없습니다.';
+          details.append(empty);
+        }
+      }
+      row.append(details);
       return row;
     });
     if (playerRows.length === 0) {
@@ -221,7 +279,9 @@ function renderScoreboard(data) {
     data.creditPlayers || [],
     'credits',
     'CR',
-    '아직 등록된 플레이어가 없어요.'
+    '아직 등록된 플레이어가 없어요.',
+    false,
+    'investment'
   );
 
   const gameBreakdown = document.querySelector('#score-game-breakdown');
@@ -236,6 +296,46 @@ function renderScoreboard(data) {
     return row;
   }));
 }
+
+function toggleRankingDetails(row) {
+  const expanded = row.classList.toggle('is-expanded');
+  row.setAttribute('aria-expanded', String(expanded));
+  row.querySelector('.ranking-detail')?.setAttribute('aria-hidden', String(!expanded && !row.matches(':hover, :focus-within')));
+}
+
+document.querySelectorAll('#score-rankings, #credit-rankings').forEach((container) => {
+  const setDetailsVisibility = (row, visible) => {
+    if (row.classList.contains('is-expanded')) return;
+    row.querySelector('.ranking-detail')?.setAttribute('aria-hidden', String(!visible));
+  };
+  container.addEventListener('pointerover', (event) => {
+    const row = event.target.closest('.ranking-row[role="button"]');
+    if (row && !row.contains(event.relatedTarget)) setDetailsVisibility(row, true);
+  });
+  container.addEventListener('pointerout', (event) => {
+    const row = event.target.closest('.ranking-row[role="button"]');
+    if (row && !row.contains(event.relatedTarget)) setDetailsVisibility(row, false);
+  });
+  container.addEventListener('focusin', (event) => {
+    const row = event.target.closest('.ranking-row[role="button"]');
+    if (row) setDetailsVisibility(row, true);
+  });
+  container.addEventListener('focusout', (event) => {
+    const row = event.target.closest('.ranking-row[role="button"]');
+    if (row && !row.contains(event.relatedTarget)) setDetailsVisibility(row, false);
+  });
+  container.addEventListener('click', (event) => {
+    const row = event.target.closest('.ranking-row[role="button"]');
+    if (row) toggleRankingDetails(row);
+  });
+  container.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const row = event.target.closest('.ranking-row[role="button"]');
+    if (!row) return;
+    event.preventDefault();
+    toggleRankingDetails(row);
+  });
+});
 
 function setShopMessage(message, isError = false) {
   const status = document.querySelector('#shop-message');

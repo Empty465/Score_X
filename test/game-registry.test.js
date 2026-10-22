@@ -164,6 +164,26 @@ test('server issues play sessions and validates score submissions', async (t) =>
   assert.equal(guest.body.saved, false);
   assert.equal((await json('POST', '/api/scores', { game: 'demo_game', points: 50, playId: guestPlay.body.playId, durationMs: 400 })).status, 409);
 
+  const investment = await json('POST', '/api/investment/start', { stake: 50, risk: 'safe' }, cookie);
+  assert.equal(investment.status, 201);
+  const investmentGame = investment.body.run.games[0];
+  const investmentPlay = await json('POST', '/api/plays', { game: investmentGame, difficulty: 'EASY' }, cookie);
+  await sleep(450);
+  const investmentScore = await json('POST', '/api/scores', {
+    game: investmentGame,
+    points: 100,
+    playId: investmentPlay.body.playId,
+    durationMs: 400
+  }, cookie);
+  assert.equal(investmentScore.status, 201);
+  assert.equal(investmentScore.body.investment.status, 'completed');
+  const leaderboard = await json('GET', '/api/leaderboard', undefined, cookie);
+  const creditRank = leaderboard.body.creditPlayers.find((player) => player.id === leaderboard.body.currentUser.id);
+  assert.equal(creditRank.latestInvestment.status, 'completed');
+  assert.equal(creditRank.latestInvestment.stake, 50);
+  assert.equal(typeof creditRank.latestInvestment.outcomeName, 'string');
+  assert.equal(typeof creditRank.latestInvestment.net, 'number');
+
   // 폴더를 지우면 목록에서 사라지고 점수 제출도 거부된다.
   fs.rmSync(path.join(gamesDir, 'demo_game'), { recursive: true });
   await sleep(1100);

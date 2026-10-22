@@ -246,6 +246,7 @@ const getAccountBests = database.prepare('SELECT game, best_points FROM best_sco
 const getAllBests = database.prepare('SELECT account_id, game, best_points FROM best_scores');
 const getUserCosmetics = database.prepare('SELECT item_id FROM user_cosmetics WHERE account_id = ?');
 const getActiveInvestment = database.prepare("SELECT * FROM investment_runs WHERE account_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
+const getLatestInvestment = database.prepare('SELECT * FROM investment_runs WHERE account_id = ? ORDER BY id DESC LIMIT 1');
 const insertPlay = database.prepare('INSERT INTO play_sessions (play_id, account_id, game, difficulty, seed, started_at) VALUES (?, ?, ?, ?, ?, ?)');
 const findPlay = database.prepare('SELECT * FROM play_sessions WHERE play_id = ?');
 const markPlayUsed = database.prepare('UPDATE play_sessions SET used_at = ? WHERE play_id = ? AND used_at IS NULL');
@@ -430,16 +431,39 @@ function loadPlayers() {
 function serializeInvestment(row) {
   if (!row) return null;
   const risk = investmentRisks.find((option) => option.id === row.risk);
+  const outcome = risk?.outcomes.find((item) => item.id === row.outcome);
   return {
     id: row.id,
     stake: Number(row.stake),
     risk: row.risk,
     riskName: risk?.name || '',
+    outcomeName: outcome?.name || '',
+    multiplier: outcome?.multiplier ?? null,
+    net: Number(row.reward) - Number(row.stake),
     games: JSON.parse(row.games_json),
     progress: Number(row.progress),
     status: row.status,
     outcome: row.outcome,
     reward: Number(row.reward)
+  };
+}
+
+function serializeInvestmentSummary(row) {
+  if (!row) return null;
+  const risk = investmentRisks.find((option) => option.id === row.risk);
+  const outcome = risk?.outcomes.find((item) => item.id === row.outcome);
+  const stake = Number(row.stake);
+  const reward = Number(row.reward);
+  return {
+    status: row.status,
+    stake,
+    reward,
+    riskName: risk?.name || '',
+    outcomeName: outcome?.name || '',
+    multiplier: outcome?.multiplier ?? null,
+    net: reward - stake,
+    progress: Number(row.progress),
+    gameCount: JSON.parse(row.games_json).length
   };
 }
 
@@ -561,7 +585,11 @@ async function handleApi(request, response, url) {
     if (currentUser) currentUser.ownedCosmetics = getUserCosmetics.all(currentUser.id).map((item) => item.item_id);
     sendJson(response, 200, {
       players: byScore.slice(0, 10),
-      creditPlayers: byCredits.slice(0, 10).map((player) => ({ ...player, rank: player.creditRank })),
+      creditPlayers: byCredits.slice(0, 10).map((player) => ({
+        ...player,
+        rank: player.creditRank,
+        latestInvestment: serializeInvestmentSummary(getLatestInvestment.get(player.id))
+      })),
       currentUser
     });
     return;

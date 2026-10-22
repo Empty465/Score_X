@@ -87,13 +87,22 @@ h1, h2, h3, p { margin-top: 0; }
 .ranking-heading h2 { margin: 0; color: #f3f2e9; font: 14px "Jua", sans-serif; }
 .ranking-heading > span { color: #a8aea1; font: 7px "DM Mono", monospace; letter-spacing: .7px; }
 #score-rankings, #credit-rankings { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; max-height: 232px; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
-.ranking-row { min-width: 0; min-height: 25px; display: flex; align-items: center; gap: 7px; border-top: 1px solid #ffffff18; }
+.ranking-row { min-width: 0; min-height: 25px; display: flex; flex-wrap: wrap; align-items: center; gap: 7px; border-top: 1px solid #ffffff18; cursor: pointer; }
+.ranking-row:focus-visible { outline: 2px solid var(--green); outline-offset: -2px; }
 .ranking-number { width: 14px; color: #9ca394; font: 8px "DM Mono", monospace; }
 .ranking-row:first-child .ranking-number { color: #c5eb7c; }
 .ranking-name { overflow: hidden; color: #e2e2d9; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .ranking-row > strong { margin-left: auto; color: #f2f1e6; font: 9px "DM Mono", monospace; white-space: nowrap; }
 .ranking-row > strong small { color: #aeb4a6; font: 7px "DM Mono", monospace; }
 .ranking-row.is-current-player .ranking-name { color: #c5eb7c; }
+.ranking-detail { display: none; flex: 0 0 calc(100% - 21px); margin: 1px 0 7px 21px; border-left: 2px solid var(--green); padding: 3px 0 4px 8px; color: #c7d3e2; font-size: 8px; }
+.ranking-row.is-expanded .ranking-detail { display: block; }
+.ranking-detail-heading { display: block; margin-bottom: 4px; color: #8ff5e5; font-size: inherit; }
+.ranking-detail-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 9px; margin: 0; padding: 0; list-style: none; }
+.ranking-detail-list li { min-width: 0; display: flex; justify-content: space-between; gap: 5px; }
+.ranking-detail-list li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ranking-detail-list li strong, .ranking-investment-result { color: #eef7ff; font: inherit; font-weight: 700; white-space: nowrap; }
+.ranking-investment-info, .ranking-investment-result { margin: 2px 0; }
 .ranking-empty { min-height: 34px; display: flex; align-items: center; color: #bdc1b4; font-size: 9px; }
 .scoreboard-game-breakdown { grid-column: 1 / -1; border-top: 1px solid #ffffff1e; padding: 12px 22px 14px; }
 .scoreboard-game-breakdown .ranking-heading { margin-bottom: 7px; }
@@ -1016,6 +1025,10 @@ kbd { border-color: #344456; background: #172330; color: #ced7e0; }
   .investment-options-heading, .shop-item-name, .shop-item-form input { font-size: 14px; }
   .investment-result-dialog p { font-size: 14px; }
   .investment-result-dialog .mission-result-total { font-size: 12px; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ranking-row:hover .ranking-detail, .ranking-row:focus-visible .ranking-detail { display: block; }
 }
 
 @media (max-width: 760px) {
