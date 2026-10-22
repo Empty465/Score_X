@@ -1,5 +1,4 @@
-// 게임 화면 어댑터 템플릿(전용 화면이 필요한 경우만). 게임 본체는 games/<id>/ 폴더(iframe)에 두고,
-// 이 파일은 Shell 쪽 연결만 맡습니다. 실제 예시는 snake.js를 참고하세요.
+// 전용 화면이 필요한 게임의 Shell 어댑터 템플릿입니다.
 import { mountGame } from '/shell/game-host.js';
 
 const { getBest, saveBest, awardScore } = window.Playground;

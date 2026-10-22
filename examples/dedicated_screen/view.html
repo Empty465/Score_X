@@ -1,0 +1,28 @@
+<section class="view game-view" id="view-hello_game">
+  <div class="game-heading">
+    <button class="back-button" data-view="home" type="button" aria-label="게임 목록으로">←</button>
+    <div>
+      <div class="eyebrow">SAMPLE</div>
+      <h1>샘플: 신호 연타</h1>
+    </div>
+    <span class="heading-mark" aria-hidden="true">★</span>
+  </div>
+  <div class="play-layout">
+    <div class="board-wrap">
+      <div class="board-caption">
+        <span>샘플 게임</span>
+        <span id="hello_game-status">준비</span>
+      </div>
+      <div class="game-host" id="hello_game-host"></div>
+      <div class="board-overlay" id="hello_game-overlay">
+        <h2>임무 준비</h2>
+        <p>10초 동안 신호를 최대한 많이 보내세요.</p>
+        <button class="primary-button" id="hello_game-start" type="button">임무 시작</button>
+      </div>
+    </div>
+    <aside class="game-side-panel">
+      <div class="record-row"><span>현재 점수</span><strong id="hello_game-score">0</strong></div>
+      <div class="record-row"><span>최고 기록</span><strong id="hello_game-best">—</strong></div>
+    </aside>
+  </div>
+</section>

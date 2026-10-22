@@ -42,6 +42,11 @@ test('generic game views are inserted before the page footer', () => {
 test('hello_game example is discoverable after copying it into games/', () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'scorex-example-'));
   try {
+    assert.deepEqual(
+      fs.readdirSync(path.join(root, 'examples', 'hello_game')).sort(),
+      ['index.html', 'manifest.json'],
+      'basic example should be a self-contained two-file game package'
+    );
     const gamesDir = path.join(tempRoot, 'games');
     fs.mkdirSync(gamesDir);
     fs.cpSync(path.join(root, 'examples', 'hello_game'), path.join(gamesDir, 'hello_game'), { recursive: true });
@@ -60,4 +65,26 @@ test('hello_game example is discoverable after copying it into games/', () => {
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
+});
+
+test('dedicated-screen example includes a matching adapter and view markup', () => {
+  const adapter = read('examples/dedicated_screen/adapter.js');
+  const template = read('examples/dedicated_screen/adapter-template.js');
+  const view = read('examples/dedicated_screen/view.html');
+  const guide = read('examples/README.md');
+
+  assert.ok(adapter.includes("id: 'hello_game'"));
+  assert.ok(adapter.includes("document.querySelector('#hello_game-host')"));
+  assert.ok(/^export default \{/m.test(adapter));
+  assert.ok(view.includes('id="view-hello_game"'));
+  assert.ok(view.includes('id="hello_game-host"'));
+  assert.ok(view.includes('id="hello_game-start"'));
+  assert.ok(guide.includes('시작 화면'));
+  assert.ok(guide.includes('재시작'));
+  assert.ok(guide.includes('최고 기록'));
+  assert.ok(guide.includes('games/<id>/manifest.json'));
+  assert.ok(template.includes("import { mountGame } from '/shell/game-host.js';"));
+  assert.ok(!fs.existsSync(path.join(root, 'games', 'template.js')));
+  assert.ok(!fs.existsSync(path.join(root, 'examples', 'hello_game', 'adapter.js')));
+  assert.ok(!fs.existsSync(path.join(root, 'examples', 'hello_game', 'dedicated-view.html')));
 });
