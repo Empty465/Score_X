@@ -863,12 +863,24 @@ function showView(name) {
   }
 }
 
+function setGameLoading(game, isLoading) {
+  const indicator = document.querySelector('#game-loading-indicator');
+  if (isLoading) {
+    document.querySelector('#game-loading-message').textContent = `${game.title} 불러오는 중...`;
+    indicator.hidden = false;
+    return;
+  }
+  indicator.hidden = true;
+}
+
 async function openGame(id, shouldLaunch, onError = (message) => {
   showView('home');
   setPlayerMessage(message, true);
 }, startImmediately = false) {
+  let game = null;
   try {
-    const game = getGame(id);
+    game = getGame(id);
+    setGameLoading(game, true);
     if (!gameLoads.has(id) && !gameModules.has(id)) {
       const loading = loadLifecycle(game).then((lifecycle) => {
         gameModules.set(id, lifecycle);
@@ -883,10 +895,18 @@ async function openGame(id, shouldLaunch, onError = (message) => {
     const lifecycle = gameModules.get(id) || await gameLoads.get(id);
     showView(id);
     if (shouldLaunch) lifecycle.onLaunch?.();
+    const host = document.querySelector(`#${id}-host`);
+    const gameElement = host?.querySelector('scorex-game');
+    if (!gameElement || typeof gameElement.whenReady !== 'function') {
+      throw new Error(`${game.title} 로딩 상태를 확인할 수 없습니다.`);
+    }
+    await gameElement.whenReady();
     if (startImmediately) await lifecycle.onStart?.();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     onError(message);
+  } finally {
+    if (game) setGameLoading(game, false);
   }
 }
 

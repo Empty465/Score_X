@@ -24,6 +24,7 @@ export function createGenericGame(meta, section) {
   heading.append(back, titles, el('span', 'heading-mark', meta.icon));
 
   const host = el('div', 'game-host');
+  host.id = `${meta.id}-host`;
   const overlayTitle = el('h2', '', `${meta.title} 준비`);
   const overlayCopy = el('p', '', meta.description);
   const startButton = el('button', 'primary-button', '임무 시작 ↗');
