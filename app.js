@@ -79,6 +79,8 @@ let activeInvestment = null;
 let pendingInvestmentSettlement = null;
 let investmentGameInProgress = null;
 let missionResultReturnsToInvestment = false;
+let cancellationPausedGame = null;
+let investmentCancellationPending = false;
 let investmentRequestPending = false;
 let authMode = 'login';
 
@@ -150,6 +152,7 @@ function showMissionResult(game, points, result, returnToInvestment) {
     ? '게스트 기록 · 순위에 반영되지 않음'
     : `최고 기록 합산 ${formatPoints(result.totalBestScore)} PTS · ${result.tier}`;
   if (!dialog.open) dialog.showModal();
+  document.querySelector('#mission-result-confirm').focus();
 }
 
 function ensureScoreServer() {
@@ -257,6 +260,11 @@ function renderScoreboard(data) {
                 ? `순손실 ${formatPoints(Math.abs(investment.net))} CR`
                 : '손익 없음';
             result.textContent = `${investment.outcomeName} · ×${investment.multiplier ?? '—'} · ${netDescription}`;
+            details.append(info, result);
+          } else if (investment.status === 'cancelled') {
+            const result = document.createElement('p');
+            result.className = 'ranking-investment-result';
+            result.textContent = `투자 취소 · ${formatPoints(investment.reward)} CR 환급 · 순손실 ${formatPoints(Math.abs(investment.net))} CR`;
             details.append(info, result);
           } else {
             const progress = document.createElement('p');
@@ -582,6 +590,7 @@ async function awardScore(game, points, play = {}) {
   const earned = Math.max(0, Math.floor(points));
   const returnToInvestment = investmentGameInProgress === game;
   if (returnToInvestment) investmentGameInProgress = null;
+  updateInvestmentCancelVisibility();
   try {
     ensureScoreServer();
     const response = await fetch('/api/scores', {
@@ -655,6 +664,8 @@ function renderInvestment() {
   const form = document.querySelector('#investment-form');
   const progress = document.querySelector('#investment-progress');
   const startButton = document.querySelector('#investment-start');
+  const cancelButton = document.querySelector('#investment-cancel');
+  cancelButton.disabled = investmentCancellationPending;
   form.hidden = Boolean(activeInvestment);
   document.querySelector('#investment-panel-title').textContent = activeInvestment
     ? '투자 임무 진행 중'
@@ -686,6 +697,69 @@ function renderInvestment() {
   if (nextGame) {
     nextButton.dataset.launch = nextGame;
     nextButton.innerHTML = `${gameNames[nextGame]} 시작 <span>↗</span>`;
+  }
+}
+
+function updateInvestmentCancelVisibility() {
+  const currentView = document.querySelector('.view.is-visible');
+  const cancelButton = document.querySelector('#investment-game-cancel');
+  cancelButton.hidden = !activeInvestment
+    || !investmentGameInProgress
+    || currentView?.id !== `view-${investmentGameInProgress}`;
+}
+
+function openInvestmentCancellation() {
+  if (!activeInvestment || investmentCancellationPending) return;
+  const currentView = document.querySelector('.view.is-visible');
+  cancellationPausedGame = investmentGameInProgress && currentView?.id === `view-${investmentGameInProgress}`
+    ? investmentGameInProgress
+    : null;
+  if (cancellationPausedGame) gameModules.get(cancellationPausedGame)?.onHide?.();
+  const refund = Math.floor(activeInvestment.stake / 2);
+  document.querySelector('#investment-cancel-copy').textContent =
+    '투자를 취소하면 투자 원금의 50%를 돌려받고, 진행한 임무와 남은 미니게임은 모두 종료됩니다. 환급액은 CR 정수 단위로 내림 계산됩니다.';
+  document.querySelector('#investment-cancel-stake').textContent = `${formatPoints(activeInvestment.stake)} CR`;
+  document.querySelector('#investment-cancel-refund').textContent = `${formatPoints(refund)} CR`;
+  const dialog = document.querySelector('#investment-cancel-dialog');
+  dialog.showModal();
+  document.querySelector('#investment-cancel-dismiss').focus();
+}
+
+async function confirmInvestmentCancellation() {
+  if (investmentCancellationPending || !activeInvestment) return;
+  investmentCancellationPending = true;
+  const confirmButton = document.querySelector('#investment-cancel-confirm');
+  confirmButton.disabled = true;
+  document.querySelector('#investment-cancel').disabled = true;
+  document.querySelector('#investment-game-cancel').disabled = true;
+  document.querySelector('#investment-cancel-dialog').close();
+  try {
+    ensureScoreServer();
+    const response = await fetch('/api/investment/cancel', { method: 'POST' });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || '투자를 취소하지 못했습니다.');
+    activeInvestment = null;
+    investmentGameInProgress = null;
+    cancellationPausedGame = null;
+    if (currentProfile) currentProfile.credits = result.credits;
+    document.querySelector('#wallet-balance').textContent = formatPoints(result.credits);
+    document.querySelector('#shop-balance').textContent = formatPoints(result.credits);
+    renderInvestment();
+    showView('investment');
+    setInvestmentMessage(`${formatPoints(result.refund)} CR을 돌려받고 투자를 취소했습니다.`, false);
+    refreshScoreboard().catch((error) => setPlayerMessage(error.message || '점수판을 새로고침하지 못했습니다.', true));
+  } catch (error) {
+    const gameId = cancellationPausedGame;
+    cancellationPausedGame = null;
+    if (gameId && document.querySelector('.view.is-visible')?.id === `view-${gameId}`) {
+      gameModules.get(gameId)?.onShow?.();
+    }
+    setInvestmentMessage(error.message || '투자를 취소하지 못했습니다.', true);
+  } finally {
+    investmentCancellationPending = false;
+    confirmButton.disabled = false;
+    renderInvestment();
+    updateInvestmentCancelVisibility();
   }
 }
 
@@ -772,6 +846,7 @@ async function launchNextInvestmentGame() {
   investmentGameInProgress = nextGame;
   await openGame(nextGame, true, (message) => {
     investmentGameInProgress = null;
+    updateInvestmentCancelVisibility();
     showView('investment');
     setInvestmentMessage(message, true);
   }, true);
@@ -795,7 +870,10 @@ function handleInvestmentProgress(result) {
 function continueInvestmentRun() {
   const shouldReturn = missionResultReturnsToInvestment;
   missionResultReturnsToInvestment = false;
-  if (!shouldReturn) return;
+  if (!shouldReturn) {
+    document.querySelector('.view.is-visible .board-overlay:not(.is-hidden) button, .view.is-visible .rocket-overlay:not(.is-hidden) button')?.focus();
+    return;
+  }
   showView('investment');
   if (pendingInvestmentSettlement) {
     const investment = pendingInvestmentSettlement;
@@ -807,7 +885,10 @@ function continueInvestmentRun() {
     document.querySelector('#investment-result-amount').textContent =
       `${net >= 0 ? '+' : ''}${formatPoints(net)} CR`;
     document.querySelector('#investment-result-dialog').showModal();
+    document.querySelector('#investment-result-confirm').focus();
+    return;
   }
+  document.querySelector('#investment-next-game')?.focus();
 }
 const gameModules = new Map();
 const gameLoads = new Map();
@@ -857,6 +938,7 @@ function showView(name) {
   document.querySelectorAll('.view').forEach((view) => view.classList.toggle('is-visible', view === target));
   document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('is-active', item.dataset.view === name));
   breadcrumbCurrent.textContent = titles[name];
+  updateInvestmentCancelVisibility();
   gameModules.get(name)?.onShow?.();
   if (name === 'investment' && activePlayer) {
     loadActiveInvestment().catch((error) => setInvestmentMessage(error.message || '투자 정보를 불러오지 못했습니다.', true));
@@ -926,6 +1008,31 @@ gameGrid.addEventListener('click', (event) => {
   const button = event.target.closest('[data-launch]');
   if (button) openGame(button.dataset.launch, true);
 });
+document.addEventListener('keydown', (event) => {
+  if (event.code !== 'Space' || event.repeat || event.defaultPrevented) return;
+  const openDialog = document.querySelector('dialog[open]');
+  if (openDialog) {
+    const confirmButton = openDialog.id === 'mission-result-dialog'
+      ? openDialog.querySelector('#mission-result-confirm')
+      : openDialog.id === 'investment-result-dialog'
+        ? openDialog.querySelector('#investment-result-confirm')
+        : null;
+    if (confirmButton && !confirmButton.disabled) {
+      event.preventDefault();
+      confirmButton.click();
+    }
+    return;
+  }
+  const target = event.target;
+  if (target instanceof Element && target.closest('button, a, input, select, textarea, [contenteditable="true"], iframe')) return;
+  const currentView = document.querySelector('.view.is-visible');
+  const action = currentView?.id === 'view-investment'
+    ? document.querySelector('#investment-next-game:not([hidden]):not(:disabled)')
+    : currentView?.querySelector('.board-overlay:not(.is-hidden) button:not(:disabled), .rocket-overlay:not(.is-hidden) button:not(:disabled)');
+  if (!action) return;
+  event.preventDefault();
+  action.click();
+});
 document.querySelector('#investment-form').addEventListener('submit', startInvestment);
 document.querySelector('#investment-cancel-option').addEventListener('click', () => {
   selectedRisk = null;
@@ -953,6 +1060,20 @@ document.querySelector('#investment-stake-number').addEventListener('input', (ev
 });
 document.querySelector('#investment-next-game').addEventListener('click', async () => {
   await launchNextInvestmentGame();
+});
+document.querySelector('#investment-cancel').addEventListener('click', openInvestmentCancellation);
+document.querySelector('#investment-game-cancel').addEventListener('click', openInvestmentCancellation);
+document.querySelector('#investment-cancel-dismiss').addEventListener('click', () => {
+  document.querySelector('#investment-cancel-dialog').close();
+});
+document.querySelector('#investment-cancel-confirm').addEventListener('click', confirmInvestmentCancellation);
+document.querySelector('#investment-cancel-dialog').addEventListener('close', () => {
+  if (!cancellationPausedGame || investmentCancellationPending) return;
+  const gameId = cancellationPausedGame;
+  cancellationPausedGame = null;
+  if (activeInvestment && document.querySelector('.view.is-visible')?.id === `view-${gameId}`) {
+    gameModules.get(gameId)?.onShow?.();
+  }
 });
 document.querySelector('#investment-result-confirm').addEventListener('click', () => {
   document.querySelector('#investment-result-dialog').close();

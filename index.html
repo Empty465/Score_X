@@ -141,7 +141,10 @@
           <div class="investment-progress-heading"><div><span class="section-kicker">ACTIVE INVESTMENT</span><h2>진행 중인 투자 임무</h2></div><strong id="investment-progress-count"></strong></div>
           <p id="investment-progress-copy"></p>
           <ol id="investment-sequence" class="investment-sequence"></ol>
-          <button class="primary-button investment-next-button" id="investment-next-game" type="button">다음 임무 시작 <span>↗</span></button>
+          <div class="investment-progress-actions">
+            <button class="primary-button investment-next-button" id="investment-next-game" type="button">다음 임무 시작 <span>↗</span></button>
+            <button class="text-button investment-cancel-button" id="investment-cancel" type="button">투자 취소</button>
+          </div>
         </section>
 
         <div class="investment-note" id="investment-note"><span>i</span><p>게임별 티어 점수와 임무 크레딧은 투자 재화와 별도로 기록됩니다. 투자 원금은 시작 시 차감되며 정산 보상은 완료 후 지급됩니다.</p></div>
@@ -244,6 +247,22 @@
     <div class="investment-confirm-actions">
       <button class="text-button" id="investment-confirm-cancel" type="button">취소</button>
       <button class="primary-button" id="investment-confirm-submit" type="button">투자 확정 <span>↗</span></button>
+    </div>
+  </dialog>
+  <button class="investment-game-cancel" id="investment-game-cancel" type="button" hidden>투자 취소</button>
+  <dialog class="investment-result-dialog investment-cancel-dialog" id="investment-cancel-dialog" aria-labelledby="investment-cancel-title">
+    <form method="dialog"><button class="dialog-close" aria-label="닫기">×</button></form>
+    <span class="section-kicker">INVESTMENT CANCELLATION</span>
+    <h2 id="investment-cancel-title">투자를 취소할까요?</h2>
+    <p id="investment-cancel-copy"></p>
+    <div class="investment-confirm-summary">
+      <div><span>투자 원금</span><strong id="investment-cancel-stake"></strong></div>
+      <div><span>돌려받을 금액 (50%)</span><strong id="investment-cancel-refund"></strong></div>
+    </div>
+    <p class="investment-cancel-warning">취소하면 투자 원금의 나머지 50%는 돌려받을 수 없으며, 진행 중인 투자 임무도 종료됩니다.</p>
+    <div class="investment-confirm-actions">
+      <button class="text-button" id="investment-cancel-dismiss" type="button">계속 진행</button>
+      <button class="primary-button investment-cancel-confirm" id="investment-cancel-confirm" type="button">50% 환급 후 취소</button>
     </div>
   </dialog>
   <div class="game-loading-indicator" id="game-loading-indicator" role="status" aria-live="polite" hidden>

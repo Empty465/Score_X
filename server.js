@@ -197,7 +197,7 @@ database.exec(`
     risk TEXT NOT NULL CHECK (risk IN ('safe', 'balanced', 'high')),
     games_json TEXT NOT NULL,
     progress INTEGER NOT NULL DEFAULT 0 CHECK (progress >= 0),
-    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed')),
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed', 'cancelled')),
     outcome TEXT NOT NULL DEFAULT '',
     reward INTEGER NOT NULL DEFAULT 0 CHECK (reward >= 0),
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -216,6 +216,32 @@ database.exec(`
   CREATE INDEX IF NOT EXISTS credit_ledger_account_idx ON credit_ledger(account_id, id);
   CREATE INDEX IF NOT EXISTS sessions_account_idx ON sessions(account_id);
 `);
+
+const investmentRunsSchema = database.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'investment_runs'").get().sql;
+if (!investmentRunsSchema.includes("'cancelled'")) {
+  database.exec(`
+    BEGIN IMMEDIATE;
+    ALTER TABLE investment_runs RENAME TO investment_runs_legacy;
+    CREATE TABLE investment_runs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      stake INTEGER NOT NULL CHECK (stake > 0),
+      risk TEXT NOT NULL CHECK (risk IN ('safe', 'balanced', 'high')),
+      games_json TEXT NOT NULL,
+      progress INTEGER NOT NULL DEFAULT 0 CHECK (progress >= 0),
+      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed', 'cancelled')),
+      outcome TEXT NOT NULL DEFAULT '',
+      reward INTEGER NOT NULL DEFAULT 0 CHECK (reward >= 0),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      completed_at TEXT
+    );
+    INSERT INTO investment_runs (id, account_id, stake, risk, games_json, progress, status, outcome, reward, created_at, completed_at)
+      SELECT id, account_id, stake, risk, games_json, progress, status, outcome, reward, created_at, completed_at
+      FROM investment_runs_legacy;
+    DROP TABLE investment_runs_legacy;
+    COMMIT;
+  `);
+}
 
 const profileSelect = `
   SELECT accounts.id, profiles.nickname, profiles.avatar_id, profiles.title_id, profiles.background_id, wallets.credits
@@ -437,8 +463,8 @@ function serializeInvestment(row) {
     stake: Number(row.stake),
     risk: row.risk,
     riskName: risk?.name || '',
-    outcomeName: outcome?.name || '',
-    multiplier: outcome?.multiplier ?? null,
+    outcomeName: row.status === 'cancelled' ? '투자 취소' : outcome?.name || '',
+    multiplier: row.status === 'cancelled' ? null : outcome?.multiplier ?? null,
     net: Number(row.reward) - Number(row.stake),
     games: JSON.parse(row.games_json),
     progress: Number(row.progress),
@@ -459,8 +485,8 @@ function serializeInvestmentSummary(row) {
     stake,
     reward,
     riskName: risk?.name || '',
-    outcomeName: outcome?.name || '',
-    multiplier: outcome?.multiplier ?? null,
+    outcomeName: row.status === 'cancelled' ? '투자 취소' : outcome?.name || '',
+    multiplier: row.status === 'cancelled' ? null : outcome?.multiplier ?? null,
     net: reward - stake,
     progress: Number(row.progress),
     gameCount: JSON.parse(row.games_json).length
@@ -707,6 +733,32 @@ async function handleApi(request, response, url) {
 
   if (request.method === 'GET' && url.pathname === '/api/investment/active') {
     sendJson(response, 200, { run: serializeInvestment(getActiveInvestment.get(accountId)) });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/investment/cancel') {
+    const cancelled = runInTransaction(() => {
+      const run = getActiveInvestment.get(accountId);
+      if (!run) return { error: '취소할 진행 중인 투자가 없습니다.' };
+      const refund = Math.floor(Number(run.stake) / 2);
+      const updated = database.prepare(`
+        UPDATE investment_runs
+        SET status = 'cancelled', outcome = 'cancelled', reward = ?, completed_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND status = 'active'
+      `).run(refund, run.id);
+      if (updated.changes !== 1) return { error: '투자 상태가 변경되어 취소할 수 없습니다.' };
+      if (refund > 0) adjustCredits(accountId, refund, 'investment_cancel_refund', `run:${run.id}`);
+      return {
+        run: serializeInvestment(database.prepare('SELECT * FROM investment_runs WHERE id = ?').get(run.id)),
+        refund,
+        credits: Number(getWalletCredits.get(accountId).credits)
+      };
+    });
+    if (cancelled.error) {
+      sendJson(response, 409, { error: cancelled.error });
+      return;
+    }
+    sendJson(response, 200, cancelled);
     return;
   }
 

@@ -407,7 +407,17 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 18px; 
 .investment-sequence li { border: 1px solid #2a4058; border-radius: 4px; padding: 9px 7px; color: #7f95af; font-size: 9px; line-height: 1.5; }
 .investment-sequence li.is-complete { border-color: #286b65; color: #8ff5e5; }
 .investment-sequence li.is-current { border-color: #78baff; color: #dceeff; box-shadow: 0 0 13px #78baff20; }
-.investment-next-button { margin-top: 13px; }
+.investment-progress-actions { display: flex; align-items: center; gap: 15px; margin-top: 13px; }
+.investment-next-button { margin-top: 0; }
+.investment-cancel-button { margin: 0; color: #f19aa5; }
+.investment-cancel-button:hover { color: #ffb7bf; }
+.investment-game-cancel { position: fixed; z-index: 900; right: 24px; bottom: 24px; border: 1px solid #8a4654; border-radius: 6px; padding: 10px 15px; background: #351d29ed; color: #ffc0c8; font-size: 11px; cursor: pointer; box-shadow: 0 8px 24px #0006; }
+.investment-game-cancel:hover { border-color: #d36b7a; background: #48232e; }
+.investment-game-cancel[hidden] { display: none; }
+.investment-cancel-warning { border-left: 2px solid #dd7181; padding-left: 10px; color: #ffadb8 !important; }
+.investment-cancel-confirm { background: #a84658; color: #fff; }
+.investment-cancel-confirm:hover { background: #c14e61; }
+.investment-cancel-confirm:disabled { opacity: .6; cursor: wait; }
 .investment-result-dialog { width: min(420px, calc(100% - 32px)); border: 1px solid #36536e; border-radius: 10px; padding: 27px; background: #0c1b2d; color: #e6f0ff; box-shadow: 0 24px 90px #000b; }
 .investment-result-dialog::backdrop { background: #020914c9; backdrop-filter: blur(4px); }
 .investment-result-dialog h2 { margin: 10px 0; font: 26px "Jua", sans-serif; }
@@ -768,6 +778,8 @@ kbd { border-color: #314965; background: #14253a; color: #bfcee0; }
   .sidebar { flex-direction: row; justify-content: space-between; }
   .game-nav { flex: 1 1 auto; width: calc(100% - 50px); }
   .investment-nav-group { height: 100%; flex: 0 0 48px; margin: 0; border-left: 1px solid #29415d; }
+  .investment-game-cancel { right: 14px; bottom: 78px; }
+  .investment-progress-actions { flex-wrap: wrap; }
   .investment-nav { height: 100%; display: grid; align-items: center; padding-left: 3px; }
   .investment-nav .nav-item { height: 48px; }
   .investment-view { padding-top: 19px; }
