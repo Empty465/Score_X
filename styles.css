@@ -1159,3 +1159,7 @@ ul.investment-outcomes { display: grid; gap: 4px; margin: 10px 0 0; padding: 10p
 .score-game-item { font-size: 16px; }
 .score-game-item > strong { font-size: 18px; font-weight: 600; }
 @media (max-width: 760px) { .score-game-item { font-size: 14px; } .score-game-item > strong { font-size: 16px; } }
+
+.game-heading > div:not(.heading-mark) { flex: 1 1 auto; }
+.mission-subtitle { max-width: none; }
+@media (max-width: 760px) { .mission-subtitle { max-width: none; } }
