@@ -12,7 +12,6 @@ function el(tag, className, text) {
 
 export function createGenericGame(meta, section) {
   const { getBest, saveBest, awardScore } = window.Playground;
-  const difficulty = meta.difficulties.includes('NORMAL') ? 'NORMAL' : meta.difficulties[0];
 
   const back = el('button', 'back-button', '←');
   back.dataset.view = 'home';
@@ -78,7 +77,6 @@ export function createGenericGame(meta, section) {
   const game = mountGame({
     id: meta.id,
     host,
-    difficulty,
     onHud: renderHud,
     onError: (message) => showOverlay('실행 오류', message, '다시 시도'),
     async onGameOver({ playId, score, durationMs }) {

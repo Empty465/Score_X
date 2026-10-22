@@ -8,16 +8,19 @@
     html, body { margin: 0; height: 100%; background: #081727; }
     body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
     canvas { display: block; flex: 0 1 auto; min-height: 0; max-width: 100%; max-height: 100%; aspect-ratio: 1; background: #081727; }
-    .dpad { display: none; flex: 0 0 auto; flex-direction: column; align-items: center; gap: 4px; padding-bottom: 6px; }
-    .dpad div { display: flex; gap: 4px; }
-    .dpad button { width: 44px; height: 38px; border: 1px solid #1f4660; border-radius: 8px; background: #0d2438; color: #a8e6f0; font-size: 18px; touch-action: manipulation; }
+    .dpad { display: none; flex: 0 0 auto; grid-template: repeat(3, 54px) / repeat(3, 54px); gap: 4px; padding-bottom: 6px; }
+    .dpad button { width: 54px; height: 54px; border: 1px solid #1f4660; border-radius: 10px; background: #0d2438; color: #a8e6f0; font-size: 24px; touch-action: manipulation; }
     .dpad button:active { background: #164c53; }
-    @media (pointer: coarse) { .dpad { display: flex; } }
+    .dpad [data-direction="up"] { grid-area: 1 / 2; }
+    .dpad [data-direction="left"] { grid-area: 2 / 1; }
+    .dpad [data-direction="down"] { grid-area: 3 / 2; }
+    .dpad [data-direction="right"] { grid-area: 2 / 3; }
+    @media (pointer: coarse) { .dpad { display: grid; } }
   </style>
 </head>
 <body>
   <canvas id="canvas" width="420" height="420" aria-label="우주 쓰레기 수거 드론 비행 구역"></canvas>
-  <div class="dpad" aria-label="터치 방향 조작"><button data-direction="up" aria-label="위로">↑</button><div><button data-direction="left" aria-label="왼쪽">←</button><button data-direction="down" aria-label="아래로">↓</button><button data-direction="right" aria-label="오른쪽">→</button></div></div>
+  <div class="dpad" aria-label="터치 방향 조작"><button data-direction="up" aria-label="위로">↑</button><button data-direction="left" aria-label="왼쪽">←</button><button data-direction="down" aria-label="아래로">↓</button><button data-direction="right" aria-label="오른쪽">→</button></div>
   <script src="../../sdk/scorex-sdk.js"></script>
   <script>
     const GRID = 21;

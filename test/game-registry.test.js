@@ -32,11 +32,12 @@ test('manifest validation normalizes defaults and rejects bad input', () => {
   assert.equal(normalized.entry, '/games/demo_game/index.html');
   assert.equal(normalized.aspectRatio, '16:9');
   assert.deepEqual(normalized.input, ['keyboard']);
+  assert.equal(Object.hasOwn(normalized, 'difficulties'), false);
+  assert.equal(Object.hasOwn(normalizeManifest({ ...validManifest, difficulties: ['HARD'] }, 'demo_game'), 'difficulties'), false);
   assert.throws(() => normalizeManifest({ ...validManifest, id: 'other' }, 'demo_game'), /폴더/);
   assert.throws(() => normalizeManifest({ ...validManifest, protocol: 2 }, 'demo_game'), /protocol/);
   assert.throws(() => normalizeManifest({ ...validManifest, maxScore: 0 }, 'demo_game'), /maxScore/);
   assert.throws(() => normalizeManifest({ ...validManifest, maxScore: 100001 }, 'demo_game'), /maxScore/);
-  assert.throws(() => normalizeManifest({ ...validManifest, difficulties: ['EXTREME'] }, 'demo_game'), /difficulties/);
   assert.throws(() => normalizeManifest({ ...validManifest, thumbnail: '../x.png' }, 'demo_game'), /thumbnail/);
 });
 
@@ -120,11 +121,22 @@ test('server issues play sessions and validates score submissions', async (t) =>
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       completed_at TEXT
     );
+    CREATE TABLE play_sessions (
+      play_id TEXT PRIMARY KEY,
+      account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
+      game TEXT NOT NULL,
+      difficulty TEXT NOT NULL,
+      seed INTEGER NOT NULL,
+      started_at INTEGER NOT NULL,
+      used_at INTEGER
+    );
     INSERT INTO accounts (id, login_id, password_hash, password_salt) VALUES (1, 'legacy', 'hash', 'salt');
     INSERT INTO profiles (account_id, nickname) VALUES (1, '기존유저');
     INSERT INTO wallets (account_id, credits) VALUES (1, 40);
     INSERT INTO investment_runs (account_id, stake, risk, games_json, progress, status, outcome, reward)
       VALUES (1, 40, 'safe', '[\"demo_game\"]', 1, 'completed', 'break_even', 40);
+    INSERT INTO play_sessions (play_id, account_id, game, difficulty, seed, started_at)
+      VALUES ('legacy-play', 1, 'demo_game', 'NORMAL', 123, 1000);
   `);
   legacyDatabase.close();
   const port = 3200 + Math.floor(Math.random() * 500);
@@ -144,6 +156,14 @@ test('server issues play sessions and validates score submissions', async (t) =>
     try { if ((await fetch(`${base}/api/games`)).ok) break; } catch { /* 서버 시작 대기 */ }
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
+  const migratedDatabase = new DatabaseSync(databasePath);
+  const playSessionColumns = migratedDatabase.prepare('PRAGMA table_info(play_sessions)').all().map((column) => column.name);
+  assert.equal(playSessionColumns.includes('difficulty'), false);
+  const migratedPlay = migratedDatabase.prepare('SELECT play_id, game, seed FROM play_sessions').get();
+  assert.equal(migratedPlay.play_id, 'legacy-play');
+  assert.equal(migratedPlay.game, 'demo_game');
+  assert.equal(migratedPlay.seed, 123);
+  migratedDatabase.close();
 
   const json = async (method, url, body, cookie) => {
     const response = await fetch(base + url, {
@@ -172,7 +192,9 @@ test('server issues play sessions and validates score submissions', async (t) =>
   }
 
   assert.equal((await json('POST', '/api/plays', { game: 'nope' })).status, 400);
-  assert.equal((await json('POST', '/api/plays', { game: 'demo_game', difficulty: 'HARD' })).status, 400);
+  const legacyDifficultyRequest = await json('POST', '/api/plays', { game: 'demo_game', difficulty: 'HARD' });
+  assert.equal(legacyDifficultyRequest.status, 201);
+  assert.equal(Object.hasOwn(legacyDifficultyRequest.body, 'difficulty'), false);
 
   // playId 없이 점수를 보낼 수 없다.
   assert.equal((await json('POST', '/api/scores', { game: 'demo_game', points: 100 })).status, 400);
@@ -181,9 +203,22 @@ test('server issues play sessions and validates score submissions', async (t) =>
   assert.equal(reg.status, 201);
   const cookie = reg.headers.get('set-cookie').split(';')[0];
 
-  const play = await json('POST', '/api/plays', { game: 'demo_game', difficulty: 'EASY' }, cookie);
+  assert.equal((await json('GET', '/api/attendance/status')).status, 401);
+  assert.equal((await json('POST', '/api/attendance/claim')).status, 401);
+  const attendanceStatus = await json('GET', '/api/attendance/status', undefined, cookie);
+  assert.equal(attendanceStatus.status, 200);
+  assert.equal(attendanceStatus.body.eligible, true);
+  assert.match(attendanceStatus.body.date, /^\d{4}-\d{2}-\d{2}$/);
+  const attendanceClaim = await json('POST', '/api/attendance/claim', {}, cookie);
+  assert.equal(attendanceClaim.status, 200);
+  assert.ok(attendanceClaim.body.reward >= 100 && attendanceClaim.body.reward <= 500);
+  assert.equal(attendanceClaim.body.credits, reg.body.user.credits + attendanceClaim.body.reward);
+  assert.equal((await json('GET', '/api/attendance/status', undefined, cookie)).body.eligible, false);
+  assert.equal((await json('POST', '/api/attendance/claim', {}, cookie)).status, 409);
+
+  const play = await json('POST', '/api/plays', { game: 'demo_game' }, cookie);
   assert.equal(play.status, 201);
-  assert.equal(play.body.difficulty, 'EASY');
+  assert.equal(Object.hasOwn(play.body, 'difficulty'), false);
   assert.ok(Number.isInteger(play.body.seed));
 
   // 너무 짧은 플레이, 최대 점수 초과, 실제 경과보다 긴 시간 보고는 거부한다.
@@ -196,6 +231,12 @@ test('server issues play sessions and validates score submissions', async (t) =>
   assert.equal(ok.status, 201);
   assert.equal(ok.body.saved, true);
   assert.equal((await json('POST', '/api/scores', { game: 'demo_game', points: 100, playId: play.body.playId, durationMs: 400 }, cookie)).status, 409);
+  const gameLeaderboard = await json('GET', '/api/leaderboard/games/demo_game', undefined, cookie);
+  assert.equal(gameLeaderboard.status, 200);
+  assert.deepEqual(gameLeaderboard.body.players.map((player) => [player.rank, player.name, player.score, player.isCurrentUser]), [[1, '테스터', 100, true]]);
+  const guestGameLeaderboard = await json('GET', '/api/leaderboard/games/demo_game');
+  assert.equal(guestGameLeaderboard.body.players[0].isCurrentUser, false);
+  assert.equal((await json('GET', '/api/leaderboard/games/unknown_game')).status, 404);
 
   // 다른 계정이나 게스트는 남의 세션을 쓸 수 없다.
   const other = await json('POST', '/api/plays', { game: 'demo_game' }, cookie);
@@ -213,7 +254,7 @@ test('server issues play sessions and validates score submissions', async (t) =>
   const investment = await json('POST', '/api/investment/start', { stake: 50, risk: 'safe' }, cookie);
   assert.equal(investment.status, 201);
   const investmentGame = investment.body.run.games[0];
-  const investmentPlay = await json('POST', '/api/plays', { game: investmentGame, difficulty: 'EASY' }, cookie);
+  const investmentPlay = await json('POST', '/api/plays', { game: investmentGame }, cookie);
   await sleep(450);
   const investmentScore = await json('POST', '/api/scores', {
     game: investmentGame,

@@ -202,10 +202,10 @@
       </section>
 
       <section class="view game-view" id="view-mole" data-title="비상 경고등 진압">
-        <div class="game-heading"><button class="back-button" data-view="home" aria-label="임무 목록으로">←</button><div><div class="eyebrow">NO. 04 <span class="eyebrow-line"></span> EMERGENCY RESPONSE</div><h1>비상 경고등 진압</h1><p class="mission-subtitle">선내 과부하 경고. 점등된 비상 스위치를 빠르게 차단하세요.</p></div><span class="heading-mark mole-mark">!</span></div>
+        <div class="game-heading"><button class="back-button" data-view="home" aria-label="임무 목록으로">←</button><div><div class="eyebrow">NO. 04 <span class="eyebrow-line"></span> EMERGENCY RESPONSE</div><h1>비상 경고등 진압</h1><p class="mission-subtitle">선내 과부하 경고. 한 번에 1~3개 켜지는 스위치를 모두 빠르게 차단하세요.</p></div><span class="heading-mark mole-mark">!</span></div>
         <div class="play-layout">
-          <div class="mole-board-wrap"><div class="board-caption"><span>WARNING SWITCHES · DECK 04</span><span class="live-label"><i></i> <span id="mole-status">READY</span></span></div><div class="game-host mole-host" id="mole-host"></div><div class="board-overlay" id="mole-overlay"><div class="overlay-symbol">!</div><h2 id="mole-overlay-title">경고 진압 준비</h2><p id="mole-overlay-copy">점등된 비상 스위치를 빠르게 눌러 경고를 차단하세요.</p><button class="primary-button" id="mole-start">임무 시작 <span>↗</span></button></div><div class="mole-footer"><span>점등된 경고 스위치를 눌러 과부하를 차단하세요.</span><span>20 SEC</span></div></div>
-          <div class="game-side-panel"><div class="score-block"><span class="panel-label">차단한 경고</span><strong id="mole-score">00</strong><span class="score-unit">WARNINGS CLEARED</span></div><div class="record-row"><span>남은 시간</span><strong id="mole-time">20<small> 초</small></strong></div><div class="record-row"><span>최고 기록</span><strong><span data-best="mole">0</span><small> 회</small></strong></div><div class="divider"></div><div class="control-title">비상 대응 <span>✦</span></div><p class="control-copy">과부하 경고등이 켜지는 즉시 해당 스위치를 눌러 전력을 차단하세요.</p></div>
+          <div class="mole-board-wrap"><div class="board-caption"><span>WARNING SWITCHES · DECK 04</span><span class="live-label"><i></i> <span id="mole-status">READY</span></span></div><div class="game-host mole-host" id="mole-host"></div><div class="board-overlay" id="mole-overlay"><div class="overlay-symbol">!</div><h2 id="mole-overlay-title">경고 진압 준비</h2><p id="mole-overlay-copy">한 번에 1~3개 켜지는 비상 스위치를 모두 눌러 경고를 차단하세요.</p><button class="primary-button" id="mole-start">임무 시작 <span>↗</span></button></div><div class="mole-footer"><span>점등된 경고 스위치를 눌러 과부하를 차단하세요.</span><span>20 SEC</span></div></div>
+          <div class="game-side-panel"><div class="score-block"><span class="panel-label">차단한 경고</span><strong id="mole-score">00</strong><span class="score-unit">WARNINGS CLEARED</span></div><div class="record-row"><span>남은 시간</span><strong id="mole-time">20<small> 초</small></strong></div><div class="record-row"><span>최고 기록</span><strong><span data-best="mole">0</span><small> 회</small></strong></div><div class="divider"></div><div class="control-title">비상 대응 <span>✦</span></div><p class="control-copy">경고등은 한 번에 1~3개 점등됩니다. 여러 개가 켜지면 모두 눌러 전력을 차단하세요.</p></div>
         </div>
       </section>
 
@@ -220,7 +220,7 @@
         <div class="game-heading"><button class="back-button" data-view="home" aria-label="임무 목록으로">←</button><div><div class="eyebrow">NO. 06 <span class="eyebrow-line"></span> BOOSTER RECOVERY</div><h1>1단 부스터 회수</h1><p class="mission-subtitle">재사용 발사체를 해상 바지선 착륙 패드에 수직 착륙시키세요.</p></div><span class="heading-mark rocket-mark">▲</span></div>
         <div class="play-layout">
           <div class="rocket-board-wrap"><div class="board-caption"><span>BOOSTER DESCENT · BARGE LANDING</span><span class="live-label"><i></i> <span id="rocket-status">READY</span></span></div><div class="game-host rocket-host" id="rocket-host"></div><div class="rocket-overlay" id="rocket-overlay"><div class="rocket-overlay-mark">▲</div><h2 id="rocket-overlay-title">부스터 회수 준비 완료</h2><p id="rocket-overlay-copy">추력으로 속도를 줄이고 해상 착륙 패드에 수직 착륙하세요.</p><button class="primary-button" id="rocket-start">회수 시퀀스 시작 <span>↗</span></button></div></div>
-          <div class="game-side-panel rocket-side-panel"><div class="score-block rocket-score-block"><span class="panel-label">회수 착륙 점수</span><strong id="rocket-score">—</strong><span class="score-unit">BOOSTER RECOVERY SCORE</span></div><div class="rocket-fuel"><div><span>연료</span><strong id="rocket-fuel-label">100%</strong></div><progress id="rocket-fuel-meter" max="100" value="100">100%</progress></div><div class="divider"></div><div class="control-title">착륙 조작 <span>⌨</span></div><p class="control-copy">좌우로 기울이고 위쪽 추력을 눌러 속도를 줄이세요. 안전 착륙은 수평 속도 2.4, 수직 속도 2.8 m/s 이하입니다.</p><p class="rocket-key-hint"><kbd>←</kbd><kbd>→</kbd> 방향 <span>·</span> <kbd>↑</kbd> 추력</p><button class="text-button" id="rocket-reset">↻ 회수 시퀀스 재설정</button></div>
+          <div class="game-side-panel rocket-side-panel"><div class="score-block rocket-score-block"><span class="panel-label">회수 착륙 점수</span><strong id="rocket-score">—</strong><span class="score-unit">BOOSTER RECOVERY SCORE</span></div><div class="record-row"><span>최고 기록</span><strong><span data-best="rocket">—</span><small> PTS</small></strong></div><div class="rocket-fuel"><div><span>연료</span><strong id="rocket-fuel-label">100%</strong></div><progress id="rocket-fuel-meter" max="100" value="100">100%</progress></div><div class="divider"></div><div class="control-title">착륙 조작 <span>⌨</span></div><p class="control-copy">좌우로 기울이고 위쪽 추력을 눌러 속도를 줄이세요. 안전 착륙은 수평 속도 2.4, 수직 속도 2.8 m/s 이하입니다.</p><p class="rocket-key-hint"><kbd>←</kbd><kbd>→</kbd> 방향 <span>·</span> <kbd>↑</kbd> 추력</p><button class="text-button" id="rocket-reset">↻ 회수 시퀀스 재설정</button></div>
         </div>
       </section>
       <section class="view game-view" id="view-clop" data-title="4족 보행 로봇 운영">
@@ -284,6 +284,21 @@
     <div class="mission-result-reward"><span>획득 투자 재화</span><strong id="mission-result-credits"></strong></div>
     <p class="mission-result-total" id="mission-result-total"></p>
     <button class="primary-button" id="mission-result-confirm" type="button">확인 <span>↗</span></button>
+  </dialog>
+  <dialog class="investment-result-dialog attendance-dialog" id="attendance-dialog" aria-labelledby="attendance-title">
+    <form method="dialog"><button class="dialog-close" aria-label="나중에 받기">×</button></form>
+    <span class="section-kicker">DAILY CHECK-IN</span>
+    <h2 id="attendance-title">오늘의 출석 보상</h2>
+    <p>복권을 긁어 100~500 CR 출석 보상을 확인하세요. 보상은 하루 한 번 받을 수 있습니다.</p>
+    <div class="attendance-scratch-card">
+      <strong id="attendance-reward">??? CR</strong>
+      <canvas id="attendance-scratch-canvas" aria-label="마우스나 손가락으로 긁어 출석 보상 확인"></canvas>
+    </div>
+    <p class="attendance-scratch-status" id="attendance-scratch-status" aria-live="polite">화면을 긁어 오늘의 보상을 확인하세요.</p>
+    <div class="attendance-actions">
+      <button class="text-button" id="attendance-keyboard-reveal" type="button">긁기 어려우신가요? 보상 확인</button>
+      <button class="primary-button" id="attendance-close" type="button" hidden>확인</button>
+    </div>
   </dialog>
 </body>
 </html>

@@ -83,6 +83,15 @@ let cancellationPausedGame = null;
 let investmentCancellationPending = false;
 let investmentRequestPending = false;
 let authMode = 'login';
+let attendanceDismissedKey = null;
+let attendanceClaimPending = false;
+let attendanceRewardClaimed = false;
+let attendanceDate = null;
+let attendanceAccountId = null;
+let attendanceScratchPointer = null;
+const attendanceDialog = document.querySelector('#attendance-dialog');
+const attendanceScratchCanvas = document.querySelector('#attendance-scratch-canvas');
+const attendanceScratchContext = attendanceScratchCanvas.getContext('2d');
 
 document.querySelector('#today-date').textContent = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
 
@@ -108,8 +117,9 @@ function renderBests() {
     const game = element.dataset.best;
     if (!gameCatalogById.has(game)) return;
     const serverBest = currentProfile?.scores?.[game];
+    const localBest = getBest(game);
     if (currentProfile) element.textContent = serverBest > 0 ? formatPoints(serverBest) : '—';
-    else element.textContent = getGame(game).bestDefault;
+    else element.textContent = localBest === null ? getGame(game).bestDefault : formatPoints(Number(localBest));
   });
 }
 
@@ -328,30 +338,10 @@ function renderScoreboard(data) {
 function toggleRankingDetails(row) {
   const expanded = row.classList.toggle('is-expanded');
   row.setAttribute('aria-expanded', String(expanded));
-  row.querySelector('.ranking-detail')?.setAttribute('aria-hidden', String(!expanded && !row.matches(':hover, :focus-within')));
+  row.querySelector('.ranking-detail')?.setAttribute('aria-hidden', String(!expanded));
 }
 
 document.querySelectorAll('#score-rankings, #credit-rankings').forEach((container) => {
-  const setDetailsVisibility = (row, visible) => {
-    if (row.classList.contains('is-expanded')) return;
-    row.querySelector('.ranking-detail')?.setAttribute('aria-hidden', String(!visible));
-  };
-  container.addEventListener('pointerover', (event) => {
-    const row = event.target.closest('.ranking-row[role="button"]');
-    if (row && !row.contains(event.relatedTarget)) setDetailsVisibility(row, true);
-  });
-  container.addEventListener('pointerout', (event) => {
-    const row = event.target.closest('.ranking-row[role="button"]');
-    if (row && !row.contains(event.relatedTarget)) setDetailsVisibility(row, false);
-  });
-  container.addEventListener('focusin', (event) => {
-    const row = event.target.closest('.ranking-row[role="button"]');
-    if (row) setDetailsVisibility(row, true);
-  });
-  container.addEventListener('focusout', (event) => {
-    const row = event.target.closest('.ranking-row[role="button"]');
-    if (row && !row.contains(event.relatedTarget)) setDetailsVisibility(row, false);
-  });
   container.addEventListener('click', (event) => {
     const row = event.target.closest('.ranking-row[role="button"]');
     if (row) toggleRankingDetails(row);
@@ -555,6 +545,130 @@ async function refreshScoreboard() {
     ? `${data.currentUser.name}님의 점수판을 불러왔어요.`
     : '서버 연결됨 · 로그인 없이 플레이하면 게스트로 기록이 저장되지 않아요.');
   await loadActiveInvestment();
+  await checkAttendance(data.currentUser);
+}
+
+async function checkAttendance(user) {
+  if (!user) {
+    if (attendanceDialog.open) attendanceDialog.close();
+    attendanceDismissedKey = null;
+    return;
+  }
+  try {
+    const response = await fetch('/api/attendance/status');
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || '출석 상태를 확인하지 못했습니다.');
+    if (!result.eligible) return;
+    const promptKey = `${user.id}:${result.date}`;
+    if (attendanceDialog.open || attendanceDismissedKey === promptKey) return;
+    attendanceAccountId = user.id;
+    attendanceDate = result.date;
+    attendanceRewardClaimed = false;
+    document.querySelector('#attendance-reward').textContent = '??? CR';
+    document.querySelector('#attendance-scratch-status').textContent = '화면을 긁어 오늘의 보상을 확인하세요.';
+    attendanceScratchCanvas.hidden = false;
+    document.querySelector('#attendance-keyboard-reveal').hidden = false;
+    document.querySelector('#attendance-close').hidden = true;
+    attendanceDialog.showModal();
+    requestAnimationFrame(drawAttendanceCover);
+  } catch (error) {
+    setPlayerMessage(error.message || '출석 상태를 확인하지 못했습니다.', true);
+  }
+}
+
+function drawAttendanceCover() {
+  const bounds = attendanceScratchCanvas.getBoundingClientRect();
+  if (!bounds.width || !bounds.height) return;
+  const scale = window.devicePixelRatio || 1;
+  attendanceScratchCanvas.width = Math.round(bounds.width * scale);
+  attendanceScratchCanvas.height = Math.round(bounds.height * scale);
+  attendanceScratchContext.setTransform(scale, 0, 0, scale, 0, 0);
+  const gradient = attendanceScratchContext.createLinearGradient(0, 0, bounds.width, bounds.height);
+  gradient.addColorStop(0, '#9faebb');
+  gradient.addColorStop(.5, '#d5dce1');
+  gradient.addColorStop(1, '#8798a8');
+  attendanceScratchContext.globalCompositeOperation = 'source-over';
+  attendanceScratchContext.fillStyle = gradient;
+  attendanceScratchContext.fillRect(0, 0, bounds.width, bounds.height);
+  attendanceScratchContext.fillStyle = '#24364a';
+  attendanceScratchContext.textAlign = 'center';
+  attendanceScratchContext.font = 'bold 14px sans-serif';
+  attendanceScratchContext.fillText('DAILY REWARD', bounds.width / 2, bounds.height / 2 - 5);
+  attendanceScratchContext.font = '11px sans-serif';
+  attendanceScratchContext.fillText('여기를 긁어 확인하세요', bounds.width / 2, bounds.height / 2 + 17);
+}
+
+function scratchAttendance(event) {
+  const bounds = attendanceScratchCanvas.getBoundingClientRect();
+  const point = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+  attendanceScratchContext.globalCompositeOperation = 'destination-out';
+  attendanceScratchContext.lineWidth = 42;
+  attendanceScratchContext.lineCap = 'round';
+  attendanceScratchContext.lineJoin = 'round';
+  attendanceScratchContext.beginPath();
+  if (attendanceScratchPointer) {
+    attendanceScratchContext.moveTo(attendanceScratchPointer.x, attendanceScratchPointer.y);
+    attendanceScratchContext.lineTo(point.x, point.y);
+  } else {
+    attendanceScratchContext.arc(point.x, point.y, 21, 0, Math.PI * 2);
+  }
+  attendanceScratchContext.stroke();
+  attendanceScratchPointer = point;
+}
+
+function getAttendanceScratchProgress() {
+  const { width, height } = attendanceScratchCanvas;
+  const pixels = attendanceScratchContext.getImageData(0, 0, width, height).data;
+  const columns = 12;
+  const rows = 6;
+  let cleared = 0;
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      const x = Math.floor((column + .5) * width / columns);
+      const y = Math.floor((row + .5) * height / rows);
+      if (pixels[(y * width + x) * 4 + 3] < 128) cleared += 1;
+    }
+  }
+  return cleared / (columns * rows);
+}
+
+async function claimAttendanceReward() {
+  if (attendanceClaimPending || attendanceRewardClaimed) return;
+  attendanceClaimPending = true;
+  document.querySelector('#attendance-keyboard-reveal').disabled = true;
+  document.querySelector('#attendance-scratch-status').textContent = '출석 보상을 확인하고 있습니다.';
+  try {
+    ensureScoreServer();
+    const response = await fetch('/api/attendance/claim', { method: 'POST' });
+    const result = await response.json();
+    if (response.status === 409) {
+      attendanceDialog.close();
+      await refreshScoreboard();
+      setPlayerMessage(result.error || '오늘 출석 보상은 이미 받았습니다.', true);
+      return;
+    }
+    if (!response.ok) throw new Error(result.error || '출석 보상을 받지 못했습니다.');
+    attendanceRewardClaimed = true;
+    attendanceScratchCanvas.hidden = true;
+    document.querySelector('#attendance-keyboard-reveal').hidden = true;
+    document.querySelector('#attendance-reward').textContent = `+${formatPoints(result.reward)} CR`;
+    document.querySelector('#attendance-scratch-status').textContent = '오늘의 출석 보상을 받았습니다!';
+    document.querySelector('#attendance-close').hidden = false;
+    let scoreboardError = null;
+    try {
+      await refreshScoreboard();
+    } catch (error) {
+      scoreboardError = error;
+    }
+    setPlayerMessage(scoreboardError
+      ? scoreboardError.message || '보상은 받았지만 점수판을 갱신하지 못했습니다.'
+      : `${formatPoints(result.reward)} CR 출석 보상을 받았습니다.`, Boolean(scoreboardError));
+  } catch (error) {
+    document.querySelector('#attendance-scratch-status').textContent = error.message || '출석 보상을 받지 못했습니다.';
+  } finally {
+    attendanceClaimPending = false;
+    document.querySelector('#attendance-keyboard-reveal').disabled = false;
+  }
 }
 
 function setAuthMode(mode) {
@@ -630,6 +744,7 @@ async function awardScore(game, points, play = {}) {
     showMissionResult(game, earned, result, returnToInvestment);
     if (result.saved) {
       await refreshScoreboard();
+      refreshGameLeaderboard(game);
       setShopMessage(`임무 보상으로 ${formatPoints(result.creditsEarned)} CR을 획득했습니다.`);
     } else {
       setPlayerMessage('게스트 플레이 결과는 저장되지 않아요. 로그인하면 기록과 보상이 쌓입니다.');
@@ -881,7 +996,7 @@ async function launchNextInvestmentGame() {
     updateInvestmentCancelVisibility();
     showView('investment');
     setInvestmentMessage(message, true);
-  }, true);
+  });
 }
 
 function handleInvestmentProgress(result) {
@@ -948,10 +1063,13 @@ async function loadLifecycle(game) {
   if (!customView) {
     section.className = 'view game-view';
     section.id = `view-${game.id}`;
-    document.querySelector('#view-shop').parentElement.append(section);
+    const footer = document.querySelector('.page-footer');
+    footer.parentElement.insertBefore(section, footer);
   }
   const { createGenericGame } = await import('/shell/generic-game.js');
-  return validateLifecycle(game.id, createGenericGame(game, section));
+  const lifecycle = validateLifecycle(game.id, createGenericGame(game, section));
+  renderBests();
+  return lifecycle;
 }
 
 function showView(name) {
@@ -972,6 +1090,7 @@ function showView(name) {
   breadcrumbCurrent.textContent = titles[name];
   updateInvestmentCancelVisibility();
   gameModules.get(name)?.onShow?.();
+  if (gameCatalogById.has(name)) refreshGameLeaderboard(name);
   if (name === 'investment' && activePlayer) {
     loadActiveInvestment().catch((error) => setInvestmentMessage(error.message || '투자 정보를 불러오지 못했습니다.', true));
   }
@@ -985,6 +1104,54 @@ function setGameLoading(game, isLoading) {
     return;
   }
   indicator.hidden = true;
+}
+
+async function refreshGameLeaderboard(gameId) {
+  const view = document.querySelector(`#view-${gameId}`);
+  const panel = view?.querySelector('.game-side-panel');
+  if (!panel) return;
+
+  let section = panel.querySelector('.game-leaderboard');
+  if (!section) {
+    section = document.createElement('section');
+    section.className = 'game-leaderboard';
+    const heading = document.createElement('div');
+    heading.className = 'game-leaderboard-heading';
+    heading.textContent = '게임별 최고 기록';
+    const status = document.createElement('p');
+    status.className = 'game-leaderboard-status';
+    status.textContent = '랭킹을 불러오는 중...';
+    const list = document.createElement('ol');
+    list.className = 'game-leaderboard-list';
+    section.append(heading, status, list);
+    panel.append(section);
+  }
+
+  const status = section.querySelector('.game-leaderboard-status');
+  const list = section.querySelector('.game-leaderboard-list');
+  status.textContent = '랭킹을 불러오는 중...';
+  try {
+    const response = await fetch(`/api/leaderboard/games/${encodeURIComponent(gameId)}`);
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || '게임 랭킹을 불러오지 못했습니다.');
+    list.replaceChildren(...result.players.map((player) => {
+      const row = document.createElement('li');
+      row.className = `game-leaderboard-row${player.isCurrentUser ? ' is-current-player' : ''}`;
+      const rank = document.createElement('span');
+      rank.className = 'game-leaderboard-rank';
+      rank.textContent = String(player.rank).padStart(2, '0');
+      const identity = document.createElement('span');
+      identity.className = 'game-leaderboard-player';
+      identity.textContent = `${player.avatar} ${player.name}${player.title ? ` · ${player.title}` : ''}`;
+      const score = document.createElement('strong');
+      score.textContent = formatPoints(player.score);
+      row.append(rank, identity, score);
+      return row;
+    }));
+    status.textContent = result.players.length ? '' : '아직 이 게임에 기록한 유저가 없습니다.';
+  } catch (error) {
+    status.textContent = error.message || '게임 랭킹을 불러오지 못했습니다.';
+  }
 }
 
 async function openGame(id, shouldLaunch, onError = (message) => {
@@ -1116,6 +1283,35 @@ document.querySelector('#mission-result-confirm').addEventListener('click', () =
   document.querySelector('#mission-result-dialog').close();
 });
 document.querySelector('#mission-result-dialog').addEventListener('close', continueInvestmentRun);
+document.querySelector('#attendance-keyboard-reveal').addEventListener('click', claimAttendanceReward);
+document.querySelector('#attendance-close').addEventListener('click', () => attendanceDialog.close());
+attendanceDialog.addEventListener('close', () => {
+  if (activePlayer?.id === attendanceAccountId && attendanceDate) {
+    attendanceDismissedKey = `${attendanceAccountId}:${attendanceDate}`;
+  } else {
+    attendanceDismissedKey = null;
+  }
+  attendanceScratchPointer = null;
+});
+attendanceScratchCanvas.addEventListener('pointerdown', (event) => {
+  if (attendanceClaimPending || attendanceRewardClaimed) return;
+  event.preventDefault();
+  attendanceScratchPointer = null;
+  attendanceScratchCanvas.setPointerCapture(event.pointerId);
+  scratchAttendance(event);
+});
+attendanceScratchCanvas.addEventListener('pointermove', (event) => {
+  if (attendanceScratchCanvas.hasPointerCapture(event.pointerId) && attendanceScratchPointer) {
+    event.preventDefault();
+    scratchAttendance(event);
+  }
+});
+attendanceScratchCanvas.addEventListener('pointerup', (event) => {
+  if (!attendanceScratchCanvas.hasPointerCapture(event.pointerId)) return;
+  attendanceScratchPointer = null;
+  if (getAttendanceScratchProgress() >= .38) claimAttendanceReward();
+});
+attendanceScratchCanvas.addEventListener('pointercancel', () => { attendanceScratchPointer = null; });
 loadShopItems().catch((error) => setShopMessage(error.message || '상점에 연결할 수 없습니다.', true));
 loadInvestmentOptions().catch((error) => setInvestmentMessage(error.message || '투자 옵션을 불러올 수 없습니다.', true));
 document.querySelector('#player-form').addEventListener('submit', submitAuth);

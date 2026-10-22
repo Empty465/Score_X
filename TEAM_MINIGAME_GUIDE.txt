@@ -33,7 +33,7 @@ Score X 미니게임 개발 안내
 --------
 
 1. 게임 규칙, 조작 방식, 종료 조건, 점수 산정 기준을 정합니다.
-2. games/README.md, examples/hello_game, 비슷한 기존 게임을 확인합니다.
+2. games/README.md, examples/README.md, examples/hello_game, 비슷한 기존 게임을 확인합니다.
 3. 필요한 범위에서 게임 폴더(manifest.json, index.html)를 만들고, 전용 화면이 필요하면 어댑터·화면·스타일을 수정합니다.
 4. VS Code 소스 제어에서 변경 파일과 diff를 확인합니다.
 5. 브라우저에서 게임을 실행해 시작, 재시작, 화면 이동, 종료 동작을 확인합니다.
@@ -62,7 +62,7 @@ VS Code 터미널에서 다음을 실행합니다.
 바이브 코딩 요청 예시
 --------------------
 
-새 미니게임 <게임 이름>을 추가해줘. 먼저 games/README.md, examples/hello_game, 비슷한 기존 게임을 확인해 현재 구조를 따라줘. 게임 ID는 <id>야. games/<id>/ 폴더(manifest.json, index.html)만으로 동작하게 하고, 전용 화면이 꼭 필요할 때만 어댑터·화면·스타일을 수정해. 점수 제출은 Shell이 처리하니 게임은 SDK로 game_over만 보내고 서버 내부 구현은 넣지 마. 기존 게임과 관계없는 정리나 의존성 추가는 하지 말아줘. 점수 집계나 서버 수정이 필요하면 영향 범위를 먼저 알려줘. 마지막에 수정 파일과 브라우저 테스트 방법을 정리해줘.
+새 미니게임 <게임 이름>을 추가해줘. 먼저 games/README.md, examples/README.md, examples/hello_game, 비슷한 기존 게임을 확인해 현재 프로토콜 v1 구조를 따라줘. 게임 ID는 <id>야. 실제 게임 파일은 games/<id>/manifest.json과 games/<id>/index.html에 만들어줘(examples/ 아래에만 만들면 메인 목록에 나오지 않아). 폴더명, manifest.json의 id, Scorex.connect({ gameId })는 모두 <id>로 일치시켜. ../../sdk/scorex-sdk.js를 사용하고 init/start/pause/resume/destroy 생명주기와 HUD, game_over를 처리해. 게임은 기본 메인 게임 화면에서 바로 플레이 가능하게 만들고, 전용 화면이 꼭 필요할 때만 어댑터·화면·스타일을 수정해. 점수 제출은 Shell이 처리하니 서버 API/DB를 직접 다루지 마. 기존 게임과 관계없는 정리나 의존성 추가는 하지 말아줘. 서버 재시작 후 http://localhost:3000의 게임 목록에 표시되는지, 시작·플레이·종료 및 점수 결과가 동작하는지 확인해. 점수 집계나 서버 수정이 필요하면 영향 범위를 먼저 알려줘. 마지막에 수정 파일과 브라우저 테스트 방법을 정리해줘.
 
 보안 및 변경 검토
 ----------------

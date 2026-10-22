@@ -21,6 +21,7 @@
   <script src="../../sdk/scorex-sdk.js"></script>
   <script>
     const DURATION_MS = 10000;
+    const MAX_SCORE = 1000;
     let taps = 0;
     let startedAt = 0;
     let timer = null;
@@ -28,12 +29,12 @@
     let paused = false;
     let pausedAt = 0;
     let pausedTotal = 0;
-    let difficulty = 'NORMAL';
     const tap = document.querySelector('#tap');
     const statusEl = document.querySelector('#status');
     const countEl = document.querySelector('#count');
 
     function elapsed() { return (paused ? pausedAt : Date.now()) - startedAt - pausedTotal; }
+    function score() { return Math.min(MAX_SCORE, taps * 10); }
 
     function stop() {
       running = false;
@@ -46,15 +47,14 @@
       const durationMs = Math.min(DURATION_MS, elapsed());
       stop();
       statusEl.textContent = '종료!';
-      // 점수 상한(manifest.maxScore)을 넘지 않게 제한합니다.
-      Scorex.gameOver({ score: Math.min(1000, taps * 10), durationMs, result: 'clear', meta: { taps: taps } });
+      Scorex.gameOver({ score: score(), durationMs, result: 'clear', meta: { taps: taps } });
     }
 
     function tick() {
       if (paused) return;
       const left = Math.max(0, (DURATION_MS - elapsed()) / 1000);
       statusEl.textContent = '남은 시간 ' + left.toFixed(1) + '초';
-      Scorex.hud({ time: Math.ceil(left), score: taps * 10, danger: left <= 3 });
+      Scorex.hud({ time: Math.ceil(left), score: score(), danger: left <= 3 });
       if (left <= 0) finish();
     }
 
@@ -68,10 +68,9 @@
     window.addEventListener('keydown', (event) => { if (event.code === 'Space') { event.preventDefault(); onTap(); } });
 
     Scorex.onInit((init) => {
-      difficulty = init.difficulty;
       taps = 0;
       countEl.textContent = '0';
-      statusEl.textContent = '준비 (' + difficulty + ')';
+      statusEl.textContent = '준비';
     });
     Scorex.onStart(() => {
       taps = 0;

@@ -6,7 +6,6 @@
   "category": "SYSTEM REBOOT",
   "description": "기억을 되살려 회로 짝을 맞추세요.",
   "icon": "▦",
-  "difficulties": ["NORMAL"],
   "maxScore": 1200,
   "minDurationMs": 4000,
   "aspectRatio": "9:10",

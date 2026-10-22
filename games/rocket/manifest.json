@@ -6,7 +6,6 @@
   "category": "BOOSTER RECOVERY",
   "description": "고도와 속도를 조절해 수직 착륙하세요.",
   "icon": "▲",
-  "difficulties": ["NORMAL"],
   "maxScore": 1200,
   "minDurationMs": 1000,
   "aspectRatio": "3:2",

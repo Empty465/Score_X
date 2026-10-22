@@ -429,6 +429,17 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 18px; 
 .mission-result-reward { display: flex; align-items: baseline; justify-content: space-between; border-top: 1px solid #263d55; border-bottom: 1px solid #263d55; padding: 12px 0; color: #9aacc3; font-size: 12px; }
 .mission-result-reward strong { color: #8ff5e5; font: 18px "DM Mono", monospace; }
 .investment-result-dialog .mission-result-total { margin: 12px 0 18px; font-size: 10px; }
+.attendance-dialog { text-align: center; }
+.attendance-dialog .section-kicker { display: block; text-align: left; }
+.attendance-scratch-card { position: relative; width: min(100%, 360px); height: 154px; display: grid; place-items: center; margin: 20px auto 8px; overflow: hidden; border: 1px solid #35536d; border-radius: 8px; background: radial-gradient(ellipse at center, #153349, #0b1727); }
+.attendance-scratch-card > strong { color: var(--green); font: 30px "DM Mono", monospace; }
+#attendance-scratch-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+#attendance-scratch-canvas[hidden] { display: none; }
+.attendance-scratch-status { min-height: 20px; margin: 8px 0 12px; }
+.attendance-actions { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.attendance-actions .text-button { margin: 0; padding: 8px; }
+.attendance-actions .primary-button { padding: 9px 18px; cursor: pointer; }
+.attendance-actions [hidden] { display: none; }
 .shop-item-category { color: #8ff5e5; }
 
 @media (max-width: 760px) {
@@ -986,6 +997,15 @@ button:focus-visible, a:focus-visible { outline-color: var(--green); }
 .primary-button span { color: #174743; }
 .game-side-panel { border-color: #2b3949; border-radius: 8px; background: #111a27; box-shadow: 0 6px 18px #0002; }
 .panel-label, .record-row, .control-copy, .text-button, .rocket-fuel { color: #a0adbb; }
+.game-leaderboard { min-width: 0; margin-top: 14px; border-top: 1px solid #283544; padding-top: 12px; }
+.game-leaderboard-heading { margin-bottom: 7px; color: #e5ebf2; font: 14px "Jua", sans-serif; }
+.game-leaderboard-status { margin: 0; color: #97a4b2; font-size: 10px; line-height: 1.5; }
+.game-leaderboard-list { display: grid; gap: 4px; max-height: 180px; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+.game-leaderboard-row { min-width: 0; display: flex; align-items: center; gap: 6px; border-top: 1px solid #243140; padding-top: 5px; font-size: 10px; }
+.game-leaderboard-rank { flex: 0 0 18px; color: #65d6c9; font: 9px "DM Mono", monospace; }
+.game-leaderboard-player { min-width: 0; overflow: hidden; color: #c8d2dc; text-overflow: ellipsis; white-space: nowrap; }
+.game-leaderboard-row.is-current-player .game-leaderboard-player { color: var(--green); }
+.game-leaderboard-row > strong { margin-left: auto; color: #e5ebf2; font: 10px "DM Mono", monospace; white-space: nowrap; }
 .score-block > strong { color: #edf2f7; }
 .score-unit { color: #8291a3; }
 .record-row > strong, .control-title { color: #dbe3eb; }
@@ -1053,10 +1073,6 @@ kbd { border-color: #344456; background: #172330; color: #ced7e0; }
   .investment-options-heading, .shop-item-name, .shop-item-form input { font-size: 14px; }
   .investment-result-dialog p { font-size: 14px; }
   .investment-result-dialog .mission-result-total { font-size: 12px; }
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .ranking-row:hover .ranking-detail, .ranking-row:focus-visible .ranking-detail { display: block; }
 }
 
 @media (max-width: 760px) {
@@ -1159,3 +1175,7 @@ ul.investment-outcomes { display: grid; gap: 4px; margin: 10px 0 0; padding: 10p
 .score-game-item { font-size: 16px; }
 .score-game-item > strong { font-size: 18px; font-weight: 600; }
 @media (max-width: 760px) { .score-game-item { font-size: 14px; } .score-game-item > strong { font-size: 16px; } }
+
+.game-heading > div:not(.heading-mark) { flex: 1 1 auto; }
+.mission-subtitle { max-width: none; }
+@media (max-width: 760px) { .mission-subtitle { max-width: none; } }
