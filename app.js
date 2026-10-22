@@ -107,8 +107,9 @@ function renderBests() {
   document.querySelectorAll('[data-best]').forEach((element) => {
     const game = element.dataset.best;
     if (!gameCatalogById.has(game)) return;
-    const value = getBest(game);
-    element.textContent = value === null ? getGame(game).bestDefault : value;
+    const serverBest = currentProfile?.scores?.[game];
+    if (currentProfile) element.textContent = serverBest > 0 ? formatPoints(serverBest) : '—';
+    else element.textContent = getGame(game).bestDefault;
   });
 }
 
@@ -182,6 +183,7 @@ function renderScoreboard(data) {
   document.querySelector('#wallet-balance').textContent = currentUser ? formatPoints(currentUser.credits) : '—';
   document.querySelector('#shop-balance').textContent = currentUser ? formatPoints(currentUser.credits) : '—';
   renderFeatureAccess();
+  renderBests();
   renderShopItems();
   renderInvestment();
 

@@ -1155,3 +1155,7 @@ ul.investment-outcomes { display: grid; gap: 4px; margin: 10px 0 0; padding: 10p
 .investment-outcomes li b { color: #e6eef8; font: 500 14px "DM Mono", monospace; white-space: nowrap; }
 .investment-outcomes li:first-child span, .investment-outcomes li:first-child b { color: #ff9a9a; }
 .investment-outcomes li:last-child span, .investment-outcomes li:last-child b { color: #79e0b4; }
+
+.score-game-item { font-size: 16px; }
+.score-game-item > strong { font-size: 18px; font-weight: 600; }
+@media (max-width: 760px) { .score-game-item { font-size: 14px; } .score-game-item > strong { font-size: 16px; } }
