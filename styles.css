@@ -429,6 +429,17 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 18px; 
 .mission-result-reward { display: flex; align-items: baseline; justify-content: space-between; border-top: 1px solid #263d55; border-bottom: 1px solid #263d55; padding: 12px 0; color: #9aacc3; font-size: 12px; }
 .mission-result-reward strong { color: #8ff5e5; font: 18px "DM Mono", monospace; }
 .investment-result-dialog .mission-result-total { margin: 12px 0 18px; font-size: 10px; }
+.attendance-dialog { text-align: center; }
+.attendance-dialog .section-kicker { display: block; text-align: left; }
+.attendance-scratch-card { position: relative; width: min(100%, 360px); height: 154px; display: grid; place-items: center; margin: 20px auto 8px; overflow: hidden; border: 1px solid #35536d; border-radius: 8px; background: radial-gradient(ellipse at center, #153349, #0b1727); }
+.attendance-scratch-card > strong { color: var(--green); font: 30px "DM Mono", monospace; }
+#attendance-scratch-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+#attendance-scratch-canvas[hidden] { display: none; }
+.attendance-scratch-status { min-height: 20px; margin: 8px 0 12px; }
+.attendance-actions { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.attendance-actions .text-button { margin: 0; padding: 8px; }
+.attendance-actions .primary-button { padding: 9px 18px; cursor: pointer; }
+.attendance-actions [hidden] { display: none; }
 .shop-item-category { color: #8ff5e5; }
 
 @media (max-width: 760px) {

@@ -54,7 +54,7 @@ class ScorexGame extends HTMLElement {
     this.frame = this.shadowRoot.querySelector('.frame');
     this.overlay = this.shadowRoot.querySelector('.overlay');
     this.manifest = null; // 외부에서 직접 지정하면 /api/games 조회를 건너뜁니다 (하니스용)
-    this.playProvider = null; // async (game, difficulty) => ({ playId, seed, difficulty }); 지정하지 않으면 POST /api/plays
+    this.playProvider = null; // async (game) => ({ playId, seed }); 지정하지 않으면 POST /api/plays
     this.user = { nickname: null, guest: true };
     this.theme = 'dark';
     this.state = 'idle';
@@ -112,20 +112,16 @@ class ScorexGame extends HTMLElement {
     }
   }
 
-  async prepare(difficulty) {
+  async prepare() {
     this._requireState(['ready', 'over', 'prepared'], 'prepare');
-    const allowed = this.manifest.difficulties || ['NORMAL'];
-    const chosen = difficulty || allowed[0];
-    if (!allowed.includes(chosen)) throw new Error(`지원하지 않는 난이도입니다: ${chosen}`);
-    const play = await (this.playProvider ? this.playProvider(this.manifest.id, chosen) : this._requestPlay(chosen));
+    const play = await (this.playProvider ? this.playProvider(this.manifest.id) : this._requestPlay());
     if (!isObject(play) || typeof play.playId !== 'string' || !Number.isInteger(play.seed)) throw new Error('플레이 세션 정보가 올바르지 않습니다.');
     // 비동기 대기 중에 컴포넌트가 정리되었을 수 있다.
     this._requireState(['ready', 'over', 'prepared'], 'prepare');
-    this._play = { playId: play.playId, seed: play.seed, difficulty: play.difficulty || chosen, finished: false };
+    this._play = { playId: play.playId, seed: play.seed, finished: false };
     const rect = this._iframe.getBoundingClientRect();
     this._send('init', {
       playId: this._play.playId,
-      difficulty: this._play.difficulty,
       seed: this._play.seed,
       locale: navigator.language || 'ko-KR',
       theme: this.theme,
@@ -133,7 +129,7 @@ class ScorexGame extends HTMLElement {
       user: { nickname: this.user.nickname ?? null, guest: Boolean(this.user.guest) }
     });
     this._setState('prepared');
-    this._emit('scorex-prepared', { playId: this._play.playId, difficulty: this._play.difficulty, seed: this._play.seed });
+    this._emit('scorex-prepared', { playId: this._play.playId, seed: this._play.seed });
     return this._play;
   }
 
@@ -145,9 +141,9 @@ class ScorexGame extends HTMLElement {
     this._iframe?.focus();
   }
 
-  async play(difficulty) {
+  async play() {
     await this.whenReady();
-    await this.prepare(difficulty);
+    await this.prepare();
     this.start();
   }
 
@@ -198,13 +194,13 @@ class ScorexGame extends HTMLElement {
     return manifest;
   }
 
-  async _requestPlay(difficulty) {
+  async _requestPlay() {
     const base = this.getAttribute('api-base') || '';
     const response = await fetch(`${base}/api/plays`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ game: this.manifest.id, difficulty })
+      body: JSON.stringify({ game: this.manifest.id })
     });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error || '플레이 세션을 발급받지 못했습니다.');
@@ -334,7 +330,7 @@ class ScorexGame extends HTMLElement {
     }
     play.finished = true;
     this._setState('over');
-    this._emit('scorex-gameover', { playId: play.playId, difficulty: play.difficulty, score, durationMs, result, meta });
+    this._emit('scorex-gameover', { playId: play.playId, score, durationMs, result, meta });
   }
 
   _handleRequestResize(payload) {

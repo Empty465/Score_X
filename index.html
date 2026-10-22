@@ -285,5 +285,20 @@
     <p class="mission-result-total" id="mission-result-total"></p>
     <button class="primary-button" id="mission-result-confirm" type="button">확인 <span>↗</span></button>
   </dialog>
+  <dialog class="investment-result-dialog attendance-dialog" id="attendance-dialog" aria-labelledby="attendance-title">
+    <form method="dialog"><button class="dialog-close" aria-label="나중에 받기">×</button></form>
+    <span class="section-kicker">DAILY CHECK-IN</span>
+    <h2 id="attendance-title">오늘의 출석 보상</h2>
+    <p>복권을 긁어 100~500 CR 출석 보상을 확인하세요. 보상은 하루 한 번 받을 수 있습니다.</p>
+    <div class="attendance-scratch-card">
+      <strong id="attendance-reward">??? CR</strong>
+      <canvas id="attendance-scratch-canvas" aria-label="마우스나 손가락으로 긁어 출석 보상 확인"></canvas>
+    </div>
+    <p class="attendance-scratch-status" id="attendance-scratch-status" aria-live="polite">화면을 긁어 오늘의 보상을 확인하세요.</p>
+    <div class="attendance-actions">
+      <button class="text-button" id="attendance-keyboard-reveal" type="button">긁기 어려우신가요? 보상 확인</button>
+      <button class="primary-button" id="attendance-close" type="button" hidden>확인</button>
+    </div>
+  </dialog>
 </body>
 </html>

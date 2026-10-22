@@ -6,7 +6,6 @@
   "category": "SAMPLE",
   "description": "10초 동안 버튼을 최대한 많이 누르는 프로토콜 예제 게임입니다.",
   "icon": "★",
-  "difficulties": ["EASY", "NORMAL", "HARD"],
   "maxScore": 1000,
   "minDurationMs": 10000,
   "aspectRatio": "16:9",

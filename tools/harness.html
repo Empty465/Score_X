@@ -33,7 +33,6 @@
     <div>
       <scorex-game id="game"></scorex-game>
       <div class="controls">
-        <select id="difficulty" aria-label="난이도"></select>
         <button id="btn-prepare" type="button" disabled>준비(init)</button>
         <button id="btn-start" type="button" disabled>시작(start)</button>
         <button id="btn-pause" type="button" disabled>일시정지</button>
@@ -54,7 +53,6 @@
     const logEl = document.querySelector('#log');
     const hudEl = document.querySelector('#hud');
     const resultEl = document.querySelector('#result');
-    const difficultyEl = document.querySelector('#difficulty');
     const buttons = Object.fromEntries(['prepare', 'start', 'pause', 'resume', 'destroy'].map((name) => [name, document.querySelector(`#btn-${name}`)]));
     const params = new URLSearchParams(location.search);
     document.querySelector('#dir').value = params.get('dir') || '';
@@ -107,10 +105,9 @@
     game.addEventListener('scorex-error', (event) => { log(`scorex-error ${JSON.stringify(event.detail)}`, 'bad'); syncButtons(); });
 
     // 서버 대신 로컬에서 플레이 세션을 발급합니다.
-    game.playProvider = async (_game, difficulty) => ({
+    game.playProvider = async () => ({
       playId: crypto.randomUUID().replaceAll('-', ''),
-      seed: 1 + Math.floor(Math.random() * 2 ** 31),
-      difficulty
+      seed: 1 + Math.floor(Math.random() * 2 ** 31)
     });
     game.user = { nickname: '하니스', guest: true };
 
@@ -121,7 +118,7 @@
 
     buttons.prepare.addEventListener('click', () => run(async () => {
       resultEl.textContent = '-';
-      await game.prepare(difficultyEl.value);
+      await game.prepare();
     }, '준비'));
     buttons.start.addEventListener('click', () => run(() => { playStartedAt = Date.now(); game.start(); }, '시작'));
     buttons.pause.addEventListener('click', () => run(() => game.pause(), '일시정지'));
@@ -138,7 +135,6 @@
         if (!response.ok) throw new Error(`manifest.json을 읽지 못했습니다 (${response.status})`);
         const manifest = await response.json();
         manifest.entry = new URL('index.html', base).href;
-        difficultyEl.replaceChildren(...(manifest.difficulties || ['NORMAL']).map((value) => new Option(value, value)));
         game.manifest = manifest;
         log(`매니페스트 로드: ${manifest.id} v${manifest.version || '?'}, maxScore=${manifest.maxScore}`, 'dim');
         await game.load();

@@ -15,6 +15,7 @@ test('every built-in game has a manifest, a screen and an adapter with a default
   assert.ok(ids.length >= 7);
   for (const id of ['snake', 'memory', 'reaction', 'mole', 'baseball', 'rocket', 'clop']) {
     assert.ok(ids.includes(id), `${id} manifest is missing`);
+    assert.equal(Object.hasOwn(registry.get(id), 'difficulties'), false, `${id} should not expose difficulty options`);
     assert.ok(html.includes(`id="view-${id}"`), `${id} screen is missing`);
     assert.ok(/^export default \{/m.test(read(`games/${id}.js`)), `${id} adapter must export a default lifecycle`);
     assert.ok(html.includes(`data-best="${id}"`), `${id} screen must show its best record`);
@@ -32,6 +33,24 @@ test('game menu is derived from manifests, not a static catalog', () => {
   assert.ok(app.includes("fetch('/api/games')"));
   assert.ok(server.includes('gameRegistry.list()'));
   assert.ok(loader.includes('import(moduleUrl)'));
+});
+
+test('game launch and manifest APIs do not expose a difficulty selector', () => {
+  const app = read('app.js');
+  const server = read('server.js');
+  const registry = read('lib/game-registry.js');
+  const component = read('shell/scorex-game.js');
+  const host = read('shell/game-host.js');
+  const generic = read('shell/generic-game.js');
+  const harness = read('tools/harness.html');
+  assert.ok(!registry.includes('DIFFICULTIES'));
+  assert.ok(!registry.includes('difficulties:'));
+  assert.ok(!server.includes('payload.difficulty'));
+  assert.ok(!component.includes('difficulty'));
+  assert.ok(!host.includes('difficulty'));
+  assert.ok(!generic.includes('difficulty'));
+  assert.ok(!harness.includes('difficulty'));
+  assert.ok(!app.includes('difficulty'));
 });
 
 test('generic game views are inserted before the page footer', () => {
@@ -96,6 +115,22 @@ test('emergency warning game spawns groups of one to three lights with extra res
   assert.ok(game.includes('active.delete(index);'));
   assert.ok(game.includes('600 + count * 300 + rng() * 250'));
   assert.ok(adapter.includes('한 번에 1~3개 켜지는 비상 스위치를 모두 눌러'));
+});
+
+test('daily attendance reward uses a scratch dialog and server-claimed check-in', () => {
+  const app = read('app.js');
+  const server = read('server.js');
+  const html = read('index.html');
+  const styles = read('styles.css');
+  assert.ok(server.includes('CREATE TABLE IF NOT EXISTS attendance_claims'));
+  assert.ok(server.includes("url.pathname === '/api/attendance/status'"));
+  assert.ok(server.includes("url.pathname === '/api/attendance/claim'"));
+  assert.ok(server.includes("adjustCredits(accountId, reward, 'attendance_daily', claimDate)"));
+  assert.ok(app.includes("fetch('/api/attendance/status')"));
+  assert.ok(app.includes("fetch('/api/attendance/claim', { method: 'POST' })"));
+  assert.ok(app.includes("attendanceScratchCanvas.addEventListener('pointermove'"));
+  assert.ok(html.includes('id="attendance-scratch-canvas"'));
+  assert.ok(styles.includes('#attendance-scratch-canvas {'));
 });
 
 test('hello_game example is discoverable after copying it into games/', () => {

@@ -6,7 +6,6 @@
   "category": "MANUAL DOCKING",
   "description": "레이더 신호에 맞춰 도킹을 완료하세요.",
   "icon": "✳",
-  "difficulties": ["NORMAL"],
   "maxScore": 999,
   "minDurationMs": 1000,
   "aspectRatio": "16:9",

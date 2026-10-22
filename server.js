@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { randomInt, randomBytes, createHash, scryptSync, timingSafeEqual } = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
-const { createGameRegistry, resolveGameAsset, DIFFICULTIES } = require('./lib/game-registry.js');
+const { createGameRegistry, resolveGameAsset } = require('./lib/game-registry.js');
 
 const host = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT || 3000);
@@ -169,6 +169,13 @@ database.exec(`
     ref TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS attendance_claims (
+    account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    claim_date TEXT NOT NULL,
+    reward INTEGER NOT NULL CHECK (reward BETWEEN 100 AND 500),
+    claimed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (account_id, claim_date)
+  );
   CREATE TABLE IF NOT EXISTS best_scores (
     account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
     game TEXT NOT NULL,
@@ -207,7 +214,6 @@ database.exec(`
     play_id TEXT PRIMARY KEY,
     account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE,
     game TEXT NOT NULL,
-    difficulty TEXT NOT NULL,
     seed INTEGER NOT NULL,
     started_at INTEGER NOT NULL,
     used_at INTEGER
@@ -216,6 +222,10 @@ database.exec(`
   CREATE INDEX IF NOT EXISTS credit_ledger_account_idx ON credit_ledger(account_id, id);
   CREATE INDEX IF NOT EXISTS sessions_account_idx ON sessions(account_id);
 `);
+
+if (database.prepare('PRAGMA table_info(play_sessions)').all().some((column) => column.name === 'difficulty')) {
+  database.exec('ALTER TABLE play_sessions DROP COLUMN difficulty');
+}
 
 const investmentRunsSchema = database.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'investment_runs'").get().sql;
 if (!investmentRunsSchema.includes("'cancelled'")) {
@@ -261,6 +271,7 @@ const findSession = database.prepare('SELECT account_id FROM sessions WHERE toke
 const deleteSession = database.prepare('DELETE FROM sessions WHERE token_hash = ?');
 const deleteExpiredSessions = database.prepare('DELETE FROM sessions WHERE expires_at <= ?');
 const getWalletCredits = database.prepare('SELECT credits FROM wallets WHERE account_id = ?');
+const getAttendanceClaim = database.prepare('SELECT reward FROM attendance_claims WHERE account_id = ? AND claim_date = ?');
 const insertLedger = database.prepare('INSERT INTO credit_ledger (account_id, delta, balance_after, reason, ref) VALUES (?, ?, ?, ?, ?)');
 const insertScore = database.prepare('INSERT INTO score_events (account_id, game, points, credits_earned) VALUES (?, ?, ?, ?)');
 const upsertBestScore = database.prepare(`
@@ -273,7 +284,7 @@ const getAllBests = database.prepare('SELECT account_id, game, best_points FROM 
 const getUserCosmetics = database.prepare('SELECT item_id FROM user_cosmetics WHERE account_id = ?');
 const getActiveInvestment = database.prepare("SELECT * FROM investment_runs WHERE account_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
 const getLatestInvestment = database.prepare('SELECT * FROM investment_runs WHERE account_id = ? ORDER BY id DESC LIMIT 1');
-const insertPlay = database.prepare('INSERT INTO play_sessions (play_id, account_id, game, difficulty, seed, started_at) VALUES (?, ?, ?, ?, ?, ?)');
+const insertPlay = database.prepare('INSERT INTO play_sessions (play_id, account_id, game, seed, started_at) VALUES (?, ?, ?, ?, ?)');
 const findPlay = database.prepare('SELECT * FROM play_sessions WHERE play_id = ?');
 const markPlayUsed = database.prepare('UPDATE play_sessions SET used_at = ? WHERE play_id = ? AND used_at IS NULL');
 const deleteStalePlays = database.prepare('DELETE FROM play_sessions WHERE started_at < ?');
@@ -517,6 +528,17 @@ function validateNickname(value) {
   return nickname.length >= 2 && nickname.length <= 16 ? nickname : null;
 }
 
+function getAttendanceDate() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
 async function handleApi(request, response, url) {
   if (request.method === 'OPTIONS') {
     response.writeHead(204);
@@ -591,6 +613,37 @@ async function handleApi(request, response, url) {
     return;
   }
 
+  if ((request.method === 'GET' && url.pathname === '/api/attendance/status') ||
+      (request.method === 'POST' && url.pathname === '/api/attendance/claim')) {
+    const accountId = getAuthenticatedAccountId(request);
+    if (!accountId) {
+      sendJson(response, 401, { error: '로그인이 필요합니다.' });
+      return;
+    }
+    const claimDate = getAttendanceDate();
+    if (request.method === 'GET') {
+      const claim = getAttendanceClaim.get(accountId, claimDate);
+      sendJson(response, 200, { date: claimDate, eligible: !claim });
+      return;
+    }
+    const claim = runInTransaction(() => {
+      if (getAttendanceClaim.get(accountId, claimDate)) {
+        return { status: 409, error: '오늘 출석 보상은 이미 받았습니다.' };
+      }
+      const reward = randomInt(100, 501);
+      database.prepare('INSERT INTO attendance_claims (account_id, claim_date, reward) VALUES (?, ?, ?)')
+        .run(accountId, claimDate, reward);
+      const credits = adjustCredits(accountId, reward, 'attendance_daily', claimDate);
+      return { reward, credits, date: claimDate };
+    });
+    if (claim.error) {
+      sendJson(response, claim.status, { error: claim.error });
+      return;
+    }
+    sendJson(response, 200, claim);
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/shop/items') {
     sendJson(response, 200, { items: shopItems });
     return;
@@ -661,18 +714,12 @@ async function handleApi(request, response, url) {
       sendJson(response, 400, { error: '알 수 없는 게임입니다.' });
       return;
     }
-    const allowed = manifest.difficulties;
-    const difficulty = payload.difficulty === undefined ? allowed[0] : payload.difficulty;
-    if (!DIFFICULTIES.includes(difficulty) || !allowed.includes(difficulty)) {
-      sendJson(response, 400, { error: '지원하지 않는 난이도입니다.' });
-      return;
-    }
     const playId = randomBytes(16).toString('hex');
     const seed = randomInt(1, 2 ** 31);
     const now = Date.now();
     deleteStalePlays.run(now - PLAY_MAX_AGE_MS);
-    insertPlay.run(playId, getAuthenticatedAccountId(request), payload.game, difficulty, seed, now);
-    sendJson(response, 201, { playId, game: payload.game, difficulty, seed, startedAt: now });
+    insertPlay.run(playId, getAuthenticatedAccountId(request), payload.game, seed, now);
+    sendJson(response, 201, { playId, game: payload.game, seed, startedAt: now });
     return;
   }
 

@@ -1,7 +1,7 @@
 // 메인 화면에서 <scorex-game>을 만들고 HUD·게임오버·오류 이벤트를 화면 어댑터(games/<id>.js)에 연결하는 공용 도우미입니다.
 import '/shell/scorex-game.js';
 
-export function mountGame({ id, host, difficulty = 'NORMAL', onHud, onGameOver, onError }) {
+export function mountGame({ id, host, onHud, onGameOver, onError }) {
   let element = null;
   let starting = false;
 
@@ -26,7 +26,7 @@ export function mountGame({ id, host, difficulty = 'NORMAL', onHud, onGameOver, 
       const game = ensure();
       if (game.state === 'error' || game.state === 'destroyed') await game.load();
       await game.whenReady();
-      await game.play(difficulty);
+      await game.play();
       return true;
     } catch (error) {
       onError?.(error.message || '잠시 후 다시 시도해 주세요.');

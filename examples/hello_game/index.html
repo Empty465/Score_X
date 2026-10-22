@@ -29,7 +29,6 @@
     let paused = false;
     let pausedAt = 0;
     let pausedTotal = 0;
-    let difficulty = 'NORMAL';
     const tap = document.querySelector('#tap');
     const statusEl = document.querySelector('#status');
     const countEl = document.querySelector('#count');
@@ -69,10 +68,9 @@
     window.addEventListener('keydown', (event) => { if (event.code === 'Space') { event.preventDefault(); onTap(); } });
 
     Scorex.onInit((init) => {
-      difficulty = init.difficulty;
       taps = 0;
       countEl.textContent = '0';
-      statusEl.textContent = '준비 (' + difficulty + ')';
+      statusEl.textContent = '준비';
     });
     Scorex.onStart(() => {
       taps = 0;

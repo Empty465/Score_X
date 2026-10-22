@@ -2,7 +2,7 @@
  * Score X 미니게임 SDK (프로토콜 v1) — iframe 안의 게임에서 사용합니다.
  * 명세: MINIGAME_PROTOCOL.md
  *
- *   Scorex.onInit(({ playId, difficulty, seed, user, viewport }) => { ... });
+ *   Scorex.onInit(({ playId, seed, user, viewport }) => { ... });
  *   Scorex.onStart(() => { ... });
  *   Scorex.onPause(() => { ... }); Scorex.onResume(() => { ... });
  *   Scorex.onDestroy(() => { ...타이머·리스너 정리... });

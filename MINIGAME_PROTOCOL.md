@@ -39,7 +39,6 @@ games/
   "description": "Q·W·O·P로 4족 로버의 다리를 움직여 목적지까지 가세요.",
   "icon": "🐾",
   "thumbnail": "thumb.png",
-  "difficulties": ["EASY", "NORMAL", "HARD"],
   "maxScore": 5000,
   "minDurationMs": 3000,
   "aspectRatio": "16:9",
@@ -56,7 +55,6 @@ games/
 | `protocol` | ✔ | 게임이 구현한 프로토콜 메이저 버전 (현재 `1`) |
 | `title`, `shortTitle`, `category`, `description`, `icon` | ✔ | 카드·메뉴 표시용 텍스트 |
 | `thumbnail` | | 카드 이미지(폴더 내 상대 경로). 없으면 `icon` 사용 |
-| `difficulties` | | 지원 난이도. 생략 시 `["NORMAL"]` |
 | `maxScore` | ✔ | 한 판에 얻을 수 있는 최대 점수. 서버가 초과 제출을 거부 |
 | `minDurationMs` | | 한 판의 최소 소요 시간. 미만이면 서버가 거부 |
 | `aspectRatio` | | iframe 비율 (`"16:9"`, `"1:1"`, `"4:3"` 등). 기본 `"16:9"` |
@@ -126,7 +124,7 @@ sandbox 때문에 `event.origin` 검증이 불가능하므로, 최초 1회만 `w
 
 | type | payload | 설명 |
 |---|---|---|
-| `init` | `{ playId, difficulty, seed, locale, theme, viewport:{width,height}, user:{nickname\|null, guest:boolean} }` | `ready` 직후 1회. `seed`는 서버 발급 난수(정수)이며 게임은 이를 사용해 무작위 요소를 생성하는 것을 권장. `user`는 표시용이며 아이디는 전달하지 않음 |
+| `init` | `{ playId, seed, locale, theme, viewport:{width,height}, user:{nickname\|null, guest:boolean} }` | `ready` 직후 1회. `seed`는 서버 발급 난수(정수)이며 게임은 이를 사용해 무작위 요소를 생성하는 것을 권장. `user`는 표시용이며 아이디는 전달하지 않음 |
 | `start` | `{}` | 게임 시작 명령 (카운트다운 등은 게임 책임) |
 | `pause` / `resume` | `{}` | 탭 전환·창 포커스 상실·사용자 일시정지 시 |
 | `resize` | `{ width, height }` | iframe 크기 변경 |
@@ -168,7 +166,7 @@ Shell: 게임 전환/닫기 시 destroy → destroyed 대기(최대 2초) → if
 
 ## 7. 점수 신뢰 모델 (Shell/서버 책임)
 
-서버 API: `GET /api/games`(매니페스트 목록), `POST /api/plays {game, difficulty?}` → `{playId, seed, difficulty, startedAt}`(게스트 가능), `POST /api/scores {game, points, playId, durationMs}`. 검증 실패는 400, 이미 사용한 `playId`는 409입니다. 서버 로그에 `[score-rejected]`로 남습니다.
+서버 API: `GET /api/games`(매니페스트 목록), `POST /api/plays {game}` → `{playId, seed, startedAt}`(게스트 가능), `POST /api/scores {game, points, playId, durationMs}`. 게임별 난이도 선택·전달은 지원하지 않습니다. 검증 실패는 400, 이미 사용한 `playId`는 409입니다. 서버 로그에 `[score-rejected]`로 남습니다.
 
 게임이 보낸 `score`는 **참고값**입니다.
 
@@ -186,8 +184,8 @@ Shell: 게임 전환/닫기 시 destroy → destroyed 대기(최대 2초) → if
 
 - [`sdk/scorex-sdk.js`](./sdk/scorex-sdk.js): 핸드셰이크·봉투·검증을 감싼 단일 파일 SDK. 게임 `index.html`에서 `<script src="../../sdk/scorex-sdk.js"></script>`로 불러옵니다(상대 경로라 `games/<id>/`, `examples/<id>/` 어디서든 동작).
   - `Scorex.onInit / onStart / onPause / onResume / onResize / onDestroy(handler)` → `Scorex.connect({ gameId, gameVersion })` → `Scorex.started()`, `Scorex.hud({...})`(초당 약 10회로 제한), `Scorex.gameOver({ score, durationMs, result, meta })`(playId당 1회, `playId`는 자동 첨부), `Scorex.error(code, message)`
-- [`shell/scorex-game.js`](./shell/scorex-game.js): Shell용 `<scorex-game game-id="...">` Web Component. 이벤트 `scorex-ready`, `scorex-prepared`, `scorex-started`, `scorex-hud`, `scorex-gameover`, `scorex-error`를 발생시키며, 메서드는 `load()`, `whenReady()`, `prepare(difficulty)`, `start()`, `play(difficulty)`, `pause()`, `resume()`, `destroy()`입니다. 점수 제출은 하지 않고 `scorex-gameover`를 받은 Shell이 `/api/scores`로 제출합니다. 탭이 숨겨지면 자동으로 `pause`/`resume`을 보냅니다.
-- [`shell/game-host.js`](./shell/game-host.js): Shell 어댑터(`games/<id>.js`) 공용 도우미. `mountGame({ id, host, difficulty, onHud, onGameOver, onError })`가 `<scorex-game>`을 만들어 붙이고 `{ ensure, start, reload, pause, resume }`을 돌려줍니다. 시작에 성공하면 `start()`는 `true`를 반환합니다.
+- [`shell/scorex-game.js`](./shell/scorex-game.js): Shell용 `<scorex-game game-id="...">` Web Component. 이벤트 `scorex-ready`, `scorex-prepared`, `scorex-started`, `scorex-hud`, `scorex-gameover`, `scorex-error`를 발생시키며, 메서드는 `load()`, `whenReady()`, `prepare()`, `start()`, `play()`, `pause()`, `resume()`, `destroy()`입니다. 점수 제출은 하지 않고 `scorex-gameover`를 받은 Shell이 `/api/scores`로 제출합니다. 탭이 숨겨지면 자동으로 `pause`/`resume`을 보냅니다.
+- [`shell/game-host.js`](./shell/game-host.js): Shell 어댑터(`games/<id>.js`) 공용 도우미. `mountGame({ id, host, onHud, onGameOver, onError })`가 `<scorex-game>`을 만들어 붙이고 `{ ensure, start, reload, pause, resume }`을 돌려줍니다. 시작에 성공하면 `start()`는 `true`를 반환합니다.
 - [`tools/harness.html`](./tools/harness.html): 목업 Shell 하니스. 서버·DB 없이 게임을 실행하고 메시지 로그, HUD, 서버 검증 시뮬레이션(maxScore·minDurationMs·경과 시간·playId 재사용)을 보여 줍니다.
 - [`examples/hello_game/`](./examples/hello_game): 최소 구현 예제 게임(매니페스트 포함).
 
