@@ -120,6 +120,19 @@ function setPlayerMessage(message, isError = false) {
   status.classList.toggle('is-error', isError);
 }
 
+function renderFeatureAccess() {
+  const isGuest = !currentProfile;
+  document.querySelector('#investment-access-gate').hidden = !isGuest;
+  document.querySelector('#investment-panel').hidden = isGuest;
+  document.querySelector('#investment-progress').hidden = isGuest || !activeInvestment;
+  document.querySelector('#investment-note').hidden = isGuest;
+  document.querySelector('#shop-access-gate').hidden = !isGuest;
+  document.querySelector('#shop-message').hidden = isGuest;
+  document.querySelector('#shop-section-heading').hidden = isGuest;
+  document.querySelector('#shop-items').hidden = isGuest;
+  document.querySelector('#shop-footnote').hidden = isGuest;
+}
+
 function showMissionResult(game, points, result, returnToInvestment) {
   const gameName = getGame(game).title;
   const dialog = document.querySelector('#mission-result-dialog');
@@ -164,6 +177,7 @@ function renderScoreboard(data) {
   titleBadge.hidden = !currentUser?.title;
   document.querySelector('#wallet-balance').textContent = currentUser ? formatPoints(currentUser.credits) : '—';
   document.querySelector('#shop-balance').textContent = currentUser ? formatPoints(currentUser.credits) : '—';
+  renderFeatureAccess();
   renderShopItems();
   renderInvestment();
 
@@ -652,7 +666,7 @@ function renderInvestment() {
     element.disabled = !currentProfile || Boolean(activeInvestment) || investmentRequestPending;
   });
   startButton.disabled = !currentProfile || Boolean(activeInvestment) || investmentRequestPending || stake > balance || !selectedRisk;
-  progress.hidden = !activeInvestment;
+  progress.hidden = !currentProfile || !activeInvestment;
   if (!activeInvestment) return;
 
   const gameNames = Object.fromEntries(scoreGames.map((game) => [game.id, game.title]));
@@ -877,6 +891,11 @@ async function openGame(id, shouldLaunch, onError = (message) => {
 }
 
 document.addEventListener('click', (event) => {
+  if (event.target.closest('[data-open-login]')) {
+    showView('home');
+    document.querySelector('#auth-login-id').focus();
+    return;
+  }
   const button = event.target.closest('[data-view]');
   if (!button) return;
   const view = button.dataset.view;

@@ -111,6 +111,13 @@
           <div class="investment-hero-mark" aria-hidden="true"><span>◇</span><small>RESOURCE<br>EXCHANGE</small></div>
         </div>
 
+        <section class="feature-access-gate investment-access-gate" id="investment-access-gate" aria-labelledby="investment-access-title" hidden>
+          <span class="feature-access-icon" aria-hidden="true">◇</span>
+          <h2 id="investment-access-title">투자는 로그인 후 이용할 수 있어요</h2>
+          <p>게스트는 투자 임무와 투자 정산을 이용할 수 없습니다. 로그인하거나 계정을 만들어 계속 이용해 주세요.</p>
+          <button class="primary-button feature-access-login" data-open-login type="button">로그인하러 가기 <span>↗</span></button>
+        </section>
+
         <section class="investment-status-panel" id="investment-panel" aria-label="투자 설정">
           <div class="investment-status-icon">↗</div>
           <div class="investment-panel-content">
@@ -137,7 +144,7 @@
           <button class="primary-button investment-next-button" id="investment-next-game" type="button">다음 임무 시작 <span>↗</span></button>
         </section>
 
-        <div class="investment-note"><span>i</span><p>게임별 티어 점수와 임무 크레딧은 투자 재화와 별도로 기록됩니다. 투자 원금은 시작 시 차감되며 정산 보상은 완료 후 지급됩니다.</p></div>
+        <div class="investment-note" id="investment-note"><span>i</span><p>게임별 티어 점수와 임무 크레딧은 투자 재화와 별도로 기록됩니다. 투자 원금은 시작 시 차감되며 정산 보상은 완료 후 지급됩니다.</p></div>
       </section>
 
       <section class="view shop-view" id="view-shop">
@@ -150,9 +157,15 @@
           <div class="shop-wallet" aria-label="보유 크레딧"><span>보유 크레딧</span><strong><i>◇</i> <b id="shop-balance">—</b><small>CR</small></strong></div>
         </div>
         <div class="shop-notice" id="shop-message" role="status" aria-live="polite">상점 정보를 불러오는 중...</div>
-        <div class="shop-section-heading"><div><span class="section-kicker">PROFILE ITEMS</span><h2>아바타 · 칭호 · 랭킹 배경</h2></div><span class="section-note">구매한 아이템은 언제든 장착할 수 있어요</span></div>
+        <section class="feature-access-gate shop-access-gate" id="shop-access-gate" aria-labelledby="shop-access-title" hidden>
+          <span class="feature-access-icon" aria-hidden="true">▣</span>
+          <h2 id="shop-access-title">재화 상점은 로그인 후 이용할 수 있어요</h2>
+          <p>게스트는 아이템 구매와 프로필 꾸미기를 이용할 수 없습니다. 로그인하거나 계정을 만들어 계속 이용해 주세요.</p>
+          <button class="primary-button feature-access-login" data-open-login type="button">로그인하러 가기 <span>↗</span></button>
+        </section>
+        <div class="shop-section-heading" id="shop-section-heading"><div><span class="section-kicker">PROFILE ITEMS</span><h2>아바타 · 칭호 · 랭킹 배경</h2></div><span class="section-note">구매한 아이템은 언제든 장착할 수 있어요</span></div>
         <div class="shop-grid" id="shop-items" aria-live="polite"></div>
-        <div class="shop-footnote"><span>i</span><p>새 계정 등록 시 환영 크레딧 500 CR이 지급됩니다. 기존 계정은 상점 적용 시 500 CR을 한 번 지급받습니다. 미니게임 점수 100점마다 1 CR, 게임 완료 시 최소 1 CR을 획득합니다.</p></div>
+        <div class="shop-footnote" id="shop-footnote"><span>i</span><p>새 계정 등록 시 환영 크레딧 500 CR이 지급됩니다. 기존 계정은 상점 적용 시 500 CR을 한 번 지급받습니다. 미니게임 점수 100점마다 1 CR, 게임 완료 시 최소 1 CR을 획득합니다.</p></div>
       </section>
 
       <section class="view game-view" id="view-snake" data-title="우주 쓰레기 수거">
