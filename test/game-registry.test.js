@@ -3,6 +3,7 @@ const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { DatabaseSync } = require('node:sqlite');
 const test = require('node:test');
 const { normalizeManifest, createGameRegistry, resolveGameAsset } = require('../lib/game-registry.js');
 
@@ -84,11 +85,52 @@ test('asset resolver blocks traversal, dotfiles and unknown types', () => {
 test('server issues play sessions and validates score submissions', async (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sx-e2e-'));
   const gamesDir = path.join(dir, 'games');
+  const databasePath = path.join(dir, 'test.sqlite');
   writeGame(gamesDir, 'demo_game', validManifest);
+  const legacyDatabase = new DatabaseSync(databasePath);
+  legacyDatabase.exec(`
+    CREATE TABLE accounts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      login_id TEXT NOT NULL COLLATE NOCASE UNIQUE,
+      password_hash TEXT NOT NULL,
+      password_salt TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE profiles (
+      account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+      nickname TEXT NOT NULL COLLATE NOCASE UNIQUE CHECK (length(nickname) BETWEEN 2 AND 16),
+      avatar_id TEXT NOT NULL DEFAULT 'pilot',
+      title_id TEXT NOT NULL DEFAULT '',
+      background_id TEXT NOT NULL DEFAULT ''
+    );
+    CREATE TABLE wallets (
+      account_id INTEGER PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+      credits INTEGER NOT NULL DEFAULT 0 CHECK (credits >= 0)
+    );
+    CREATE TABLE investment_runs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+      stake INTEGER NOT NULL CHECK (stake > 0),
+      risk TEXT NOT NULL CHECK (risk IN ('safe', 'balanced', 'high')),
+      games_json TEXT NOT NULL,
+      progress INTEGER NOT NULL DEFAULT 0 CHECK (progress >= 0),
+      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed')),
+      outcome TEXT NOT NULL DEFAULT '',
+      reward INTEGER NOT NULL DEFAULT 0 CHECK (reward >= 0),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      completed_at TEXT
+    );
+    INSERT INTO accounts (id, login_id, password_hash, password_salt) VALUES (1, 'legacy', 'hash', 'salt');
+    INSERT INTO profiles (account_id, nickname) VALUES (1, '기존유저');
+    INSERT INTO wallets (account_id, credits) VALUES (1, 40);
+    INSERT INTO investment_runs (account_id, stake, risk, games_json, progress, status, outcome, reward)
+      VALUES (1, 40, 'safe', '[\"demo_game\"]', 1, 'completed', 'break_even', 40);
+  `);
+  legacyDatabase.close();
   const port = 3200 + Math.floor(Math.random() * 500);
   const base = `http://127.0.0.1:${port}`;
   const child = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
-    env: { ...process.env, PORT: String(port), DB_PATH: path.join(dir, 'test.sqlite'), GAMES_DIR: gamesDir, GAMES_RESCAN_MS: '1000' },
+    env: { ...process.env, PORT: String(port), DB_PATH: databasePath, GAMES_DIR: gamesDir, GAMES_RESCAN_MS: '1000' },
     stdio: ['ignore', 'pipe', 'pipe']
   });
   t.after(() => {
@@ -116,6 +158,10 @@ test('server issues play sessions and validates score submissions', async (t) =>
   const list = await json('GET', '/api/games');
   assert.equal(list.status, 200);
   assert.deepEqual(list.body.games.map((game) => game.id), ['demo_game']);
+  const migratedLeaderboard = await json('GET', '/api/leaderboard');
+  const migratedInvestment = migratedLeaderboard.body.creditPlayers.find((player) => player.name === '기존유저').latestInvestment;
+  assert.equal(migratedInvestment.status, 'completed');
+  assert.equal(migratedInvestment.stake, 40);
 
   const asset = await fetch(`${base}/games/demo_game/game.js`);
   assert.equal(asset.status, 200);
@@ -183,6 +229,21 @@ test('server issues play sessions and validates score submissions', async (t) =>
   assert.equal(creditRank.latestInvestment.stake, 50);
   assert.equal(typeof creditRank.latestInvestment.outcomeName, 'string');
   assert.equal(typeof creditRank.latestInvestment.net, 'number');
+
+  const cancellableInvestment = await json('POST', '/api/investment/start', { stake: 51, risk: 'balanced' }, cookie);
+  assert.equal(cancellableInvestment.status, 201);
+  const cancellation = await json('POST', '/api/investment/cancel', {}, cookie);
+  assert.equal(cancellation.status, 200);
+  assert.equal(cancellation.body.refund, 25);
+  assert.equal(cancellation.body.credits, cancellableInvestment.body.credits + 25);
+  assert.equal(cancellation.body.run.status, 'cancelled');
+  assert.equal(cancellation.body.run.reward, 25);
+  assert.equal((await json('POST', '/api/investment/cancel', {}, cookie)).status, 409);
+  const cancelledLeaderboard = await json('GET', '/api/leaderboard', undefined, cookie);
+  const cancelledCreditRank = cancelledLeaderboard.body.creditPlayers
+    .find((player) => player.id === cancelledLeaderboard.body.currentUser.id);
+  assert.equal(cancelledCreditRank.latestInvestment.status, 'cancelled');
+  assert.equal(cancelledCreditRank.latestInvestment.net, -26);
 
   // 폴더를 지우면 목록에서 사라지고 점수 제출도 거부된다.
   fs.rmSync(path.join(gamesDir, 'demo_game'), { recursive: true });
