@@ -688,6 +688,13 @@ kbd { border-color: #314965; background: #14253a; color: #bfcee0; }
 .investment-hero-mark > span { font-size: 37px; line-height: 1; text-shadow: 0 0 17px #b69bffb0; }
 .investment-hero-mark small { color: #9b91bf; font: 7px/1.5 "DM Mono", monospace; letter-spacing: .9px; text-align: center; }
 .investment-status-panel { display: flex; align-items: center; gap: 16px; margin-top: 19px; padding: 17px 20px; border: 1px solid #34405c; border-radius: 8px; background: linear-gradient(110deg, #121f35, #101a2c); }
+.feature-access-gate { display: flex; align-items: center; flex-direction: column; gap: 10px; margin-top: 19px; border: 1px solid #29465a; border-radius: 9px; padding: 28px 20px; background: linear-gradient(145deg, #102136, #0c1725); text-align: center; }
+.feature-access-gate[hidden], #investment-panel[hidden], #investment-progress[hidden], #investment-note[hidden],
+#shop-message[hidden], #shop-section-heading[hidden], #shop-items[hidden], #shop-footnote[hidden] { display: none; }
+.feature-access-icon { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #397c7a; border-radius: 50%; background: #102d35; color: var(--green); font-size: 21px; }
+.feature-access-gate h2 { margin: 0; color: #eaf3fc; font-size: 17px; }
+.feature-access-gate p { max-width: 480px; margin: 0; color: #9aacc1; font-size: 11px; line-height: 1.7; }
+.feature-access-login { margin-top: 4px; }
 .investment-status-icon { width: 40px; height: 40px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid #7565a2; border-radius: 50%; background: #282242; color: #c7b4ff; font-size: 20px; }
 .investment-status-panel > div:nth-child(2) { min-width: 0; }
 .investment-status-kicker { color: #a496d0; font: 8px "DM Mono", monospace; letter-spacing: .9px; }

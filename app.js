@@ -77,6 +77,8 @@ let investmentOptions = [];
 let selectedRisk = null;
 let activeInvestment = null;
 let pendingInvestmentSettlement = null;
+let investmentGameInProgress = null;
+let missionResultReturnsToInvestment = false;
 let investmentRequestPending = false;
 let authMode = 'login';
 
@@ -118,9 +120,23 @@ function setPlayerMessage(message, isError = false) {
   status.classList.toggle('is-error', isError);
 }
 
-function showMissionResult(game, points, result) {
+function renderFeatureAccess() {
+  const isGuest = !currentProfile;
+  document.querySelector('#investment-access-gate').hidden = !isGuest;
+  document.querySelector('#investment-panel').hidden = isGuest;
+  document.querySelector('#investment-progress').hidden = isGuest || !activeInvestment;
+  document.querySelector('#investment-note').hidden = isGuest;
+  document.querySelector('#shop-access-gate').hidden = !isGuest;
+  document.querySelector('#shop-message').hidden = isGuest;
+  document.querySelector('#shop-section-heading').hidden = isGuest;
+  document.querySelector('#shop-items').hidden = isGuest;
+  document.querySelector('#shop-footnote').hidden = isGuest;
+}
+
+function showMissionResult(game, points, result, returnToInvestment) {
   const gameName = getGame(game).title;
   const dialog = document.querySelector('#mission-result-dialog');
+  missionResultReturnsToInvestment = returnToInvestment;
   const isGuest = result.saved === false;
   document.querySelector('#mission-result-title').textContent = `${gameName} 완료`;
   document.querySelector('#mission-result-copy').textContent = isGuest
@@ -161,6 +177,7 @@ function renderScoreboard(data) {
   titleBadge.hidden = !currentUser?.title;
   document.querySelector('#wallet-balance').textContent = currentUser ? formatPoints(currentUser.credits) : '—';
   document.querySelector('#shop-balance').textContent = currentUser ? formatPoints(currentUser.credits) : '—';
+  renderFeatureAccess();
   renderShopItems();
   renderInvestment();
 
@@ -563,6 +580,8 @@ async function logout() {
 
 async function awardScore(game, points, play = {}) {
   const earned = Math.max(0, Math.floor(points));
+  const returnToInvestment = investmentGameInProgress === game;
+  if (returnToInvestment) investmentGameInProgress = null;
   try {
     ensureScoreServer();
     const response = await fetch('/api/scores', {
@@ -573,7 +592,7 @@ async function awardScore(game, points, play = {}) {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || '점수 저장에 실패했습니다.');
     handleInvestmentProgress(result);
-    showMissionResult(game, earned, result);
+    showMissionResult(game, earned, result, returnToInvestment);
     if (result.saved) {
       await refreshScoreboard();
       setShopMessage(`임무 보상으로 ${formatPoints(result.creditsEarned)} CR을 획득했습니다.`);
@@ -647,7 +666,7 @@ function renderInvestment() {
     element.disabled = !currentProfile || Boolean(activeInvestment) || investmentRequestPending;
   });
   startButton.disabled = !currentProfile || Boolean(activeInvestment) || investmentRequestPending || stake > balance || !selectedRisk;
-  progress.hidden = !activeInvestment;
+  progress.hidden = !currentProfile || !activeInvestment;
   if (!activeInvestment) return;
 
   const gameNames = Object.fromEntries(scoreGames.map((game) => [game.id, game.title]));
@@ -750,7 +769,9 @@ async function confirmInvestmentStart() {
 async function launchNextInvestmentGame() {
   const nextGame = activeInvestment?.games[activeInvestment.progress];
   if (!nextGame) return;
+  investmentGameInProgress = nextGame;
   await openGame(nextGame, true, (message) => {
+    investmentGameInProgress = null;
     showView('investment');
     setInvestmentMessage(message, true);
   }, true);
@@ -772,6 +793,9 @@ function handleInvestmentProgress(result) {
 }
 
 function continueInvestmentRun() {
+  const shouldReturn = missionResultReturnsToInvestment;
+  missionResultReturnsToInvestment = false;
+  if (!shouldReturn) return;
   showView('investment');
   if (pendingInvestmentSettlement) {
     const investment = pendingInvestmentSettlement;
@@ -824,6 +848,7 @@ function showView(name) {
   }
   const previous = document.querySelector('.view.is-visible');
   const previousGame = previous?.id.replace(/^view-/, '');
+  if (investmentGameInProgress === previousGame && previousGame !== name) investmentGameInProgress = null;
   if (previousGame && previousGame !== name && gameCatalogById.has(previousGame)) {
     const lifecycle = gameModules.get(previousGame);
     lifecycle?.onHide?.();
@@ -866,6 +891,11 @@ async function openGame(id, shouldLaunch, onError = (message) => {
 }
 
 document.addEventListener('click', (event) => {
+  if (event.target.closest('[data-open-login]')) {
+    showView('home');
+    document.querySelector('#auth-login-id').focus();
+    return;
+  }
   const button = event.target.closest('[data-view]');
   if (!button) return;
   const view = button.dataset.view;
