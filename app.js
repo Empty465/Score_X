@@ -108,8 +108,9 @@ function renderBests() {
     const game = element.dataset.best;
     if (!gameCatalogById.has(game)) return;
     const serverBest = currentProfile?.scores?.[game];
+    const localBest = getBest(game);
     if (currentProfile) element.textContent = serverBest > 0 ? formatPoints(serverBest) : '—';
-    else element.textContent = getGame(game).bestDefault;
+    else element.textContent = localBest === null ? getGame(game).bestDefault : formatPoints(Number(localBest));
   });
 }
 
@@ -328,30 +329,10 @@ function renderScoreboard(data) {
 function toggleRankingDetails(row) {
   const expanded = row.classList.toggle('is-expanded');
   row.setAttribute('aria-expanded', String(expanded));
-  row.querySelector('.ranking-detail')?.setAttribute('aria-hidden', String(!expanded && !row.matches(':hover, :focus-within')));
+  row.querySelector('.ranking-detail')?.setAttribute('aria-hidden', String(!expanded));
 }
 
 document.querySelectorAll('#score-rankings, #credit-rankings').forEach((container) => {
-  const setDetailsVisibility = (row, visible) => {
-    if (row.classList.contains('is-expanded')) return;
-    row.querySelector('.ranking-detail')?.setAttribute('aria-hidden', String(!visible));
-  };
-  container.addEventListener('pointerover', (event) => {
-    const row = event.target.closest('.ranking-row[role="button"]');
-    if (row && !row.contains(event.relatedTarget)) setDetailsVisibility(row, true);
-  });
-  container.addEventListener('pointerout', (event) => {
-    const row = event.target.closest('.ranking-row[role="button"]');
-    if (row && !row.contains(event.relatedTarget)) setDetailsVisibility(row, false);
-  });
-  container.addEventListener('focusin', (event) => {
-    const row = event.target.closest('.ranking-row[role="button"]');
-    if (row) setDetailsVisibility(row, true);
-  });
-  container.addEventListener('focusout', (event) => {
-    const row = event.target.closest('.ranking-row[role="button"]');
-    if (row && !row.contains(event.relatedTarget)) setDetailsVisibility(row, false);
-  });
   container.addEventListener('click', (event) => {
     const row = event.target.closest('.ranking-row[role="button"]');
     if (row) toggleRankingDetails(row);
@@ -630,6 +611,7 @@ async function awardScore(game, points, play = {}) {
     showMissionResult(game, earned, result, returnToInvestment);
     if (result.saved) {
       await refreshScoreboard();
+      refreshGameLeaderboard(game);
       setShopMessage(`임무 보상으로 ${formatPoints(result.creditsEarned)} CR을 획득했습니다.`);
     } else {
       setPlayerMessage('게스트 플레이 결과는 저장되지 않아요. 로그인하면 기록과 보상이 쌓입니다.');
@@ -952,7 +934,9 @@ async function loadLifecycle(game) {
     footer.parentElement.insertBefore(section, footer);
   }
   const { createGenericGame } = await import('/shell/generic-game.js');
-  return validateLifecycle(game.id, createGenericGame(game, section));
+  const lifecycle = validateLifecycle(game.id, createGenericGame(game, section));
+  renderBests();
+  return lifecycle;
 }
 
 function showView(name) {
@@ -973,6 +957,7 @@ function showView(name) {
   breadcrumbCurrent.textContent = titles[name];
   updateInvestmentCancelVisibility();
   gameModules.get(name)?.onShow?.();
+  if (gameCatalogById.has(name)) refreshGameLeaderboard(name);
   if (name === 'investment' && activePlayer) {
     loadActiveInvestment().catch((error) => setInvestmentMessage(error.message || '투자 정보를 불러오지 못했습니다.', true));
   }
@@ -986,6 +971,54 @@ function setGameLoading(game, isLoading) {
     return;
   }
   indicator.hidden = true;
+}
+
+async function refreshGameLeaderboard(gameId) {
+  const view = document.querySelector(`#view-${gameId}`);
+  const panel = view?.querySelector('.game-side-panel');
+  if (!panel) return;
+
+  let section = panel.querySelector('.game-leaderboard');
+  if (!section) {
+    section = document.createElement('section');
+    section.className = 'game-leaderboard';
+    const heading = document.createElement('div');
+    heading.className = 'game-leaderboard-heading';
+    heading.textContent = '게임별 최고 기록';
+    const status = document.createElement('p');
+    status.className = 'game-leaderboard-status';
+    status.textContent = '랭킹을 불러오는 중...';
+    const list = document.createElement('ol');
+    list.className = 'game-leaderboard-list';
+    section.append(heading, status, list);
+    panel.append(section);
+  }
+
+  const status = section.querySelector('.game-leaderboard-status');
+  const list = section.querySelector('.game-leaderboard-list');
+  status.textContent = '랭킹을 불러오는 중...';
+  try {
+    const response = await fetch(`/api/leaderboard/games/${encodeURIComponent(gameId)}`);
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || '게임 랭킹을 불러오지 못했습니다.');
+    list.replaceChildren(...result.players.map((player) => {
+      const row = document.createElement('li');
+      row.className = 'game-leaderboard-row';
+      const rank = document.createElement('span');
+      rank.className = 'game-leaderboard-rank';
+      rank.textContent = String(player.rank).padStart(2, '0');
+      const identity = document.createElement('span');
+      identity.className = 'game-leaderboard-player';
+      identity.textContent = `${player.avatar} ${player.name}${player.title ? ` · ${player.title}` : ''}`;
+      const score = document.createElement('strong');
+      score.textContent = formatPoints(player.score);
+      row.append(rank, identity, score);
+      return row;
+    }));
+    status.textContent = result.players.length ? '' : '아직 이 게임에 기록한 유저가 없습니다.';
+  } catch (error) {
+    status.textContent = error.message || '게임 랭킹을 불러오지 못했습니다.';
+  }
 }
 
 async function openGame(id, shouldLaunch, onError = (message) => {

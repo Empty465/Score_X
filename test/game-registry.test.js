@@ -196,6 +196,10 @@ test('server issues play sessions and validates score submissions', async (t) =>
   assert.equal(ok.status, 201);
   assert.equal(ok.body.saved, true);
   assert.equal((await json('POST', '/api/scores', { game: 'demo_game', points: 100, playId: play.body.playId, durationMs: 400 }, cookie)).status, 409);
+  const gameLeaderboard = await json('GET', '/api/leaderboard/games/demo_game');
+  assert.equal(gameLeaderboard.status, 200);
+  assert.deepEqual(gameLeaderboard.body.players.map((player) => [player.rank, player.name, player.score]), [[1, '테스터', 100]]);
+  assert.equal((await json('GET', '/api/leaderboard/games/unknown_game')).status, 404);
 
   // 다른 계정이나 게스트는 남의 세션을 쓸 수 없다.
   const other = await json('POST', '/api/plays', { game: 'demo_game' }, cookie);

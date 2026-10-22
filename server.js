@@ -621,6 +621,28 @@ async function handleApi(request, response, url) {
     return;
   }
 
+  const gameLeaderboardMatch = /^\/api\/leaderboard\/games\/([a-z][a-z0-9_]{1,31})$/.exec(url.pathname);
+  if (request.method === 'GET' && gameLeaderboardMatch) {
+    const game = gameLeaderboardMatch[1];
+    if (!gameRegistry.get(game)) {
+      sendJson(response, 404, { error: '알 수 없는 게임입니다.' });
+      return;
+    }
+    const players = loadPlayers().byScore
+      .filter((player) => player.scores[game] > 0)
+      .sort((left, right) => right.scores[game] - left.scores[game] || left.id - right.id)
+      .map((player, index) => ({
+        rank: index + 1,
+        name: player.name,
+        avatar: player.avatar,
+        title: player.title,
+        backgroundId: player.backgroundId,
+        score: player.scores[game]
+      }));
+    sendJson(response, 200, { game, players });
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/games') {
     const games = gameRegistry.list().map((manifest) => ({
       ...manifest,

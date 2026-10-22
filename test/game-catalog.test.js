@@ -17,6 +17,7 @@ test('every built-in game has a manifest, a screen and an adapter with a default
     assert.ok(ids.includes(id), `${id} manifest is missing`);
     assert.ok(html.includes(`id="view-${id}"`), `${id} screen is missing`);
     assert.ok(/^export default \{/m.test(read(`games/${id}.js`)), `${id} adapter must export a default lifecycle`);
+    assert.ok(html.includes(`data-best="${id}"`), `${id} screen must show its best record`);
   }
 });
 
@@ -37,6 +38,35 @@ test('generic game views are inserted before the page footer', () => {
   const app = read('app.js');
   assert.ok(app.includes("const footer = document.querySelector('.page-footer');"));
   assert.ok(app.includes('footer.parentElement.insertBefore(section, footer);'));
+});
+
+test('ranking details open only through click or keyboard activation', () => {
+  const app = read('app.js');
+  const styles = read('styles.css');
+
+  assert.ok(app.includes("container.addEventListener('click'"));
+  assert.ok(app.includes("container.addEventListener('keydown'"));
+  assert.ok(!app.includes("addEventListener('pointerover'"));
+  assert.ok(!app.includes("addEventListener('pointerout'"));
+  assert.ok(!styles.includes('.ranking-row:hover .ranking-detail'));
+});
+
+test('guest best record displays the locally saved value', () => {
+  const app = read('app.js');
+  assert.ok(app.includes("const localBest = getBest(game);"));
+  assert.ok(app.includes("localBest === null ? getGame(game).bestDefault : formatPoints(Number(localBest))"));
+  assert.match(app, /const lifecycle = validateLifecycle\(game\.id, createGenericGame\(game, section\)\);\r?\n  renderBests\(\);/);
+});
+
+test('game views load per-game player best-score rankings', () => {
+  const app = read('app.js');
+  const server = read('server.js');
+  const styles = read('styles.css');
+  assert.ok(app.includes('refreshGameLeaderboard(name)'));
+  assert.ok(app.includes('/api/leaderboard/games/${encodeURIComponent(gameId)}'));
+  assert.ok(app.includes('refreshGameLeaderboard(game);'));
+  assert.ok(server.includes('const gameLeaderboardMatch = /^\\/api\\/leaderboard\\/games\\/'));
+  assert.ok(styles.includes('.game-leaderboard-list'));
 });
 
 test('hello_game example is discoverable after copying it into games/', () => {

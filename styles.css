@@ -986,6 +986,14 @@ button:focus-visible, a:focus-visible { outline-color: var(--green); }
 .primary-button span { color: #174743; }
 .game-side-panel { border-color: #2b3949; border-radius: 8px; background: #111a27; box-shadow: 0 6px 18px #0002; }
 .panel-label, .record-row, .control-copy, .text-button, .rocket-fuel { color: #a0adbb; }
+.game-leaderboard { min-width: 0; margin-top: 14px; border-top: 1px solid #283544; padding-top: 12px; }
+.game-leaderboard-heading { margin-bottom: 7px; color: #e5ebf2; font: 14px "Jua", sans-serif; }
+.game-leaderboard-status { margin: 0; color: #97a4b2; font-size: 10px; line-height: 1.5; }
+.game-leaderboard-list { display: grid; gap: 4px; max-height: 180px; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
+.game-leaderboard-row { min-width: 0; display: flex; align-items: center; gap: 6px; border-top: 1px solid #243140; padding-top: 5px; font-size: 10px; }
+.game-leaderboard-rank { flex: 0 0 18px; color: #65d6c9; font: 9px "DM Mono", monospace; }
+.game-leaderboard-player { min-width: 0; overflow: hidden; color: #c8d2dc; text-overflow: ellipsis; white-space: nowrap; }
+.game-leaderboard-row > strong { margin-left: auto; color: #e5ebf2; font: 10px "DM Mono", monospace; white-space: nowrap; }
 .score-block > strong { color: #edf2f7; }
 .score-unit { color: #8291a3; }
 .record-row > strong, .control-title { color: #dbe3eb; }
@@ -1053,10 +1061,6 @@ kbd { border-color: #344456; background: #172330; color: #ced7e0; }
   .investment-options-heading, .shop-item-name, .shop-item-form input { font-size: 14px; }
   .investment-result-dialog p { font-size: 14px; }
   .investment-result-dialog .mission-result-total { font-size: 12px; }
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .ranking-row:hover .ranking-detail, .ranking-row:focus-visible .ranking-detail { display: block; }
 }
 
 @media (max-width: 760px) {
