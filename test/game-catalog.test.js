@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { createGameRegistry } = require('../lib/game-registry.js');
@@ -30,4 +31,27 @@ test('game menu is derived from manifests, not a static catalog', () => {
   assert.ok(app.includes("fetch('/api/games')"));
   assert.ok(server.includes('gameRegistry.list()'));
   assert.ok(loader.includes('import(moduleUrl)'));
+});
+
+test('hello_game example is discoverable after copying it into games/', () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'scorex-example-'));
+  try {
+    const gamesDir = path.join(tempRoot, 'games');
+    fs.mkdirSync(gamesDir);
+    fs.cpSync(path.join(root, 'examples', 'hello_game'), path.join(gamesDir, 'hello_game'), { recursive: true });
+
+    const sample = createGameRegistry({ gamesDir }).get('hello_game');
+    assert.ok(sample, 'copied example should be included in the game registry');
+    assert.equal(sample.entry, '/games/hello_game/index.html');
+    assert.equal(sample.maxScore, 1000);
+    assert.equal(sample.minDurationMs, 10000);
+
+    const html = fs.readFileSync(path.join(gamesDir, 'hello_game', 'index.html'), 'utf8');
+    assert.ok(html.includes('../../sdk/scorex-sdk.js'));
+    assert.ok(html.includes("Scorex.connect({ gameId: 'hello_game'"));
+    assert.ok(html.includes('const DURATION_MS = 10000;'));
+    assert.ok(html.includes('const MAX_SCORE = 1000;'));
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
 });
