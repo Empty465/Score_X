@@ -162,12 +162,12 @@ h1, h2, h3, p { margin-top: 0; }
 .heading-mark { margin-left: auto; margin-right: 16px; font: 34px "Jua", sans-serif; }
 .snake-mark { color: #709256; }.memory-mark { color: #e0a458; }.reaction-mark { color: #788fcb; }
 .play-layout { display: grid; grid-template-columns: minmax(280px, 1.5fr) minmax(210px, .8fr); gap: 20px; max-width: 875px; margin: 0 auto; align-items: stretch; }
-.board-wrap, .memory-board-wrap, .reaction-board-wrap { min-width: 0; position: relative; overflow: hidden; border: 1px solid #e1dfd7; border-radius: 5px; background: #fbfaf7; }
+.board-wrap, .memory-board-wrap, .reaction-board-wrap, .mole-board-wrap, .baseball-board-wrap { min-width: 0; position: relative; overflow: hidden; border: 1px solid #e1dfd7; border-radius: 5px; background: #fbfaf7; }
 .board-caption { height: 37px; padding: 0 13px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eae8e0; color: #95968d; font: 9px "DM Mono", monospace; letter-spacing: .45px; }
 .board-caption b { color: #55574f; font-weight: 500; }
 .live-label { display: flex; align-items: center; gap: 6px; }
 .live-label i { width: 5px; height: 5px; }
-.board-overlay { position: absolute; inset: 37px 0 0; display: flex; align-items: center; justify-content: center; flex-direction: column; background: #eaf0dfeF; text-align: center; transition: opacity 180ms ease; }
+.board-overlay { position: absolute; inset: 37px 0 0; z-index: 2; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 16px; background: #eaf0dfeF; text-align: center; transition: opacity 180ms ease; }
 .board-overlay.is-hidden { opacity: 0; pointer-events: none; }
 .overlay-symbol { display: grid; place-items: center; width: 47px; height: 47px; margin-bottom: 11px; border-radius: 16px; background: #d5e5c1; color: #547846; font: 26px "Jua", sans-serif; transform: rotate(-8deg); }
 .board-overlay h2 { margin: 0; font: 21px "Jua", sans-serif; }
@@ -199,6 +199,10 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 18px; 
 .side-primary { align-self: stretch; margin-top: auto; }
 .memory-best-row { margin-top: 5px; }
 .reaction-board-wrap { display: flex; flex-direction: column; }
+.memory-board-wrap .board-overlay { bottom: 48px; }
+.reaction-board-wrap .board-overlay, .mole-board-wrap .board-overlay { bottom: 35px; }
+.baseball-board-wrap { display: flex; flex-direction: column; }
+.baseball-board-wrap .game-host { flex: 1; min-height: 0; }
 @keyframes target-pop { from { transform: scale(.5); opacity: .5; } to { transform: scale(1); opacity: 1; } }
 .reaction-hint { display: none; margin-top: 15px; color: #527748; font-size: 10px; }
 .reaction-footer { display: flex; justify-content: space-between; padding: 10px 13px; color: #9a9a91; font-size: 9px; }
@@ -373,7 +377,7 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 18px; 
 .investment-range-labels { display: flex; justify-content: space-between; color: #7890ab; font-size: 9px; }
 .investment-range-labels b { color: #c1d1e4; font-weight: normal; }
 .investment-options-heading { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 9px; color: #dce9f8; font-size: 12px; }
-.investment-options-heading .text-button { margin: 0; }
+.investment-options-heading > .text-button { margin: 0; }
 .investment-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .investment-option { display: flex; flex-direction: column; min-width: 0; min-height: 145px; gap: 7px; border: 1px solid #29415d; border-radius: 6px; padding: 12px; background: #0b192a; color: #dce9f8; text-align: left; cursor: pointer; }
 .investment-option:hover { border-color: #4f8c95; }
@@ -551,7 +555,7 @@ button:focus-visible, a:focus-visible { outline-color: var(--green); }
 .back-button:hover { border-color: #65e6d1; color: #8ff5e5; }
 .heading-mark { color: var(--green); }
 .play-layout { gap: 20px; }
-.board-wrap, .memory-board-wrap, .reaction-board-wrap, .mole-board-wrap, .rocket-board-wrap {
+.board-wrap, .memory-board-wrap, .reaction-board-wrap, .mole-board-wrap, .baseball-board-wrap, .rocket-board-wrap {
   border-color: #29415d;
   border-radius: 9px;
   background: #0b1828;
@@ -976,6 +980,43 @@ kbd { border-color: #344456; background: #172330; color: #ced7e0; }
 .shop-notice, .shop-item { border-color: #2b3949; background: #111a27; }
 .shop-item-preview { border-color: #2b3949; background: #172331; box-shadow: none; }
 .shop-buy-button:hover:not(:disabled) { border-color: #54b9ae; background: #1b4843; }
+#investment-cancel-option[hidden] { display: none; }
+.investment-confirm-dialog h2 { margin-top: 12px; }
+.investment-confirm-summary { display: grid; gap: 9px; margin: 18px 0; border: 1px solid #2c3b4b; border-radius: 6px; padding: 12px; background: #101925; }
+.investment-confirm-summary > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.investment-confirm-summary span { color: #9ba8b7; font-size: 12px; }
+.investment-confirm-summary strong { color: #e6edf5; font-size: 14px; }
+.investment-confirm-summary > div:last-child strong { color: #69d8cc; }
+.investment-confirm-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.investment-confirm-actions .text-button { margin: 0; padding: 8px 12px; }
+.investment-confirm-actions .primary-button { padding: 9px 14px; cursor: pointer; }
+
+@media (min-width: 761px) {
+  .nav-label { font-size: 11px; }
+  .nav-item { font-size: 15px; }
+  .today-stamp, .breadcrumb, .welcome-copy, .game-category { font-size: 13px; }
+  .sidebar-bottom p { font-size: 18px; }
+  .eyebrow, .section-kicker, .section-note, .game-number { font-size: 10px; }
+  .welcome-row h1 { font-size: 44px; }
+  .scoreboard-kicker, .scoreboard-label, .ranking-number { font-size: 10px; }
+  .scoreboard-foot, .scoreboard-message, .ranking-name, .ranking-row > strong,
+  .ranking-empty, .score-game-item, .section-note { font-size: 11px; }
+  .tier-badge, .profile-title-badge { font-size: 11px; }
+  .ranking-heading h2 { font-size: 16px; }
+  .ranking-heading > span { font-size: 9px; }
+  .card-title-row h3 { font-size: 19px; }
+  .best-chip, .best-chip b, .play-link, .card-info p { font-size: 13px; }
+  .game-heading h1 { font-size: 34px; }
+  .mission-subtitle, .board-caption, .panel-label, .record-row, .control-copy { font-size: 13px; }
+  .score-unit { font-size: 10px; }
+  .investment-hero-copy > p, .investment-status-panel p, .investment-step p,
+  .investment-option-description, .shop-item > p { font-size: 13px; }
+  .investment-status-kicker, .investment-outcomes, .investment-note,
+  .shop-footnote, .shop-notice { font-size: 11px; }
+  .investment-options-heading, .shop-item-name, .shop-item-form input { font-size: 14px; }
+  .investment-result-dialog p { font-size: 14px; }
+  .investment-result-dialog .mission-result-total { font-size: 12px; }
+}
 
 @media (max-width: 760px) {
   .sidebar { border-color: #293747; background: #0d141ef5; box-shadow: 0 -8px 20px #0004; }

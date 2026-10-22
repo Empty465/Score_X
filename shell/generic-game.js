@@ -68,6 +68,12 @@ export function createGenericGame(meta, section) {
     overlay.classList.remove('is-hidden');
   }
 
+  function reset() {
+    game.reload();
+    hudList.replaceChildren();
+    showOverlay(`${meta.title} 준비`, meta.description, '임무 시작');
+  }
+
   const game = mountGame({
     id: meta.id,
     host,
@@ -92,7 +98,9 @@ export function createGenericGame(meta, section) {
 
   return {
     onLaunch: () => { game.ensure(); },
+    onStart: begin,
     onShow: () => { game.ensure(); game.resume(); },
-    onHide: () => game.pause()
+    onHide: () => game.pause(),
+    onReset: reset
   };
 }
