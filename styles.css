@@ -813,6 +813,10 @@ kbd { border-color: #314965; background: #14253a; color: #bfcee0; }
 }
 
 .profile-title-badge[hidden], .investment-next-button[hidden] { display: none; }
+.game-loading-indicator[hidden] { display: none; }
+.game-loading-indicator { position: fixed; z-index: 1000; top: 88px; left: 50%; display: flex; align-items: center; gap: 11px; transform: translateX(-50%); border: 1px solid #315269; border-radius: 999px; padding: 11px 17px; background: #101d2ced; box-shadow: 0 8px 28px #0008; color: #e5f0fb; font-size: 12px; pointer-events: none; }
+.game-loading-spinner { width: 16px; height: 16px; flex: 0 0 auto; border: 2px solid #40556b; border-top-color: var(--green); border-radius: 50%; animation: game-loading-spin 750ms linear infinite; }
+@keyframes game-loading-spin { to { transform: rotate(360deg); } }
 .record-row.is-danger > strong { color: #ff6b6b; }
 
 .scoreboard-player-form { flex-wrap: wrap; }
