@@ -948,7 +948,8 @@ async function loadLifecycle(game) {
   if (!customView) {
     section.className = 'view game-view';
     section.id = `view-${game.id}`;
-    document.querySelector('#view-shop').parentElement.append(section);
+    const footer = document.querySelector('.page-footer');
+    footer.parentElement.insertBefore(section, footer);
   }
   const { createGenericGame } = await import('/shell/generic-game.js');
   return validateLifecycle(game.id, createGenericGame(game, section));

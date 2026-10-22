@@ -33,6 +33,12 @@ test('game menu is derived from manifests, not a static catalog', () => {
   assert.ok(loader.includes('import(moduleUrl)'));
 });
 
+test('generic game views are inserted before the page footer', () => {
+  const app = read('app.js');
+  assert.ok(app.includes("const footer = document.querySelector('.page-footer');"));
+  assert.ok(app.includes('footer.parentElement.insertBefore(section, footer);'));
+});
+
 test('hello_game example is discoverable after copying it into games/', () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'scorex-example-'));
   try {
