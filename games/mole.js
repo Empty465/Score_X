@@ -60,7 +60,7 @@ function reset() {
   text('#mole-score', '00');
   document.querySelector('#mole-time').innerHTML = '20<small> 초</small>';
   setButton('임무 시작');
-  showOverlay('경고 진압 준비', '점등된 비상 스위치를 빠르게 눌러 경고를 차단하세요.');
+  showOverlay('경고 진압 준비', '한 번에 1~3개 켜지는 비상 스위치를 모두 눌러 경고를 차단하세요.');
 }
 
 export default {

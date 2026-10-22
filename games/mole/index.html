@@ -34,7 +34,7 @@
       return button;
     });
     let rng = Math.random;
-    let active = -1;
+    let active = new Set();
     let score = 0;
     let ticks = 0;
     let running = false;
@@ -55,7 +55,7 @@
 
     function render() {
       holes.forEach((button, index) => {
-        button.classList.toggle('active', index === active);
+        button.classList.toggle('active', active.has(index));
         button.disabled = !running || paused;
       });
     }
@@ -64,20 +64,32 @@
 
     function next() {
       if (!running || paused) return;
-      const candidate = Math.floor(rng() * holes.length);
-      active = candidate === active ? (candidate + 1) % holes.length : candidate;
+      const roll = rng();
+      const count = roll < .62 ? 1 : roll < .92 ? 2 : 3;
+      const available = Array.from({ length: holes.length }, (_, index) => index);
+      active = new Set();
+      for (let index = 0; index < count; index += 1) {
+        const candidateIndex = Math.floor(rng() * available.length);
+        active.add(available.splice(candidateIndex, 1)[0]);
+      }
       render();
-      spawn = setTimeout(next, 650 + rng() * 500);
+      spawn = setTimeout(() => {
+        active.clear();
+        render();
+        spawn = setTimeout(next, 120);
+      }, 600 + count * 300 + rng() * 250);
     }
 
     function hit(index) {
-      if (!running || paused || index !== active) return;
+      if (!running || paused || !active.has(index)) return;
       score += 1;
-      active = -1;
-      clearTimeout(spawn);
+      active.delete(index);
       render();
       Scorex.hud({ score: score * 20 });
-      spawn = setTimeout(next, 120);
+      if (active.size === 0) {
+        clearTimeout(spawn);
+        spawn = setTimeout(next, 120);
+      }
     }
 
     function startTimers() {
@@ -92,7 +104,7 @@
     function finish() {
       stopTimers();
       running = false;
-      active = -1;
+      active.clear();
       render();
       Scorex.gameOver({ score: score * 20, durationMs: ticks * 1000, result: 'clear', meta: { hits: score } });
     }
@@ -100,7 +112,7 @@
     Scorex.onInit((init) => {
       rng = seeded(init.seed);
       stopTimers();
-      running = false; paused = false; active = -1; score = 0; ticks = 0;
+      running = false; paused = false; active.clear(); score = 0; ticks = 0;
       render();
     });
     Scorex.onStart(() => {
@@ -110,7 +122,7 @@
       Scorex.hud({ time: DURATION_SEC, score: 0 });
       startTimers();
     });
-    Scorex.onPause(() => { if (!running) return; paused = true; stopTimers(); active = -1; render(); });
+    Scorex.onPause(() => { if (!running) return; paused = true; stopTimers(); active.clear(); render(); });
     Scorex.onResume(() => { if (!running) return; paused = false; render(); startTimers(); });
     Scorex.onDestroy(() => { stopTimers(); running = false; });
     Scorex.connect({ gameId: 'mole', gameVersion: '1.0.0' });

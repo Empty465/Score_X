@@ -87,6 +87,17 @@ test('mobile debris-collection controls are enlarged and arranged as a direction
   assert.match(game, /@media \(pointer: coarse\) \{ \.dpad \{ display: grid; \} \}/);
 });
 
+test('emergency warning game spawns groups of one to three lights with extra response time', () => {
+  const game = read('games/mole/index.html');
+  const adapter = read('games/mole.js');
+  assert.ok(game.includes('let active = new Set();'));
+  assert.ok(game.includes('const count = roll < .62 ? 1 : roll < .92 ? 2 : 3;'));
+  assert.ok(game.includes('active.add(available.splice(candidateIndex, 1)[0]);'));
+  assert.ok(game.includes('active.delete(index);'));
+  assert.ok(game.includes('600 + count * 300 + rng() * 250'));
+  assert.ok(adapter.includes('한 번에 1~3개 켜지는 비상 스위치를 모두 눌러'));
+});
+
 test('hello_game example is discoverable after copying it into games/', () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'scorex-example-'));
   try {
