@@ -132,6 +132,7 @@ function renderFeatureAccess() {
   document.querySelector('#shop-message').hidden = isGuest;
   document.querySelector('#shop-section-heading').hidden = isGuest;
   document.querySelector('#shop-items').hidden = isGuest;
+  document.querySelector('#shop-filter').hidden = isGuest;
   document.querySelector('#shop-footnote').hidden = isGuest;
 }
 
@@ -368,6 +369,20 @@ function setShopMessage(message, isError = false) {
   status.classList.toggle('is-error', isError);
 }
 
+let shopFilter = 'all';
+
+document.querySelectorAll('.shop-filter-btn').forEach((button) => {
+  button.addEventListener('click', () => {
+    shopFilter = button.dataset.shopFilter;
+    document.querySelectorAll('.shop-filter-btn').forEach((other) => {
+      const active = other === button;
+      other.classList.toggle('is-active', active);
+      other.setAttribute('aria-selected', String(active));
+    });
+    renderShopItems();
+  });
+});
+
 function renderShopItems() {
   const container = document.querySelector('#shop-items');
   if (!container) return;
@@ -381,12 +396,21 @@ function renderShopItems() {
   }
 
   const owned = new Set(currentProfile?.ownedCosmetics || []);
-  shopItems.forEach((item) => {
+  const visibleItems = shopFilter === 'all' ? shopItems : shopItems.filter((item) => item.type === shopFilter);
+  if (visibleItems.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'shop-empty';
+    empty.textContent = '해당 분류의 상품이 없습니다.';
+    container.append(empty);
+    return;
+  }
+  visibleItems.forEach((item) => {
     const card = document.createElement('article');
     card.className = 'shop-item';
     const preview = document.createElement('div');
     preview.className = 'shop-item-preview';
     preview.textContent = item.emoji;
+    if (item.type === 'background' && item.backgroundId) preview.classList.add(`ranking-bg-${item.backgroundId}`);
     const category = document.createElement('span');
     category.className = 'shop-item-category';
     category.textContent = {
@@ -634,11 +658,17 @@ function renderInvestmentOptions() {
     const description = document.createElement('span');
     description.className = 'investment-option-description';
     description.textContent = option.description;
-    const outcomes = document.createElement('span');
+    const outcomes = document.createElement('ul');
     outcomes.className = 'investment-outcomes';
-    outcomes.textContent = option.outcomes
-      .map((outcome) => `${outcome.name} ${outcome.chance}% · ×${outcome.multiplier}`)
-      .join(' / ');
+    option.outcomes.forEach((outcome) => {
+      const row = document.createElement('li');
+      const label = document.createElement('span');
+      label.textContent = outcome.name;
+      const value = document.createElement('b');
+      value.textContent = `${outcome.chance}% · ×${outcome.multiplier}`;
+      row.append(label, value);
+      outcomes.append(row);
+    });
     card.append(name, description, outcomes);
     card.addEventListener('click', () => {
       selectedRisk = option.id;
@@ -1000,6 +1030,7 @@ document.addEventListener('click', (event) => {
   }
   const button = event.target.closest('[data-view]');
   if (!button) return;
+  if (button.tagName === 'A') event.preventDefault();
   const view = button.dataset.view;
   if (gameCatalogById.has(view)) openGame(view, false);
   else showView(view);

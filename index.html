@@ -15,7 +15,7 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <a class="brand" href="#home" aria-label="Score X 게임 홈">
+      <a class="brand" href="#home" data-view="home" aria-label="Score X 게임 홈">
         <span class="brand-mark"><span></span><span></span><span></span><span></span></span>
         <span>Score X<small>GAME DATA PLATFORM</small></span>
       </a>
@@ -167,6 +167,12 @@
           <button class="primary-button feature-access-login" data-open-login type="button">로그인하러 가기 <span>↗</span></button>
         </section>
         <div class="shop-section-heading" id="shop-section-heading"><div><span class="section-kicker">PROFILE ITEMS</span><h2>아바타 · 칭호 · 랭킹 배경</h2></div><span class="section-note">구매한 아이템은 언제든 장착할 수 있어요</span></div>
+        <div class="shop-filter" id="shop-filter" role="tablist" aria-label="상점 품목 분류">
+          <button type="button" class="shop-filter-btn is-active" role="tab" aria-selected="true" data-shop-filter="all">모두</button>
+          <button type="button" class="shop-filter-btn" role="tab" aria-selected="false" data-shop-filter="avatar">아바타</button>
+          <button type="button" class="shop-filter-btn" role="tab" aria-selected="false" data-shop-filter="title">칭호</button>
+          <button type="button" class="shop-filter-btn" role="tab" aria-selected="false" data-shop-filter="background">랭킹 배경</button>
+        </div>
         <div class="shop-grid" id="shop-items" aria-live="polite"></div>
         <div class="shop-footnote" id="shop-footnote"><span>i</span><p>새 계정 등록 시 환영 크레딧 500 CR이 지급됩니다. 기존 계정은 상점 적용 시 500 CR을 한 번 지급받습니다. 미니게임 점수 100점마다 1 CR, 게임 완료 시 최소 1 CR을 획득합니다.</p></div>
       </section>
