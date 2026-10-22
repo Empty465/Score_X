@@ -77,6 +77,16 @@ test('investment navigation waits for the player to press the game start button'
   assert.match(app, /await gameElement\.whenReady\(\);[\s\S]*?if \(startImmediately\) await lifecycle\.onStart\?\.\(\);/);
 });
 
+test('mobile debris-collection controls are enlarged and arranged as a directional cross', () => {
+  const game = read('games/snake/index.html');
+  assert.match(game, /\.dpad \{[^}]*grid-template: repeat\(3, 54px\) \/ repeat\(3, 54px\)/);
+  assert.match(game, /\.dpad button \{[^}]*width: 54px; height: 54px/);
+  for (const [direction, area] of [['up', '1 / 2'], ['left', '2 / 1'], ['down', '3 / 2'], ['right', '2 / 3']]) {
+    assert.ok(game.includes(`.dpad [data-direction="${direction}"] { grid-area: ${area}; }`));
+  }
+  assert.match(game, /@media \(pointer: coarse\) \{ \.dpad \{ display: grid; \} \}/);
+});
+
 test('hello_game example is discoverable after copying it into games/', () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'scorex-example-'));
   try {
