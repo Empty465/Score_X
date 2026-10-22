@@ -52,8 +52,19 @@ async function begin() {
 startButton.addEventListener('click', begin);
 document.querySelector('#rocket-reset').addEventListener('click', begin);
 
+function reset() {
+  game.reload();
+  status.textContent = 'READY';
+  score.textContent = '—';
+  document.querySelector('#rocket-fuel-label').textContent = '100%';
+  document.querySelector('#rocket-fuel-meter').value = 100;
+  showOverlay('부스터 회수 준비 완료', '추력으로 속도를 줄이고 해상 착륙 패드에 수직 착륙하세요.', '회수 시퀀스 시작');
+}
+
 export default {
-onLaunch: () => { game.ensure(); },
-onShow: () => { game.ensure(); game.resume(); },
-onHide: () => game.pause()
+  onLaunch: () => { game.ensure(); },
+  onStart: begin,
+  onShow: () => { game.ensure(); game.resume(); },
+  onHide: () => game.pause(),
+  onReset: reset
 };

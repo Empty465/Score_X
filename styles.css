@@ -87,13 +87,22 @@ h1, h2, h3, p { margin-top: 0; }
 .ranking-heading h2 { margin: 0; color: #f3f2e9; font: 14px "Jua", sans-serif; }
 .ranking-heading > span { color: #a8aea1; font: 7px "DM Mono", monospace; letter-spacing: .7px; }
 #score-rankings, #credit-rankings { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; max-height: 232px; overflow-y: auto; margin: 0; padding: 0; list-style: none; }
-.ranking-row { min-width: 0; min-height: 25px; display: flex; align-items: center; gap: 7px; border-top: 1px solid #ffffff18; }
+.ranking-row { min-width: 0; min-height: 25px; display: flex; flex-wrap: wrap; align-items: center; gap: 7px; border-top: 1px solid #ffffff18; cursor: pointer; }
+.ranking-row:focus-visible { outline: 2px solid var(--green); outline-offset: -2px; }
 .ranking-number { width: 14px; color: #9ca394; font: 8px "DM Mono", monospace; }
 .ranking-row:first-child .ranking-number { color: #c5eb7c; }
 .ranking-name { overflow: hidden; color: #e2e2d9; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .ranking-row > strong { margin-left: auto; color: #f2f1e6; font: 9px "DM Mono", monospace; white-space: nowrap; }
 .ranking-row > strong small { color: #aeb4a6; font: 7px "DM Mono", monospace; }
 .ranking-row.is-current-player .ranking-name { color: #c5eb7c; }
+.ranking-detail { display: none; flex: 0 0 calc(100% - 21px); margin: 1px 0 7px 21px; border-left: 2px solid var(--green); padding: 3px 0 4px 8px; color: #c7d3e2; font-size: 8px; }
+.ranking-row.is-expanded .ranking-detail { display: block; }
+.ranking-detail-heading { display: block; margin-bottom: 4px; color: #8ff5e5; font-size: inherit; }
+.ranking-detail-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 9px; margin: 0; padding: 0; list-style: none; }
+.ranking-detail-list li { min-width: 0; display: flex; justify-content: space-between; gap: 5px; }
+.ranking-detail-list li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ranking-detail-list li strong, .ranking-investment-result { color: #eef7ff; font: inherit; font-weight: 700; white-space: nowrap; }
+.ranking-investment-info, .ranking-investment-result { margin: 2px 0; }
 .ranking-empty { min-height: 34px; display: flex; align-items: center; color: #bdc1b4; font-size: 9px; }
 .scoreboard-game-breakdown { grid-column: 1 / -1; border-top: 1px solid #ffffff1e; padding: 12px 22px 14px; }
 .scoreboard-game-breakdown .ranking-heading { margin-bottom: 7px; }
@@ -162,12 +171,12 @@ h1, h2, h3, p { margin-top: 0; }
 .heading-mark { margin-left: auto; margin-right: 16px; font: 34px "Jua", sans-serif; }
 .snake-mark { color: #709256; }.memory-mark { color: #e0a458; }.reaction-mark { color: #788fcb; }
 .play-layout { display: grid; grid-template-columns: minmax(280px, 1.5fr) minmax(210px, .8fr); gap: 20px; max-width: 875px; margin: 0 auto; align-items: stretch; }
-.board-wrap, .memory-board-wrap, .reaction-board-wrap { min-width: 0; position: relative; overflow: hidden; border: 1px solid #e1dfd7; border-radius: 5px; background: #fbfaf7; }
+.board-wrap, .memory-board-wrap, .reaction-board-wrap, .mole-board-wrap, .baseball-board-wrap { min-width: 0; position: relative; overflow: hidden; border: 1px solid #e1dfd7; border-radius: 5px; background: #fbfaf7; }
 .board-caption { height: 37px; padding: 0 13px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eae8e0; color: #95968d; font: 9px "DM Mono", monospace; letter-spacing: .45px; }
 .board-caption b { color: #55574f; font-weight: 500; }
 .live-label { display: flex; align-items: center; gap: 6px; }
 .live-label i { width: 5px; height: 5px; }
-.board-overlay { position: absolute; inset: 37px 0 0; display: flex; align-items: center; justify-content: center; flex-direction: column; background: #eaf0dfeF; text-align: center; transition: opacity 180ms ease; }
+.board-overlay { position: absolute; inset: 37px 0 0; z-index: 2; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 16px; background: #eaf0dfeF; text-align: center; transition: opacity 180ms ease; }
 .board-overlay.is-hidden { opacity: 0; pointer-events: none; }
 .overlay-symbol { display: grid; place-items: center; width: 47px; height: 47px; margin-bottom: 11px; border-radius: 16px; background: #d5e5c1; color: #547846; font: 26px "Jua", sans-serif; transform: rotate(-8deg); }
 .board-overlay h2 { margin: 0; font: 21px "Jua", sans-serif; }
@@ -199,6 +208,10 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 18px; 
 .side-primary { align-self: stretch; margin-top: auto; }
 .memory-best-row { margin-top: 5px; }
 .reaction-board-wrap { display: flex; flex-direction: column; }
+.memory-board-wrap .board-overlay { bottom: 48px; }
+.reaction-board-wrap .board-overlay, .mole-board-wrap .board-overlay { bottom: 35px; }
+.baseball-board-wrap { display: flex; flex-direction: column; }
+.baseball-board-wrap .game-host { flex: 1; min-height: 0; }
 @keyframes target-pop { from { transform: scale(.5); opacity: .5; } to { transform: scale(1); opacity: 1; } }
 .reaction-hint { display: none; margin-top: 15px; color: #527748; font-size: 10px; }
 .reaction-footer { display: flex; justify-content: space-between; padding: 10px 13px; color: #9a9a91; font-size: 9px; }
@@ -373,7 +386,7 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 18px; 
 .investment-range-labels { display: flex; justify-content: space-between; color: #7890ab; font-size: 9px; }
 .investment-range-labels b { color: #c1d1e4; font-weight: normal; }
 .investment-options-heading { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 9px; color: #dce9f8; font-size: 12px; }
-.investment-options-heading .text-button { margin: 0; }
+.investment-options-heading > .text-button { margin: 0; }
 .investment-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .investment-option { display: flex; flex-direction: column; min-width: 0; min-height: 145px; gap: 7px; border: 1px solid #29415d; border-radius: 6px; padding: 12px; background: #0b192a; color: #dce9f8; text-align: left; cursor: pointer; }
 .investment-option:hover { border-color: #4f8c95; }
@@ -418,7 +431,7 @@ kbd { display: inline-grid; place-items: center; min-width: 17px; height: 18px; 
   .investment-progress-panel { padding: 15px; }
 }
 
-/* Score X spacecraft-console visual theme */
+/* Score X service dashboard theme */
 body {
   color: var(--ink);
   background:
@@ -551,7 +564,7 @@ button:focus-visible, a:focus-visible { outline-color: var(--green); }
 .back-button:hover { border-color: #65e6d1; color: #8ff5e5; }
 .heading-mark { color: var(--green); }
 .play-layout { gap: 20px; }
-.board-wrap, .memory-board-wrap, .reaction-board-wrap, .mole-board-wrap, .rocket-board-wrap {
+.board-wrap, .memory-board-wrap, .reaction-board-wrap, .mole-board-wrap, .baseball-board-wrap, .rocket-board-wrap {
   border-color: #29415d;
   border-radius: 9px;
   background: #0b1828;
@@ -802,3 +815,227 @@ kbd { border-color: #314965; background: #14253a; color: #bfcee0; }
 .auth-actions { display: flex; flex: 1 1 100%; gap: 5px; }
 .scoreboard-player-form button.auth-secondary { background: transparent; color: var(--green); border: 1px solid var(--green); font-weight: normal; }
 .scoreboard-player-form[hidden] { display: none; }
+
+/* Corporate product UI: clear hierarchy, restrained surfaces, and one brand accent. */
+:root {
+  font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+  color: #e6edf5;
+  background: #080d16;
+  --ink: #e6edf5;
+  --muted: #91a0b4;
+  --paper: #111a27;
+  --line: #263446;
+  --green: #22c8b8;
+  --orange: #f16d7a;
+  --blue: #78a8f5;
+}
+
+body {
+  color: var(--ink);
+  background: #080d16;
+  font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+}
+
+button, input, select { font-family: inherit; }
+button:focus-visible, a:focus-visible { outline-color: var(--green); }
+.app-shell { max-width: 1680px; }
+.sidebar { border-color: #202c3a; background: #0d141e; }
+.brand, .welcome-row h1, .day-badge strong, .ranking-heading h2,
+.card-title-row h3, .game-heading h1, .investment-panel-content > h2,
+.shop-hero h1, .investment-hero h1, .section-heading h2 {
+  font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+  letter-spacing: -.025em;
+}
+.brand { color: #f1f5f9; font-weight: 700; }
+.brand small { color: #8390a1; font-weight: 400; letter-spacing: 1.2px; }
+.brand-mark span, .brand-mark span:nth-child(n) {
+  background: var(--green);
+  border-radius: 2px;
+  box-shadow: none;
+}
+.nav-label, .sidebar-edition { color: #758397; }
+.nav-item { border-radius: 6px; color: #a9b5c4; }
+.nav-item:hover { background: #172331; color: #f1f5f9; }
+.nav-item.is-active { background: #102a2c; color: #68dfd2; box-shadow: inset 2px 0 var(--green); }
+.nav-icon, .nav-item.is-active .nav-icon { color: #55cdbf; }
+.live-dot, .live-label i { background: var(--green); box-shadow: none; }
+.sidebar-bottom p { color: #dbe4ee; font-family: inherit; font-size: 16px; line-height: 1.6; }
+.sidebar-edition span { color: var(--green); }
+.topbar { border-color: #202c3a; }
+.breadcrumb { color: #8b98a9; }
+.breadcrumb strong { color: #e0e7ef; }
+.crumb-slash { color: #526174; }
+.topbar-date { color: #8794a5; }
+.avatar { border-color: #334456; background: #172431; color: #69d9cd; }
+.wallet-chip { border-color: #314052; background: #111d2a; color: #72dace; }
+.wallet-chip:hover { border-color: #448d88; background: #14272d; }
+.welcome-row h1 { color: #f0f4f8; font-size: 38px; line-height: 1.35; }
+.welcome-row h1 span::after { height: 4px; bottom: 2px; background: var(--green); opacity: .75; }
+.eyebrow { color: #91a0b2; }
+.eyebrow-line { background: var(--green); box-shadow: none; }
+.welcome-copy { color: #9ba8b8; }
+.day-badge {
+  width: 142px;
+  height: 68px;
+  gap: 3px;
+  margin-right: 0;
+  border-color: #293747;
+  border-radius: 8px;
+  background: #101a26;
+  box-shadow: none;
+  font-size: 8px;
+  letter-spacing: .9px;
+}
+.day-badge-star { display: none; }
+.day-badge strong { margin-top: 0; color: #59d4c6; font-size: 13px; letter-spacing: .06em; }
+.scoreboard {
+  border-color: #293747;
+  border-radius: 8px;
+  background: #111a27;
+  box-shadow: 0 10px 28px #0003;
+}
+.scoreboard-summary { background: #111a27; }
+.scoreboard-ranking { background: #101925; }
+.scoreboard-kicker { color: #a6b3c2; }
+.scoreboard-kicker span, .scoreboard-total > span { color: var(--green); }
+.scoreboard-label { color: #99a7b8; }
+.scoreboard-total strong { color: #f0f4f8; }
+.tier-badge { border-color: #2b7771; color: #72dace; }
+.scoreboard-player-form input { border-color: #344457; border-radius: 5px; background: #0b121c; }
+.scoreboard-player-form input:focus { outline-color: var(--green); }
+.scoreboard-player-form button { border-radius: 5px; background: var(--green); color: #06211f; }
+.scoreboard-player-form button.auth-secondary { border-color: #3a8d85; color: #72dace; }
+.scoreboard-ranking, .scoreboard-summary, .scoreboard-game-breakdown { border-color: #283544; }
+.ranking-heading h2, .section-heading h2 { color: #e6edf5; font-weight: 600; }
+.ranking-heading > span, .ranking-number { color: #8190a3; }
+.ranking-row { border-color: #243140; }
+.ranking-row:first-child .ranking-number, .ranking-row.is-current-player .ranking-name { color: #65d6c9; }
+.ranking-name, .score-game-item { color: #c3ceda; }
+.ranking-row > strong, .score-game-item > strong { color: #e5ebf2; }
+.section-kicker, .game-number { color: #8190a3; }
+.count-pill { background: #16272c; color: #67d4c8; }
+.section-note { color: #95a2b2; }
+.section-note span { color: var(--green); }
+.game-card {
+  border-color: #293747;
+  border-radius: 8px;
+  background: #111a27;
+  box-shadow: 0 5px 15px #0002;
+}
+.game-card:hover { border-color: #47726f; box-shadow: 0 10px 22px #0004; }
+.game-art { border-color: #2b3848; border-radius: 6px; }
+.best-chip { background: #1a2734; color: #a9b5c3; }
+.best-chip b { color: #e1e7ed; }
+.card-title-row h3 { color: #edf2f7; font-weight: 600; }
+.game-category { color: #8795a7; }
+.card-info p { color: #9ba8b7; }
+.play-link { border-color: #293747; color: #d9e2eb; }
+.play-link span { color: var(--green); }
+.home-bottom { border-color: #263443; color: #94a1b0; }
+.home-bottom strong { color: #d4dde6; }
+.tip-icon { border-color: #405264; color: #69d8cc; }
+.bottom-doodle { color: #4a8f88; font-size: 10px; }
+.page-footer { border-color: #263443; color: #778698; }
+.game-heading h1 { color: #f0f4f8; font-weight: 600; }
+.back-button { border-color: #344456; border-radius: 6px; background: #111d29; color: #bdc8d4; }
+.back-button:hover { border-color: #43867f; color: #71d9cd; }
+.heading-mark { text-shadow: none; }
+.mission-subtitle { color: #99a7b7; }
+.board-wrap, .memory-board-wrap, .reaction-board-wrap, .mole-board-wrap, .rocket-board-wrap, .clop-board-wrap {
+  border-color: #2b3949;
+  border-radius: 8px;
+  background: #101925;
+  box-shadow: 0 8px 20px #0003;
+}
+.board-caption { border-color: #293747; background: #131e2b; color: #92a0b0; }
+.board-caption b, .live-label { color: #66d7ca; }
+.board-overlay { background: #0d151feb; }
+.overlay-symbol { border-radius: 10px; background: #152d30; color: #6edacf; box-shadow: none; transform: none; }
+.board-overlay h2 { font-family: inherit; font-size: 19px; font-weight: 600; }
+.board-overlay p { color: #a1adbb; }
+.primary-button { border-radius: 5px; background: var(--green); color: #06211f; }
+.primary-button:hover { background: #54d8ca; }
+.primary-button span { color: #174743; }
+.game-side-panel { border-color: #2b3949; border-radius: 8px; background: #111a27; box-shadow: 0 6px 18px #0002; }
+.panel-label, .record-row, .control-copy, .text-button, .rocket-fuel { color: #a0adbb; }
+.score-block > strong { color: #edf2f7; }
+.score-unit { color: #8291a3; }
+.record-row > strong, .control-title { color: #dbe3eb; }
+.record-row small { color: #9aa7b5; }
+.divider { background: #2b3949; }
+.control-title span, .text-button:hover { color: #69d8cc; }
+kbd { border-color: #344456; background: #172330; color: #ced7e0; }
+.memory-footer, .reaction-footer { border-color: #2b3949; color: #97a4b2; }
+.investment-hero, .shop-hero {
+  border-color: #293a49;
+  border-radius: 8px;
+  background: #111c29;
+  box-shadow: 0 8px 20px #0002;
+}
+.investment-hero h1, .shop-hero h1 { color: #edf2f7; font-weight: 600; }
+.investment-hero-mark, .shop-wallet { border-color: #344858; background: #0d1722; box-shadow: none; }
+.investment-status-panel, .investment-progress-panel {
+  border-color: #2c3b4b;
+  border-radius: 8px;
+  background: #111a27;
+  box-shadow: 0 6px 18px #0002;
+}
+.investment-option { border-color: #2c3b4b; border-radius: 6px; background: #101925; }
+.investment-option:hover { border-color: #477d78; }
+.investment-option.is-selected { border-color: var(--green); background: #122a2b; box-shadow: inset 0 0 0 1px #22c8b822; }
+.investment-option > strong, .investment-amount-label strong { color: #69d8cc; }
+.investment-amount-input, .shop-item-form input { border-color: #344456; background: #0b121c; }
+.investment-start-button, .shop-buy-button { background: #153632; color: #79e0d4; }
+.shop-notice, .shop-item { border-color: #2b3949; background: #111a27; }
+.shop-item-preview { border-color: #2b3949; background: #172331; box-shadow: none; }
+.shop-buy-button:hover:not(:disabled) { border-color: #54b9ae; background: #1b4843; }
+#investment-cancel-option[hidden] { display: none; }
+.investment-confirm-dialog h2 { margin-top: 12px; }
+.investment-confirm-summary { display: grid; gap: 9px; margin: 18px 0; border: 1px solid #2c3b4b; border-radius: 6px; padding: 12px; background: #101925; }
+.investment-confirm-summary > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.investment-confirm-summary span { color: #9ba8b7; font-size: 12px; }
+.investment-confirm-summary strong { color: #e6edf5; font-size: 14px; }
+.investment-confirm-summary > div:last-child strong { color: #69d8cc; }
+.investment-confirm-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.investment-confirm-actions .text-button { margin: 0; padding: 8px 12px; }
+.investment-confirm-actions .primary-button { padding: 9px 14px; cursor: pointer; }
+
+@media (min-width: 761px) {
+  .nav-label { font-size: 11px; }
+  .nav-item { font-size: 15px; }
+  .today-stamp, .breadcrumb, .welcome-copy, .game-category { font-size: 13px; }
+  .sidebar-bottom p { font-size: 18px; }
+  .eyebrow, .section-kicker, .section-note, .game-number { font-size: 10px; }
+  .welcome-row h1 { font-size: 44px; }
+  .scoreboard-kicker, .scoreboard-label, .ranking-number { font-size: 10px; }
+  .scoreboard-foot, .scoreboard-message, .ranking-name, .ranking-row > strong,
+  .ranking-empty, .score-game-item, .section-note { font-size: 11px; }
+  .tier-badge, .profile-title-badge { font-size: 11px; }
+  .ranking-heading h2 { font-size: 16px; }
+  .ranking-heading > span { font-size: 9px; }
+  .card-title-row h3 { font-size: 19px; }
+  .best-chip, .best-chip b, .play-link, .card-info p { font-size: 13px; }
+  .game-heading h1 { font-size: 34px; }
+  .mission-subtitle, .board-caption, .panel-label, .record-row, .control-copy { font-size: 13px; }
+  .score-unit { font-size: 10px; }
+  .investment-hero-copy > p, .investment-status-panel p, .investment-step p,
+  .investment-option-description, .shop-item > p { font-size: 13px; }
+  .investment-status-kicker, .investment-outcomes, .investment-note,
+  .shop-footnote, .shop-notice { font-size: 11px; }
+  .investment-options-heading, .shop-item-name, .shop-item-form input { font-size: 14px; }
+  .investment-result-dialog p { font-size: 14px; }
+  .investment-result-dialog .mission-result-total { font-size: 12px; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ranking-row:hover .ranking-detail, .ranking-row:focus-visible .ranking-detail { display: block; }
+}
+
+@media (max-width: 760px) {
+  .sidebar { border-color: #293747; background: #0d141ef5; box-shadow: 0 -8px 20px #0004; }
+  .investment-nav-group { border-color: #293747; }
+  .nav-item.is-active { background: #102a2c; }
+  .scoreboard-summary, .scoreboard-ranking { background: #111a27; }
+  .scoreboard-summary, .scoreboard-ranking { border-color: #283544; }
+  .day-badge { width: 96px; height: 58px; }
+}

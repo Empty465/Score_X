@@ -39,8 +39,16 @@ async function begin() {
 startButton.addEventListener('click', begin);
 document.querySelector('#snake-restart').addEventListener('click', begin);
 
+function reset() {
+  game.reload();
+  scoreText.textContent = '00';
+  showOverlay('수거 임무 준비', '방향키 또는 WASD로 드론을 조종하세요.', '임무 시작');
+}
+
 export default {
-onLaunch: () => { game.ensure(); },
-onShow: () => { game.ensure(); game.resume(); },
-onHide: () => game.pause()
+  onLaunch: () => { game.ensure(); },
+  onStart: begin,
+  onShow: () => { game.ensure(); game.resume(); },
+  onHide: () => game.pause(),
+  onReset: reset
 };

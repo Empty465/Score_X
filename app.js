@@ -3,8 +3,8 @@ import { cardArt, builtinOrder } from '/shell/card-art.js';
 const gameCatalogById = new Map();
 let scoreGames = [];
 const titles = {
-  home: '임무 관제실',
-  investment: '투자 관제실',
+  home: '게임 홈',
+  investment: '투자 센터',
   shop: '재화 상점'
 };
 const gameNav = document.querySelector('.game-nav');
@@ -48,7 +48,7 @@ function renderGameMenu(games) {
     card.innerHTML = `
       <div class="card-topline"><span class="game-number"></span><span class="best-chip"><span>★</span> 최고 <b></b></span></div>
       <div class="game-art ${decor?.artClass ?? 'generic-art'}" aria-hidden="true"></div>
-      <div class="card-info"><div class="card-title-row"><h3></h3><span class="game-category"></span></div><p></p><button class="play-link">임무 시작 <span>↗</span></button></div>`;
+      <div class="card-info"><div class="card-title-row"><h3></h3><span class="game-category"></span></div><p></p><button class="play-link">게임 시작 <span>↗</span></button></div>`;
     card.querySelector('.best-chip b').dataset.best = game.id;
     card.querySelector('.play-link').dataset.launch = game.id;
     if (decor) card.querySelector('.game-art').innerHTML = decor.artMarkup;
@@ -76,6 +76,8 @@ let shopItems = [];
 let investmentOptions = [];
 let selectedRisk = null;
 let activeInvestment = null;
+let pendingInvestmentSettlement = null;
+let investmentRequestPending = false;
 let authMode = 'login';
 
 document.querySelector('#today-date').textContent = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date());
@@ -152,8 +154,8 @@ function renderScoreboard(data) {
   document.querySelector('#auth-session').hidden = !currentUser;
   const profileAvatar = document.querySelector('.avatar');
   profileAvatar.textContent = currentUser?.avatar || '🚀';
-  profileAvatar.setAttribute('aria-label', currentUser ? `${currentUser.name} 프로필` : '크루 프로필');
-  profileAvatar.title = currentUser?.title || currentUser?.name || '크루 프로필';
+  profileAvatar.setAttribute('aria-label', currentUser ? `${currentUser.name} 프로필` : 'Score X 프로필');
+  profileAvatar.title = currentUser?.title || currentUser?.name || 'Score X 프로필';
   const titleBadge = document.querySelector('#profile-title-badge');
   titleBadge.textContent = currentUser?.title || '';
   titleBadge.hidden = !currentUser?.title;
@@ -162,10 +164,14 @@ function renderScoreboard(data) {
   renderShopItems();
   renderInvestment();
 
-  function renderRankingList(container, players, valueKey, unitLabel, emptyMessage, showTier = false) {
+  function renderRankingList(container, players, valueKey, unitLabel, emptyMessage, showTier = false, detailType = 'scores') {
     const playerRows = players.map((player) => {
       const row = document.createElement('li');
       row.className = 'ranking-row';
+      row.tabIndex = 0;
+      row.setAttribute('role', 'button');
+      row.setAttribute('aria-expanded', 'false');
+      row.setAttribute('aria-label', `${player.rank}위 ${player.name}, ${formatPoints(player[valueKey])} ${unitLabel}. 선택해 상세 정보 보기`);
       if (player.id === currentUser?.id) row.classList.add('is-current-player');
       if (player.backgroundId) row.classList.add(`ranking-bg-${player.backgroundId}`);
       const rank = document.createElement('span');
@@ -195,6 +201,60 @@ function renderScoreboard(data) {
       unit.textContent = ` ${unitLabel}`;
       points.append(unit);
       row.append(rank, avatar, name, points);
+      const details = document.createElement('div');
+      details.className = 'ranking-detail';
+      details.setAttribute('aria-hidden', 'true');
+      if (detailType === 'scores') {
+        const heading = document.createElement('strong');
+        heading.className = 'ranking-detail-heading';
+        heading.textContent = '미니게임별 최고 점수';
+        const scores = document.createElement('ul');
+        scores.className = 'ranking-detail-list';
+        scores.append(...scoreGames.map((game) => {
+          const item = document.createElement('li');
+          const label = document.createElement('span');
+          label.textContent = `${game.icon} ${game.title}`;
+          const score = document.createElement('strong');
+          score.textContent = formatPoints(player.scores?.[game.id] || 0);
+          item.append(label, score);
+          return item;
+        }));
+        details.append(heading, scores);
+      } else {
+        const investment = player.latestInvestment;
+        const heading = document.createElement('strong');
+        heading.className = 'ranking-detail-heading';
+        heading.textContent = investment ? '최근 투자 결과' : '투자 기록';
+        details.append(heading);
+        if (investment) {
+          const info = document.createElement('p');
+          info.className = 'ranking-investment-info';
+          info.textContent = `${investment.riskName} · ${formatPoints(investment.stake)} CR 투자`;
+          if (investment.status === 'completed') {
+            info.textContent += ` · ${formatPoints(investment.reward)} CR 정산`;
+            const result = document.createElement('p');
+            result.className = 'ranking-investment-result';
+            const netDescription = investment.net > 0
+              ? `순이익 +${formatPoints(investment.net)} CR`
+              : investment.net < 0
+                ? `순손실 ${formatPoints(Math.abs(investment.net))} CR`
+                : '손익 없음';
+            result.textContent = `${investment.outcomeName} · ×${investment.multiplier ?? '—'} · ${netDescription}`;
+            details.append(info, result);
+          } else {
+            const progress = document.createElement('p');
+            progress.className = 'ranking-investment-result';
+            progress.textContent = `진행 중 · 임무 ${investment.progress}/${investment.gameCount}`;
+            details.append(info, progress);
+          }
+        } else {
+          const empty = document.createElement('p');
+          empty.className = 'ranking-investment-info';
+          empty.textContent = '완료된 투자 기록이 없습니다.';
+          details.append(empty);
+        }
+      }
+      row.append(details);
       return row;
     });
     if (playerRows.length === 0) {
@@ -219,7 +279,9 @@ function renderScoreboard(data) {
     data.creditPlayers || [],
     'credits',
     'CR',
-    '아직 등록된 플레이어가 없어요.'
+    '아직 등록된 플레이어가 없어요.',
+    false,
+    'investment'
   );
 
   const gameBreakdown = document.querySelector('#score-game-breakdown');
@@ -234,6 +296,46 @@ function renderScoreboard(data) {
     return row;
   }));
 }
+
+function toggleRankingDetails(row) {
+  const expanded = row.classList.toggle('is-expanded');
+  row.setAttribute('aria-expanded', String(expanded));
+  row.querySelector('.ranking-detail')?.setAttribute('aria-hidden', String(!expanded && !row.matches(':hover, :focus-within')));
+}
+
+document.querySelectorAll('#score-rankings, #credit-rankings').forEach((container) => {
+  const setDetailsVisibility = (row, visible) => {
+    if (row.classList.contains('is-expanded')) return;
+    row.querySelector('.ranking-detail')?.setAttribute('aria-hidden', String(!visible));
+  };
+  container.addEventListener('pointerover', (event) => {
+    const row = event.target.closest('.ranking-row[role="button"]');
+    if (row && !row.contains(event.relatedTarget)) setDetailsVisibility(row, true);
+  });
+  container.addEventListener('pointerout', (event) => {
+    const row = event.target.closest('.ranking-row[role="button"]');
+    if (row && !row.contains(event.relatedTarget)) setDetailsVisibility(row, false);
+  });
+  container.addEventListener('focusin', (event) => {
+    const row = event.target.closest('.ranking-row[role="button"]');
+    if (row) setDetailsVisibility(row, true);
+  });
+  container.addEventListener('focusout', (event) => {
+    const row = event.target.closest('.ranking-row[role="button"]');
+    if (row && !row.contains(event.relatedTarget)) setDetailsVisibility(row, false);
+  });
+  container.addEventListener('click', (event) => {
+    const row = event.target.closest('.ranking-row[role="button"]');
+    if (row) toggleRankingDetails(row);
+  });
+  container.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const row = event.target.closest('.ranking-row[role="button"]');
+    if (!row) return;
+    event.preventDefault();
+    toggleRankingDetails(row);
+  });
+});
 
 function setShopMessage(message, isError = false) {
   const status = document.querySelector('#shop-message');
@@ -263,9 +365,9 @@ function renderShopItems() {
     const category = document.createElement('span');
     category.className = 'shop-item-category';
     category.textContent = {
-      'display-name': 'CREW ID',
+      'display-name': 'PLAYER ID',
       avatar: 'PROFILE AVATAR',
-      title: 'CREW TITLE',
+      title: 'PLAYER TITLE',
       background: 'RANK BACKGROUND'
     }[item.type] || 'PROFILE ITEM';
     const title = document.createElement('h3');
@@ -338,13 +440,13 @@ async function loadShopItems() {
   if (!response.ok) throw new Error(result.error || '상점 상품을 불러오지 못했습니다.');
   shopItems = result.items;
   renderShopItems();
-  if (!currentProfile) setShopMessage('상점을 이용하려면 먼저 관제실에서 로그인하세요.');
-  else setShopMessage('미니게임에서 크레딧을 모아 크루 프로필을 꾸며보세요.');
+  if (!currentProfile) setShopMessage('상점을 이용하려면 먼저 게임 홈에서 로그인하세요.');
+  else setShopMessage('미니게임에서 크레딧을 모아 프로필을 꾸며보세요.');
 }
 
 async function purchaseShopItem(itemId, displayName, button) {
   if (!activePlayer) {
-    setShopMessage('상점을 이용하려면 먼저 관제실에서 로그인하세요.', true);
+    setShopMessage('상점을 이용하려면 먼저 게임 홈에서 로그인하세요.', true);
     return;
   }
   button.disabled = true;
@@ -359,7 +461,7 @@ async function purchaseShopItem(itemId, displayName, button) {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || '구매를 완료하지 못했습니다.');
     currentProfile = result.profile;
-    setShopMessage(`${result.profile.name} 크루 프로필을 업데이트했습니다.`);
+    setShopMessage(`${result.profile.name} 프로필을 업데이트했습니다.`);
     await refreshScoreboard();
   } catch (error) {
     setShopMessage(error.message || '구매를 완료하지 못했습니다.', true);
@@ -516,6 +618,7 @@ function renderInvestmentOptions() {
     });
     return card;
   }));
+  document.querySelector('#investment-cancel-option').hidden = !selectedRisk;
 }
 
 function renderInvestment() {
@@ -541,9 +644,9 @@ function renderInvestment() {
     ? `${activeInvestment.riskName} 옵션으로 임무를 완료하면 투자 결과를 정산합니다.`
     : '3~5개의 무작위 임무를 완료하면 서버에서 확률에 따라 투자 결과를 정산합니다.';
   form.querySelectorAll('input, button').forEach((element) => {
-    element.disabled = !currentProfile || Boolean(activeInvestment);
+    element.disabled = !currentProfile || Boolean(activeInvestment) || investmentRequestPending;
   });
-  startButton.disabled = !currentProfile || Boolean(activeInvestment) || stake > balance || !selectedRisk;
+  startButton.disabled = !currentProfile || Boolean(activeInvestment) || investmentRequestPending || stake > balance || !selectedRisk;
   progress.hidden = !activeInvestment;
   if (!activeInvestment) return;
 
@@ -578,20 +681,6 @@ async function loadInvestmentOptions() {
   renderInvestment();
 }
 
-async function rerollInvestmentOption() {
-  try {
-    ensureScoreServer();
-    const response = await fetch('/api/investment/options');
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || '투자 옵션을 다시 뽑지 못했습니다.');
-    selectedRisk = result.recommendation;
-    renderInvestmentOptions();
-    setInvestmentMessage('새 위험 옵션을 뽑았습니다. 확률표를 확인해 주세요.');
-  } catch (error) {
-    setInvestmentMessage(error.message || '투자 옵션을 다시 뽑지 못했습니다.', true);
-  }
-}
-
 async function loadActiveInvestment() {
   if (!activePlayer) {
     activeInvestment = null;
@@ -612,8 +701,27 @@ async function startInvestment(event) {
     setInvestmentMessage('투자는 로그인 후 이용할 수 있어요. 위험 옵션도 선택해 주세요.', true);
     return;
   }
-  const button = document.querySelector('#investment-start');
-  button.disabled = true;
+  const stake = Number(document.querySelector('#investment-stake-number').value);
+  const option = investmentOptions.find((item) => item.id === selectedRisk);
+  if (!option || !Number.isInteger(stake) || stake < 1 || stake > (currentProfile?.credits || 0)) {
+    setInvestmentMessage('투자 금액과 위험 옵션을 다시 확인해 주세요.', true);
+    return;
+  }
+  document.querySelector('#investment-confirm-stake').textContent = `${formatPoints(stake)} CR`;
+  document.querySelector('#investment-confirm-risk').textContent = option.name;
+  document.querySelector('#investment-confirm-dialog').showModal();
+}
+
+async function confirmInvestmentStart() {
+  if (investmentRequestPending || !activePlayer || !selectedRisk) return;
+  const stake = Number(document.querySelector('#investment-stake-number').value);
+  const option = investmentOptions.find((item) => item.id === selectedRisk);
+  if (!option || !Number.isInteger(stake) || stake < 1 || stake > (currentProfile?.credits || 0)) {
+    setInvestmentMessage('투자 금액과 위험 옵션을 다시 확인해 주세요.', true);
+    return;
+  }
+  investmentRequestPending = true;
+  renderInvestment();
   setInvestmentMessage('투자 임무를 준비하고 있습니다.');
   try {
     ensureScoreServer();
@@ -621,7 +729,7 @@ async function startInvestment(event) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        stake: Number(document.querySelector('#investment-stake-number').value),
+        stake,
         risk: selectedRisk
       })
     });
@@ -630,10 +738,22 @@ async function startInvestment(event) {
     activeInvestment = result.run;
     await refreshScoreboard();
     renderInvestment();
-    setInvestmentMessage('투자금이 예치됐습니다. 안내된 임무 순서대로 진행해 주세요.');
+    setInvestmentMessage('투자금이 예치됐습니다. 아래 시작 버튼을 눌러 첫 임무를 진행해 주세요.');
   } catch (error) {
     setInvestmentMessage(error.message || '투자 임무를 시작하지 못했습니다.', true);
+  } finally {
+    investmentRequestPending = false;
+    renderInvestment();
   }
+}
+
+async function launchNextInvestmentGame() {
+  const nextGame = activeInvestment?.games[activeInvestment.progress];
+  if (!nextGame) return;
+  await openGame(nextGame, true, (message) => {
+    showView('investment');
+    setInvestmentMessage(message, true);
+  }, true);
 }
 
 function handleInvestmentProgress(result) {
@@ -641,21 +761,28 @@ function handleInvestmentProgress(result) {
     activeInvestment = result.investment.status === 'active' ? result.investment : null;
     renderInvestment();
     if (result.investment.status === 'completed') {
-      const dialog = document.querySelector('#investment-result-dialog');
-      const outcome = result.investment.outcomeName;
-      document.querySelector('#investment-result-title').textContent = `투자 결과 · ${outcome}`;
-      document.querySelector('#investment-result-copy').textContent =
-        `${formatPoints(result.investment.stake)} CR 투자 · ${result.investment.riskName} · 배율 ×${result.investment.multiplier}`;
-      const net = result.investment.reward - result.investment.stake;
-      document.querySelector('#investment-result-amount').textContent =
-        `${net >= 0 ? '+' : ''}${formatPoints(net)} CR`;
-      if (!dialog.open) dialog.showModal();
+      pendingInvestmentSettlement = result.investment;
       setInvestmentMessage('투자 임무를 완료하고 정산했습니다.');
     }
   } else if (result.reroll) {
     selectedRisk = result.reroll;
     renderInvestmentOptions();
     setInvestmentMessage('미투자 임무 완료 보너스로 투자 옵션을 다시 뽑았습니다.');
+  }
+}
+
+function continueInvestmentRun() {
+  showView('investment');
+  if (pendingInvestmentSettlement) {
+    const investment = pendingInvestmentSettlement;
+    pendingInvestmentSettlement = null;
+    document.querySelector('#investment-result-title').textContent = `투자 결과 · ${investment.outcomeName}`;
+    document.querySelector('#investment-result-copy').textContent =
+      `${formatPoints(investment.stake)} CR 투자 · ${investment.riskName} · 배율 ×${investment.multiplier}`;
+    const net = investment.reward - investment.stake;
+    document.querySelector('#investment-result-amount').textContent =
+      `${net >= 0 ? '+' : ''}${formatPoints(net)} CR`;
+    document.querySelector('#investment-result-dialog').showModal();
   }
 }
 const gameModules = new Map();
@@ -665,7 +792,7 @@ window.Playground = { getBest, saveBest, awardScore };
 
 function validateLifecycle(id, lifecycle) {
   if (!lifecycle || typeof lifecycle !== 'object' ||
-      ['onLaunch', 'onShow', 'onHide'].some((method) => lifecycle[method] !== undefined && typeof lifecycle[method] !== 'function')) {
+      ['onLaunch', 'onStart', 'onShow', 'onHide', 'onReset'].some((method) => lifecycle[method] !== undefined && typeof lifecycle[method] !== 'function')) {
     throw new Error(`잘못된 게임 생명주기입니다: ${id}`);
   }
   return lifecycle;
@@ -695,13 +822,17 @@ function showView(name) {
   if (!Object.hasOwn(titles, name) || !target) {
     throw new Error(`등록되지 않은 화면입니다: ${name}`);
   }
+  const previous = document.querySelector('.view.is-visible');
+  const previousGame = previous?.id.replace(/^view-/, '');
+  if (previousGame && previousGame !== name && gameCatalogById.has(previousGame)) {
+    const lifecycle = gameModules.get(previousGame);
+    lifecycle?.onHide?.();
+    lifecycle?.onReset?.();
+  }
   document.querySelectorAll('.view').forEach((view) => view.classList.toggle('is-visible', view === target));
   document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('is-active', item.dataset.view === name));
   breadcrumbCurrent.textContent = titles[name];
-  gameModules.forEach((lifecycle, id) => {
-    if (id === name) lifecycle.onShow?.();
-    else lifecycle.onHide?.();
-  });
+  gameModules.get(name)?.onShow?.();
   if (name === 'investment' && activePlayer) {
     loadActiveInvestment().catch((error) => setInvestmentMessage(error.message || '투자 정보를 불러오지 못했습니다.', true));
   }
@@ -710,7 +841,7 @@ function showView(name) {
 async function openGame(id, shouldLaunch, onError = (message) => {
   showView('home');
   setPlayerMessage(message, true);
-}) {
+}, startImmediately = false) {
   try {
     const game = getGame(id);
     if (!gameLoads.has(id) && !gameModules.has(id)) {
@@ -727,6 +858,7 @@ async function openGame(id, shouldLaunch, onError = (message) => {
     const lifecycle = gameModules.get(id) || await gameLoads.get(id);
     showView(id);
     if (shouldLaunch) lifecycle.onLaunch?.();
+    if (startImmediately) await lifecycle.onStart?.();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     onError(message);
@@ -745,7 +877,19 @@ gameGrid.addEventListener('click', (event) => {
   if (button) openGame(button.dataset.launch, true);
 });
 document.querySelector('#investment-form').addEventListener('submit', startInvestment);
-document.querySelector('#investment-reroll').addEventListener('click', rerollInvestmentOption);
+document.querySelector('#investment-cancel-option').addEventListener('click', () => {
+  selectedRisk = null;
+  renderInvestmentOptions();
+  renderInvestment();
+  setInvestmentMessage('위험 옵션 선택을 취소했습니다.');
+});
+document.querySelector('#investment-confirm-cancel').addEventListener('click', () => {
+  document.querySelector('#investment-confirm-dialog').close();
+});
+document.querySelector('#investment-confirm-submit').addEventListener('click', () => {
+  document.querySelector('#investment-confirm-dialog').close();
+  confirmInvestmentStart();
+});
 document.querySelector('#investment-amount').addEventListener('input', (event) => {
   document.querySelector('#investment-stake-number').value = event.target.value;
   renderInvestment();
@@ -757,17 +901,17 @@ document.querySelector('#investment-stake-number').addEventListener('input', (ev
   document.querySelector('#investment-amount-value').textContent = formatPoints(value);
   renderInvestment();
 });
-document.querySelector('#investment-next-game').addEventListener('click', async (event) => {
-  const game = event.currentTarget.dataset.launch;
-  if (!game) return;
-  await openGame(game, true, (message) => setInvestmentMessage(message, true));
+document.querySelector('#investment-next-game').addEventListener('click', async () => {
+  await launchNextInvestmentGame();
 });
 document.querySelector('#investment-result-confirm').addEventListener('click', () => {
   document.querySelector('#investment-result-dialog').close();
 });
+document.querySelector('#investment-result-dialog').addEventListener('close', () => showView('investment'));
 document.querySelector('#mission-result-confirm').addEventListener('click', () => {
   document.querySelector('#mission-result-dialog').close();
 });
+document.querySelector('#mission-result-dialog').addEventListener('close', continueInvestmentRun);
 loadShopItems().catch((error) => setShopMessage(error.message || '상점에 연결할 수 없습니다.', true));
 loadInvestmentOptions().catch((error) => setInvestmentMessage(error.message || '투자 옵션을 불러올 수 없습니다.', true));
 document.querySelector('#player-form').addEventListener('submit', submitAuth);

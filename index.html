@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#07111f">
-  <title>Score X | AI Training Arcade</title>
+  <meta name="theme-color" content="#080d16">
+  <title>Score X | 게임 데이터 플랫폼</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   
   <script type="module" src="app.js"></script>
@@ -15,17 +15,17 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <a class="brand" href="#home" aria-label="Score X 임무 관제실">
+      <a class="brand" href="#home" aria-label="Score X 게임 홈">
         <span class="brand-mark"><span></span><span></span><span></span><span></span></span>
-        <span>Score X<small>AI TRAINING ARCADE</small></span>
+        <span>Score X<small>GAME DATA PLATFORM</small></span>
       </a>
 
-      <div class="nav-label">MINI GAMES</div>
-      <nav class="game-nav" aria-label="관제실 및 미니게임">
-        <button class="nav-item is-active" data-view="home" aria-label="임무 관제실" title="임무 관제실"><span class="nav-icon">⌂</span><span class="nav-full">임무 관제실</span><span class="nav-short" aria-hidden="true">관제</span></button>
+      <div class="nav-label">PLAY</div>
+      <nav class="game-nav" aria-label="게임 메뉴">
+        <button class="nav-item is-active" data-view="home" aria-label="게임 홈" title="게임 홈"><span class="nav-icon">⌂</span><span class="nav-full">게임 홈</span><span class="nav-short" aria-hidden="true">홈</span></button>
       </nav>
       <div class="investment-nav-group">
-        <div class="nav-label">RESOURCES</div>
+        <div class="nav-label">MY SCORE</div>
         <nav class="investment-nav" aria-label="재화 메뉴">
           <button class="nav-item" data-view="investment" aria-label="투자" title="투자"><span class="nav-icon">◇</span><span class="nav-full">투자</span><span class="nav-short" aria-hidden="true">투자</span></button>
           <button class="nav-item" data-view="shop" aria-label="재화 상점" title="재화 상점"><span class="nav-icon">▣</span><span class="nav-full">재화 상점</span><span class="nav-short" aria-hidden="true">상점</span></button>
@@ -33,31 +33,31 @@
       </div>
 
       <div class="sidebar-bottom">
-        <div class="today-stamp"><span class="live-dot"></span>크루 상태 · 대기 중</div>
-        <p>우주를 지키는<br>임무를 시작하세요.</p>
-        <span class="sidebar-edition">CREW OPERATIONS <span>·</span> SCORE X</span>
+        <div class="today-stamp"><span class="live-dot"></span>서비스 운영 중</div>
+        <p>플레이하고<br>기록을 쌓아보세요.</p>
+        <span class="sidebar-edition">GAME DATA PLATFORM <span>·</span> SCORE X</span>
       </div>
     </aside>
 
     <main class="main-content">
       <header class="topbar">
-        <div class="breadcrumb"><span>SCORE X</span><span class="crumb-slash">/</span><strong id="breadcrumb-current">임무 관제실</strong></div>
+        <div class="breadcrumb"><span>SCORE X</span><span class="crumb-slash">/</span><strong id="breadcrumb-current">게임 홈</strong></div>
         <div class="topbar-right"><span class="topbar-date" id="today-date"></span><button class="wallet-chip" type="button" data-view="shop" aria-label="재화 상점 열기"><span>◇</span><strong id="wallet-balance">—</strong><small>CR</small></button><span class="avatar">🚀</span></div>
       </header>
 
       <section class="view home-view is-visible" id="view-home">
         <div class="welcome-row">
           <div>
-            <div class="eyebrow"><span class="eyebrow-line"></span>SCORE X · CREW TRAINING</div>
-            <h1>우주선의 미래를<br><span>당신</span>에게 맡깁니다.</h1>
-            <p class="welcome-copy">다양한 임무를 수행하고 AI 학습 데이터를 완성하세요.</p>
+            <div class="eyebrow"><span class="eyebrow-line"></span>SCORE X · GAME DATA PLATFORM</div>
+            <h1>플레이 기록을 한곳에서<br><span>관리</span>하세요.</h1>
+            <p class="welcome-copy">게임을 플레이하고, 최고 기록과 랭킹을 확인하세요.</p>
           </div>
-          <div class="day-badge"><span class="day-badge-star">✳</span><span>CREW<br>STATUS</span><strong>READY</strong></div>
+          <div class="day-badge"><span class="day-badge-star">●</span><span>SCORE X<br>PLATFORM</span><strong>ONLINE</strong></div>
         </div>
 
         <section class="scoreboard" aria-label="최고 기록 및 투자 재화 점수판">
           <div class="scoreboard-summary">
-            <div class="scoreboard-kicker"><span>✳</span> CREW PERFORMANCE</div>
+            <div class="scoreboard-kicker"><span>●</span> PLAYER PERFORMANCE</div>
             <div class="scoreboard-label">최고 기록 합산 점수 · PTS</div>
             <div class="scoreboard-total"><strong id="total-score">0</strong><span>PTS</span></div>
             <span class="tier-badge" id="total-tier">훈련생</span>
@@ -81,11 +81,11 @@
             <p class="scoreboard-message" id="player-message" role="status" aria-live="polite">SQLite 점수 서버에 연결하는 중...</p>
           </div>
           <div class="scoreboard-ranking">
-            <div class="ranking-heading"><h2>최고 기록 랭킹</h2><span>TOP 10 · PTS</span></div>
+            <div class="ranking-heading"><h2>최고 기록 랭킹</h2><span>TOP 10 · PTS · 상세 보기</span></div>
             <ol id="score-rankings" aria-label="최고 기록 합산 점수 순위"></ol>
           </div>
           <div class="scoreboard-ranking credit-ranking">
-            <div class="ranking-heading"><h2>투자 재화 랭킹</h2><span>TOP 10 · CR</span></div>
+            <div class="ranking-heading"><h2>투자 재화 랭킹</h2><span>TOP 10 · CR · 상세 보기</span></div>
             <ol id="credit-rankings" aria-label="현재 보유 투자 재화 순위"></ol>
           </div>
           <div class="scoreboard-game-breakdown">
@@ -94,18 +94,18 @@
           </div>
         </section>
 
-        <div class="section-heading"><div><span class="section-kicker">SELECT YOUR MISSION</span><h2>임무 선택</h2></div><span class="section-note">새 임무가 계속 추가됩니다 <span>↘</span></span></div>
+        <div class="section-heading"><div><span class="section-kicker">EXPLORE GAMES</span><h2>게임 선택</h2></div><span class="section-note">새로운 게임이 계속 추가됩니다 <span>↘</span></span></div>
 
         <div class="game-grid"></div>
 
-        <div class="home-bottom"><div class="tip-icon">i</div><p><strong>모든 임무는 AI 학습 데이터가 됩니다.</strong> 크루 기록은 Score X 점수판에 저장돼요.</p><span class="bottom-doodle">✳</span></div>
+        <div class="home-bottom"><div class="tip-icon">i</div><p><strong>플레이 기록은 Score X에 저장됩니다.</strong> 로그인하면 최고 기록과 랭킹을 관리할 수 있어요.</p><span class="bottom-doodle">●</span></div>
       </section>
 
       <section class="view investment-view" id="view-investment">
         <div class="investment-hero">
           <div class="investment-hero-copy">
             <div class="eyebrow"><span class="eyebrow-line"></span>SCORE X · RESOURCE OPERATIONS</div>
-            <h1>투자 관제실</h1>
+            <h1>투자 센터</h1>
             <p>보유 재화를 활용해 다음 결과에 투자하고, 성과에 따라 보상을 획득하세요.</p>
           </div>
           <div class="investment-hero-mark" aria-hidden="true"><span>◇</span><small>RESOURCE<br>EXCHANGE</small></div>
@@ -122,7 +122,7 @@
               <div class="investment-amount-input"><input id="investment-stake-number" type="number" min="1" max="500" value="1" aria-label="투자할 재화 수량"><span>CR</span></div>
               <input id="investment-amount" name="stake" type="range" min="1" max="500" value="1">
               <div class="investment-range-labels"><span>1 CR</span><span>보유량 <b id="investment-credit-limit">—</b> CR</span></div>
-              <div class="investment-options-heading"><strong>위험 옵션</strong><button class="text-button" id="investment-reroll" type="button">↻ 옵션 리롤</button></div>
+              <div class="investment-options-heading"><strong>위험 옵션</strong><button class="text-button" id="investment-cancel-option" type="button" hidden>선택 취소</button></div>
               <div class="investment-options" id="investment-options" role="radiogroup" aria-label="투자 위험 옵션"></div>
               <button class="primary-button investment-start-button" id="investment-start" type="submit">투자 시작 <span>↗</span></button>
             </form>
@@ -143,7 +143,7 @@
       <section class="view shop-view" id="view-shop">
         <div class="shop-hero">
           <div>
-            <div class="eyebrow"><span class="eyebrow-line"></span>SCORE X · CREW CUSTOMIZATION</div>
+            <div class="eyebrow"><span class="eyebrow-line"></span>SCORE X · PROFILE CUSTOMIZATION</div>
             <h1>재화 상점</h1>
             <p>임무 보상으로 크레딧을 모아 점수판 프로필을 꾸며보세요.</p>
           </div>
@@ -152,7 +152,7 @@
         <div class="shop-notice" id="shop-message" role="status" aria-live="polite">상점 정보를 불러오는 중...</div>
         <div class="shop-section-heading"><div><span class="section-kicker">PROFILE ITEMS</span><h2>아바타 · 칭호 · 랭킹 배경</h2></div><span class="section-note">구매한 아이템은 언제든 장착할 수 있어요</span></div>
         <div class="shop-grid" id="shop-items" aria-live="polite"></div>
-        <div class="shop-footnote"><span>i</span><p>새 크루 등록 시 환영 크레딧 500 CR이 지급됩니다. 기존 계정은 상점 적용 시 500 CR을 한 번 지급받습니다. 미니게임 점수 100점마다 1 CR, 게임 완료 시 최소 1 CR을 획득합니다.</p></div>
+        <div class="shop-footnote"><span>i</span><p>새 계정 등록 시 환영 크레딧 500 CR이 지급됩니다. 기존 계정은 상점 적용 시 500 CR을 한 번 지급받습니다. 미니게임 점수 100점마다 1 CR, 게임 완료 시 최소 1 CR을 획득합니다.</p></div>
       </section>
 
       <section class="view game-view" id="view-snake" data-title="우주 쓰레기 수거">
@@ -166,32 +166,32 @@
       <section class="view game-view" id="view-memory" data-title="시스템 오류 복구">
         <div class="game-heading"><button class="back-button" data-view="home" aria-label="임무 목록으로">←</button><div><div class="eyebrow">NO. 02 <span class="eyebrow-line"></span> SYSTEM REBOOT</div><h1>시스템 오류 복구</h1><p class="mission-subtitle">태양풍에 손상된 제어 회로의 홀로그램 패턴을 복구하세요.</p></div><span class="heading-mark memory-mark">▦</span></div>
         <div class="play-layout">
-          <div class="memory-board-wrap"><div class="board-caption"><span>HOLOGRAM CIRCUIT · PAIR SYNC</span><span class="live-label"><i></i> <span id="memory-status">READY</span></span></div><div class="game-host memory-host" id="memory-host"></div><div class="memory-footer"><span>엔진·산소 공급 등 회로 아이콘의 짝을 찾으세요.</span><button class="text-button" id="memory-reset">↻ 회로 재배열</button></div></div>
-          <div class="game-side-panel"><div class="score-block memory-score"><span class="panel-label">복구 시도</span><strong id="memory-moves">00</strong><span class="score-unit">CIRCUIT PAIR ATTEMPTS</span></div><div class="record-row"><span>복구 시간</span><strong id="memory-time">00:00</strong></div><div class="divider"></div><div class="control-title">회로 복구 방법 <span>✦</span></div><p class="control-copy">홀로그램 패널 두 개를 열어 같은 시스템 아이콘을 연결하세요. 적은 횟수로 복구할수록 좋아요.</p><div class="memory-pairs"><span>남은 회로</span><strong id="memory-pairs">08</strong></div><button class="primary-button side-primary" id="memory-start">복구 시작 <span>↗</span></button><div class="record-row memory-best-row"><span>최고 기록</span><strong><span data-best="memory">—</span><small> 회</small></strong></div></div>
+          <div class="memory-board-wrap"><div class="board-caption"><span>HOLOGRAM CIRCUIT · PAIR SYNC</span><span class="live-label"><i></i> <span id="memory-status">READY</span></span></div><div class="game-host memory-host" id="memory-host"></div><div class="board-overlay" id="memory-overlay"><div class="overlay-symbol">▦</div><h2 id="memory-overlay-title">회로 복구 준비</h2><p id="memory-overlay-copy">같은 시스템 아이콘을 찾아 제어 회로를 복구하세요.</p><button class="primary-button" id="memory-start">복구 시작 <span>↗</span></button></div><div class="memory-footer"><span>엔진·산소 공급 등 회로 아이콘의 짝을 찾으세요.</span><button class="text-button" id="memory-reset">↻ 회로 재배열</button></div></div>
+          <div class="game-side-panel"><div class="score-block memory-score"><span class="panel-label">복구 시도</span><strong id="memory-moves">00</strong><span class="score-unit">CIRCUIT PAIR ATTEMPTS</span></div><div class="record-row"><span>복구 시간</span><strong id="memory-time">00:00</strong></div><div class="divider"></div><div class="control-title">회로 복구 방법 <span>✦</span></div><p class="control-copy">홀로그램 패널 두 개를 열어 같은 시스템 아이콘을 연결하세요. 적은 횟수로 복구할수록 좋아요.</p><div class="memory-pairs"><span>남은 회로</span><strong id="memory-pairs">08</strong></div><div class="record-row memory-best-row"><span>최고 기록</span><strong><span data-best="memory">—</span><small> 회</small></strong></div></div>
         </div>
       </section>
 
       <section class="view game-view" id="view-reaction" data-title="수동 도킹 시퀀스">
         <div class="game-heading"><button class="back-button" data-view="home" aria-label="임무 목록으로">←</button><div><div class="eyebrow">NO. 03 <span class="eyebrow-line"></span> MANUAL DOCKING</div><h1>수동 도킹 시퀀스</h1><p class="mission-subtitle">자동 도킹 오류 발생. 레이더 신호에 맞춰 결합하세요.</p></div><span class="heading-mark reaction-mark">✳</span></div>
         <div class="play-layout">
-          <div class="reaction-board-wrap"><div class="board-caption"><span>DOCKING RADAR · RANGE 03</span><span class="live-label"><i></i> <span id="reaction-status">READY</span></span></div><div class="game-host reaction-host" id="reaction-host"></div><div class="reaction-footer"><span>신호 대기 중에는 조작하지 마세요.</span><span>DOCKING WINDOW</span></div></div>
-          <div class="game-side-panel"><div class="score-block reaction-score"><span class="panel-label">도킹 반응 시간</span><strong id="reaction-score">—<small> ms</small></strong><span class="score-unit">DOCKING RESPONSE</span></div><div class="record-row"><span>최고 기록</span><strong><span data-best="reaction">—</span><small> ms</small></strong></div><div class="divider"></div><div class="control-title">수동 도킹 절차 <span>⚡</span></div><p class="control-copy">도킹 신호를 기다린 뒤 결합 표시가 점등되는 순간 확인 버튼을 누르세요.</p><p class="control-copy" id="reaction-hint" role="status"></p><div class="reaction-best-note"><span>✳</span><span>정확한 타이밍으로<br><strong>안전한 도킹을 완료하세요.</strong></span></div><button class="primary-button side-primary" id="reaction-start">시퀀스 시작 <span>↗</span></button></div>
+          <div class="reaction-board-wrap"><div class="board-caption"><span>DOCKING RADAR · RANGE 03</span><span class="live-label"><i></i> <span id="reaction-status">READY</span></span></div><div class="game-host reaction-host" id="reaction-host"></div><div class="board-overlay" id="reaction-overlay"><div class="overlay-symbol">✳</div><h2 id="reaction-overlay-title">도킹 시퀀스 준비</h2><p id="reaction-overlay-copy">신호가 점등되는 순간 화면을 눌러 도킹하세요.</p><button class="primary-button" id="reaction-start">시퀀스 시작 <span>↗</span></button></div><div class="reaction-footer"><span>신호 대기 중에는 조작하지 마세요.</span><span>DOCKING WINDOW</span></div></div>
+          <div class="game-side-panel"><div class="score-block reaction-score"><span class="panel-label">도킹 반응 시간</span><strong id="reaction-score">—<small> ms</small></strong><span class="score-unit">DOCKING RESPONSE</span></div><div class="record-row"><span>최고 기록</span><strong><span data-best="reaction">—</span><small> ms</small></strong></div><div class="divider"></div><div class="control-title">수동 도킹 절차 <span>⚡</span></div><p class="control-copy">도킹 신호를 기다린 뒤 결합 표시가 점등되는 순간 확인 버튼을 누르세요.</p><p class="control-copy" id="reaction-hint" role="status"></p><div class="reaction-best-note"><span>✳</span><span>정확한 타이밍으로<br><strong>안전한 도킹을 완료하세요.</strong></span></div></div>
         </div>
       </section>
 
       <section class="view game-view" id="view-mole" data-title="비상 경고등 진압">
         <div class="game-heading"><button class="back-button" data-view="home" aria-label="임무 목록으로">←</button><div><div class="eyebrow">NO. 04 <span class="eyebrow-line"></span> EMERGENCY RESPONSE</div><h1>비상 경고등 진압</h1><p class="mission-subtitle">선내 과부하 경고. 점등된 비상 스위치를 빠르게 차단하세요.</p></div><span class="heading-mark mole-mark">!</span></div>
         <div class="play-layout">
-          <div class="mole-board-wrap"><div class="board-caption"><span>WARNING SWITCHES · DECK 04</span><span class="live-label"><i></i> <span id="mole-status">READY</span></span></div>          <div class="game-host mole-host" id="mole-host"></div><div class="mole-footer"><span>점등된 경고 스위치를 눌러 과부하를 차단하세요.</span><span>20 SEC</span></div></div>
-          <div class="game-side-panel"><div class="score-block"><span class="panel-label">차단한 경고</span><strong id="mole-score">00</strong><span class="score-unit">WARNINGS CLEARED</span></div><div class="record-row"><span>남은 시간</span><strong id="mole-time">20<small> 초</small></strong></div><div class="record-row"><span>최고 기록</span><strong><span data-best="mole">0</span><small> 회</small></strong></div><div class="divider"></div><div class="control-title">비상 대응 <span>✦</span></div><p class="control-copy">과부하 경고등이 켜지는 즉시 해당 스위치를 눌러 전력을 차단하세요.</p><button class="primary-button side-primary" id="mole-start">임무 시작 <span>↗</span></button></div>
+          <div class="mole-board-wrap"><div class="board-caption"><span>WARNING SWITCHES · DECK 04</span><span class="live-label"><i></i> <span id="mole-status">READY</span></span></div><div class="game-host mole-host" id="mole-host"></div><div class="board-overlay" id="mole-overlay"><div class="overlay-symbol">!</div><h2 id="mole-overlay-title">경고 진압 준비</h2><p id="mole-overlay-copy">점등된 비상 스위치를 빠르게 눌러 경고를 차단하세요.</p><button class="primary-button" id="mole-start">임무 시작 <span>↗</span></button></div><div class="mole-footer"><span>점등된 경고 스위치를 눌러 과부하를 차단하세요.</span><span>20 SEC</span></div></div>
+          <div class="game-side-panel"><div class="score-block"><span class="panel-label">차단한 경고</span><strong id="mole-score">00</strong><span class="score-unit">WARNINGS CLEARED</span></div><div class="record-row"><span>남은 시간</span><strong id="mole-time">20<small> 초</small></strong></div><div class="record-row"><span>최고 기록</span><strong><span data-best="mole">0</span><small> 회</small></strong></div><div class="divider"></div><div class="control-title">비상 대응 <span>✦</span></div><p class="control-copy">과부하 경고등이 켜지는 즉시 해당 스위치를 눌러 전력을 차단하세요.</p></div>
         </div>
       </section>
 
       <section class="view game-view" id="view-baseball" data-title="궤도 진입 좌표 해독">
         <div class="game-heading"><button class="back-button" data-view="home" aria-label="임무 목록으로">←</button><div><div class="eyebrow">NO. 05 <span class="eyebrow-line"></span> ORBITAL ACCESS CODE</div><h1>궤도 진입 좌표 해독</h1><p class="mission-subtitle">통신이 끊겼습니다. 터미널의 암호화된 신호를 분석해 9회 안에 보안 코드를 복구하고 궤도 진입 경로를 확보하세요.</p></div><span class="heading-mark baseball-mark">#</span></div>
         <div class="play-layout">
-          <div class="game-host" id="baseball-host"></div>
-          <div class="game-side-panel"><div class="score-block baseball-score"><span class="panel-label">남은 해독 시도</span><strong id="baseball-remaining">09</strong><span class="score-unit">ACCESS ATTEMPTS LEFT</span></div><div class="record-row"><span>최고 기록</span><strong><span data-best="baseball">—</span><small> 회</small></strong></div><div class="divider"></div><div class="control-title">터미널 신호 판독법 <span>&gt;_</span></div><p class="control-copy">코드는 <strong>1~9 숫자 중 중복 없이 고른 3자리</strong>입니다. 입력할 때마다 터미널이 숫자 포함 여부와 자리의 정확도를 알려줍니다.</p><div class="baseball-rules"><div><strong>좌표 일치</strong><p>숫자와 위치가 모두 정답입니다.</p></div><div><strong>신호 검출</strong><p>정답 숫자지만 다른 위치에 있습니다.</p></div><div><strong>미검출</strong><p>입력한 숫자가 코드에 없습니다.</p></div></div><div class="baseball-example"><span>예시 목표 코드 <b>427</b></span><span>입력한 코드 <b>472</b></span><strong>좌표 일치 1 · 신호 검출 2</strong></div><p class="baseball-instruction-note">위 예시에서 <b>4</b>는 첫 자리까지 맞고, <b>7</b>과 <b>2</b>는 코드에 있지만 위치가 바뀌었습니다. 실제 임무 코드는 매번 새로 생성됩니다. <strong>최대 9회</strong> 안에 세 자리와 순서를 모두 맞히세요.</p><button class="primary-button side-primary" id="baseball-reset">새 보안 코드 발급 <span>↻</span></button></div>
+          <div class="baseball-board-wrap"><div class="board-caption"><span>ENCRYPTED ACCESS TERMINAL</span><span class="live-label"><i></i> <span id="baseball-status">READY</span></span></div><div class="game-host" id="baseball-host"></div><div class="board-overlay" id="baseball-overlay"><div class="overlay-symbol">&gt;_</div><h2 id="baseball-overlay-title">좌표 해독 준비</h2><p id="baseball-overlay-copy">세 자리 보안 코드를 해독해 진입 경로를 확보하세요.</p><button class="primary-button" id="baseball-reset">해독 시작 <span>↗</span></button></div></div>
+          <div class="game-side-panel"><div class="score-block baseball-score"><span class="panel-label">남은 해독 시도</span><strong id="baseball-remaining">09</strong><span class="score-unit">ACCESS ATTEMPTS LEFT</span></div><div class="record-row"><span>최고 기록</span><strong><span data-best="baseball">—</span><small> 회</small></strong></div><div class="divider"></div><div class="control-title">터미널 신호 판독법 <span>&gt;_</span></div><p class="control-copy">코드는 <strong>1~9 숫자 중 중복 없이 고른 3자리</strong>입니다. 입력할 때마다 터미널이 숫자 포함 여부와 자리의 정확도를 알려줍니다.</p><div class="baseball-rules"><div><strong>좌표 일치</strong><p>숫자와 위치가 모두 정답입니다.</p></div><div><strong>신호 검출</strong><p>정답 숫자지만 다른 위치에 있습니다.</p></div><div><strong>미검출</strong><p>입력한 숫자가 코드에 없습니다.</p></div></div><div class="baseball-example"><span>예시 목표 코드 <b>427</b></span><span>입력한 코드 <b>472</b></span><strong>좌표 일치 1 · 신호 검출 2</strong></div><p class="baseball-instruction-note">위 예시에서 <b>4</b>는 첫 자리까지 맞고, <b>7</b>과 <b>2</b>는 코드에 있지만 위치가 바뀌었습니다. 실제 임무 코드는 매번 새로 생성됩니다. <strong>최대 9회</strong> 안에 세 자리와 순서를 모두 맞히세요.</p></div>
         </div>
       </section>
       <section class="view game-view" id="view-rocket" data-title="1단 부스터 회수">
@@ -218,6 +218,20 @@
     <p id="investment-result-copy"></p>
     <strong class="investment-result-amount" id="investment-result-amount"></strong>
     <button class="primary-button" id="investment-result-confirm" type="button">확인 <span>↗</span></button>
+  </dialog>
+  <dialog class="investment-result-dialog investment-confirm-dialog" id="investment-confirm-dialog">
+    <form method="dialog"><button class="dialog-close" aria-label="닫기">×</button></form>
+    <span class="section-kicker">INVESTMENT CONFIRMATION</span>
+    <h2>투자를 시작할까요?</h2>
+    <p>투자금은 시작 시 차감되며, 선택한 위험 옵션에 따라 정산됩니다.</p>
+    <div class="investment-confirm-summary">
+      <div><span>투자 금액</span><strong id="investment-confirm-stake"></strong></div>
+      <div><span>위험 옵션</span><strong id="investment-confirm-risk"></strong></div>
+    </div>
+    <div class="investment-confirm-actions">
+      <button class="text-button" id="investment-confirm-cancel" type="button">취소</button>
+      <button class="primary-button" id="investment-confirm-submit" type="button">투자 확정 <span>↗</span></button>
+    </div>
   </dialog>
   <dialog class="investment-result-dialog mission-result-dialog" id="mission-result-dialog">
     <form method="dialog"><button class="dialog-close" aria-label="닫기">×</button></form>

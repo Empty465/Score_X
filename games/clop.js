@@ -65,6 +65,10 @@ function ensureElement() {
   return element;
 }
 
+function reloadGame() {
+  if (element && element.state !== 'loading') element.load();
+}
+
 async function start() {
   if (starting) return;
   starting = true;
@@ -85,13 +89,20 @@ async function start() {
 
 startButton.addEventListener('click', start);
 document.querySelector('#clop-reset').addEventListener('click', () => {
-  if (!element) return;
-  element.load();
+  reloadGame();
   resetPanel();
   showOverlay('보행 시험 준비 완료', 'Q·W·O·P로 다리 4개를 번갈아 움직여 뒤집히지 않고 120m를 가세요.', '시험 시작');
 });
 
+function reset() {
+  reloadGame();
+  resetPanel();
+  showOverlay('보행 시험 준비 완료', 'Q·W·O·P로 다리 4개를 번갈아 움직여 뒤집히지 않고 120m를 가세요.', '시험 시작');
+}
+
 export default {
+  onStart: start,
   onShow: () => { ensureElement().resume(); },
-  onHide: () => { element?.pause(); }
+  onHide: () => { element?.pause(); },
+  onReset: reset
 };

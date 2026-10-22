@@ -39,7 +39,10 @@ export function mountGame({ id, host, difficulty = 'NORMAL', onHud, onGameOver, 
   return {
     ensure,
     start,
-    reload() { return element?.load(); },
+    reload() {
+      if (!element || element.state === 'loading') return;
+      return element.load();
+    },
     pause() { element?.pause(); },
     resume() { element?.resume(); }
   };
