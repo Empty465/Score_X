@@ -16,7 +16,7 @@
 기본 화면 대신 게임별 사이드 패널·오버레이가 필요하면 다음을 추가합니다. 기본 게임 7종이 이 방식입니다.
 
 - `index.html`에 `id="view-<id>"` 화면을 추가합니다. 게임이 들어갈 자리에는 `<div class="game-host" id="<id>-host"></div>`를 둡니다.
-- `games/<id>.js` 어댑터를 만듭니다. `shell/game-host.js`의 `mountGame({ id, host, difficulty, onHud, onGameOver, onError })`로 게임을 올리고, 모듈의 **default export**로 생명주기 `{ onLaunch, onStart, onShow, onHide, onReset }`를 내보냅니다. `onStart`와 `onReset`은 선택 항목이며, 투자 시퀀스의 자동 시작과 화면 이탈 시 초기 상태 복귀에 사용합니다. `template.js`를 복사해 시작합니다.
+- `games/<id>.js` 어댑터를 만듭니다. `shell/game-host.js`의 `mountGame({ id, host, difficulty, onHud, onGameOver, onError })`로 게임을 올리고, 모듈의 **default export**로 생명주기 `{ onLaunch, onStart, onShow, onHide, onReset }`를 내보냅니다. `onStart`와 `onReset`은 선택 항목이며, 투자 시퀀스의 자동 시작과 화면 이탈 시 초기 상태 복귀에 사용합니다. 필요하면 [`examples/dedicated_screen/adapter-template.js`](../examples/dedicated_screen/adapter-template.js)를 복사해 시작합니다.
 - `window.Playground`에서 `getBest(id)`, `saveBest(id, value)`, `awardScore(id, points, { playId, durationMs })`를 사용합니다.
 - 화면 `view-<id>`와 어댑터 `games/<id>.js`가 **둘 다** 있을 때만 전용 방식으로 동작하고, 아니면 기본 화면을 씁니다. 서버는 `GET /api/games`의 `adapter` 필드로 어댑터 존재 여부를 알려 줍니다.
 - 카드 장식(`shell/card-art.js`)은 선택 사항이며, 없으면 `icon` 기반 기본 카드가 사용됩니다.
