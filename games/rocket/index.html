@@ -35,8 +35,8 @@
     engine.gravity.scale = 0.00009;
     const WIDTH = canvas.width;
     const HEIGHT = canvas.height;
-    const PAD_X = 470;
-    const PAD_WIDTH = 180;
+    let PAD_X = 470;
+    const PAD_WIDTH = 140;
     const GROUND_Y = 424;
     const input = { rotate: 0, thrust: false };
     let rng = Math.random;
@@ -44,6 +44,8 @@
     let body = null;
     let pad = null;
     let obstacles = [];
+    let floaters = [];
+    let startX = 270;
     let fuel = 100;
     let running = false;
     let frame = null;
@@ -64,17 +66,47 @@
       };
     }
 
+    function between(min, max) { return min + rng() * (max - min); }
+
+    function layoutLevel() {
+      const half = PAD_WIDTH / 2;
+      do {
+        PAD_X = between(half + 40, WIDTH - half - 40);
+        startX = between(60, WIDTH - 60);
+      } while (Math.abs(PAD_X - startX) < 200);
+      const placed = [];
+      const count = 3 + Math.floor(rng() * 2);
+      for (let attempt = 0; attempt < 80 && placed.length < count; attempt += 1) {
+        const w = between(60, 120);
+        const h = between(16, 26);
+        const x = between(w / 2 + 20, WIDTH - w / 2 - 20);
+        const y = between(170, 330);
+        const nearPad = Math.abs(x - PAD_X) < half + w / 2 + 55;
+        const nearStart = Math.abs(x - startX) < w / 2 + 75 && y < 230;
+        const crowded = placed.some((o) => Math.abs(o.x - x) < (o.w + w) / 2 + 45 && Math.abs(o.y - y) < 70);
+        if (nearPad || nearStart || crowded) continue;
+        placed.push({ x, y, w, h });
+      }
+      return placed;
+    }
+
     function setupWorld() {
       Matter.Composite.clear(engine.world, false, true);
+      const half = PAD_WIDTH / 2;
+      const layout = layoutLevel();
       pad = Matter.Bodies.rectangle(PAD_X, GROUND_Y - 10, PAD_WIDTH, 12, { isStatic: true, friction: .9, label: 'landing-pad' });
+      floaters = layout.map(({ x, y, w, h }) => Matter.Bodies.rectangle(x, y, w, h, { isStatic: true, label: 'floating-obstacle' }));
+      const leftWidth = PAD_X - half;
+      const rightWidth = WIDTH - PAD_X - half;
       obstacles = [
-        Matter.Bodies.rectangle(190, 452, 380, 56, { isStatic: true, label: 'terrain' }),
-        Matter.Bodies.rectangle(645, 452, 150, 56, { isStatic: true, label: 'terrain' }),
+        Matter.Bodies.rectangle(leftWidth / 2, 452, leftWidth, 56, { isStatic: true, label: 'terrain' }),
+        Matter.Bodies.rectangle(PAD_X + half + rightWidth / 2, 452, rightWidth, 56, { isStatic: true, label: 'terrain' }),
         Matter.Bodies.rectangle(-14, 220, 28, 440, { isStatic: true, label: 'boundary' }),
-        Matter.Bodies.rectangle(734, 220, 28, 440, { isStatic: true, label: 'boundary' })
+        Matter.Bodies.rectangle(734, 220, 28, 440, { isStatic: true, label: 'boundary' }),
+        ...floaters
       ];
-      body = Matter.Bodies.rectangle(270, 112, 22, 38, { density: .002, friction: .55, frictionAir: .002, restitution: .02, label: 'lander' });
-      Matter.Body.setVelocity(body, { x: .15, y: .7 });
+      body = Matter.Bodies.rectangle(startX, 112, 22, 38, { density: .002, friction: .55, frictionAir: .002, restitution: .02, label: 'lander' });
+      Matter.Body.setVelocity(body, { x: startX < PAD_X ? .15 : -.15, y: .7 });
       Matter.Composite.add(engine.world, [...obstacles, pad, body]);
     }
 
@@ -159,7 +191,17 @@
       context.fillStyle = '#ff765f';
       context.fillRect(PAD_X - PAD_WIDTH / 2, GROUND_Y - 10, PAD_WIDTH, 7);
       context.fillStyle = '#f2f6f5';
-      for (let stripe = 0; stripe < 5; stripe += 1) context.fillRect(PAD_X - 64 + stripe * 32, GROUND_Y - 8, 12, 3);
+      for (let stripe = 0; stripe < 5; stripe += 1) context.fillRect(PAD_X - 50 + stripe * 25, GROUND_Y - 8, 10, 3);
+      floaters.forEach((item) => {
+        const { min, max } = item.bounds;
+        context.fillStyle = '#5d7380';
+        context.fillRect(min.x, min.y, max.x - min.x, max.y - min.y);
+        context.fillStyle = '#ffb347';
+        for (let x = min.x; x < max.x - 8; x += 16) context.fillRect(x, min.y, 8, 4);
+        context.strokeStyle = '#a9c0cc';
+        context.lineWidth = 1;
+        context.strokeRect(min.x + .5, min.y + .5, max.x - min.x - 1, max.y - min.y - 1);
+      });
 
       if (!body) return;
       context.save();

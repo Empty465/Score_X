@@ -3,15 +3,10 @@
 ## 🔲 해야 할 일 (진행 예정)
 
 ### A. 신규 요청 (2026-10-22 추가)
-- [x] 상점: 품목을 **아바타(프로필 사진) / 칭호 / 랭킹 배경**으로 나누고, '모두' 또는 해당 태그만 골라 볼 수 있게 필터 UI 개선
-- [x] UI: 랭킹에 표시되는 글씨 등 사이트 전체 글씨체 크기를 크게 키우기
-- [x] UI: 좌측 상단 게임 로고(Score X, GAME DATA PLATFORM) 클릭이 동작하지 않는 문제 수정 — 게임 홈으로 이동하는 링크 지정
-- [ ] 미니게임 `rocket`(1단 부스터 회수) 난이도 상승: 공중 장애물 일부 추가, 장애물과 착륙 플랫폼 위치는 매 판 랜덤
 - [ ] 신규 미니게임 '테트리스'(가제) 추가 (`games/<id>/manifest.json` 기반 iframe 게임, 절차는 `games/README.md` 참고)
 
 ### B. 기존 미완료 항목
 - [ ] 일일 1회 출석 보상 지급 및 중복 수령 방지
-- [ ] `clop` 남은 확인: 실제 플레이 난이도 조정(`clopHills`의 `height`, `clopTimeLimit`), 3000번 포트 서버 재시작 후 점수·CR·랭킹 반영 확인
 - [ ] 점수 검증 및 데이터 신뢰성 (5.4)
   - [ ] 게임 시작 시 난이도(EASY/NORMAL/HARD), 서버 발급 seed·플레이 세션 식별자를 공통 인터페이스로 전달 및 서버에서 관리
   - [ ] 게임 종료 결과(gameId, finalScore, playTimeSeconds, isCleared) 형식·게임 ID 서버 검증
@@ -29,6 +24,14 @@
 ## ✅ 완료 (최신순)
 
 ### 2026-10-22
+- [x] **상점·랭킹 UI 개선**
+  - [x] 상점 품목을 아바타 / 칭호 / 랭킹 배경으로 나누고 모두·분류별 필터 제공
+  - [x] 랭킹 배경 3종(오로라·성운·태양)을 CSS 그라데이션·애니메이션으로 화려하게 개선, 상점 미리보기와 동일 적용
+  - [x] 랭킹 및 사이트 전반 글씨 크기 확대, 순위 번호가 배경 색 띠와 겹치지 않게 간격 조정
+  - [x] 투자 폼을 패널 폭에 맞게 확장, 위험 옵션 확률을 결과별 줄바꿈 목록으로 표시(손실 빨강·대이득 초록)
+- [x] 좌측 상단 로고(Score X, GAME DATA PLATFORM) 클릭 시 게임 홈 이동
+- [x] 미니게임 `rocket` 난이도 상승: 공중 장애물 3~4개, 착륙 플랫폼(폭 140)·출발 위치·장애물 위치 매 판 랜덤 (플레이 테스트 확인)
+- [x] `clop` 플레이 테스트 및 점수·CR·랭킹 반영 확인
 - [x] **iframe 핫플러그 구조 완성** (명세: [MINIGAME_PROTOCOL.md](../MINIGAME_PROTOCOL.md))
   - [x] Shell 연동: `scorex-gameover` → `awardScore(game, points, {playId, durationMs})`, `scorex-hud` → 우측 패널 표시
   - [x] 시범 이전 `clop` 검증 후 나머지 6개(`reaction`, `mole`, `memory`, `baseball`, `snake`, `rocket`) 이전 (공용 도우미 `shell/game-host.js`, `rocket`은 `matter.min.js`를 `games/rocket/`에 포함, 서버의 `matter-js` 서빙 제거)
@@ -75,5 +78,6 @@
 ### 날짜 미기재 (기존 구현 확인)
 - [x] 미니게임 모듈 구조: Shell과 게임 분리(ES Module 동적 로딩), `registerGame(id, lifecycle)` 생명주기, `window.Playground` 공통 API(게임 등록, 최고 기록 조회·저장, 점수 제출) — 이후 5.3.1에서 iframe 구조로 대체됨
 - [x] 단일 카탈로그 관리, 지연 로드·중복 로드·미등록 ID·로드 실패 처리, 새 게임 추가 절차 문서화(`games/README.md`)와 연동 테스트(`npm test`)
+
 
 
