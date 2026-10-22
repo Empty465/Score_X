@@ -3,8 +3,8 @@ import { cardArt, builtinOrder } from '/shell/card-art.js';
 const gameCatalogById = new Map();
 let scoreGames = [];
 const titles = {
-  home: '임무 관제실',
-  investment: '투자 관제실',
+  home: '게임 홈',
+  investment: '투자 센터',
   shop: '재화 상점'
 };
 const gameNav = document.querySelector('.game-nav');
@@ -48,7 +48,7 @@ function renderGameMenu(games) {
     card.innerHTML = `
       <div class="card-topline"><span class="game-number"></span><span class="best-chip"><span>★</span> 최고 <b></b></span></div>
       <div class="game-art ${decor?.artClass ?? 'generic-art'}" aria-hidden="true"></div>
-      <div class="card-info"><div class="card-title-row"><h3></h3><span class="game-category"></span></div><p></p><button class="play-link">임무 시작 <span>↗</span></button></div>`;
+      <div class="card-info"><div class="card-title-row"><h3></h3><span class="game-category"></span></div><p></p><button class="play-link">게임 시작 <span>↗</span></button></div>`;
     card.querySelector('.best-chip b').dataset.best = game.id;
     card.querySelector('.play-link').dataset.launch = game.id;
     if (decor) card.querySelector('.game-art').innerHTML = decor.artMarkup;
@@ -152,8 +152,8 @@ function renderScoreboard(data) {
   document.querySelector('#auth-session').hidden = !currentUser;
   const profileAvatar = document.querySelector('.avatar');
   profileAvatar.textContent = currentUser?.avatar || '🚀';
-  profileAvatar.setAttribute('aria-label', currentUser ? `${currentUser.name} 프로필` : '크루 프로필');
-  profileAvatar.title = currentUser?.title || currentUser?.name || '크루 프로필';
+  profileAvatar.setAttribute('aria-label', currentUser ? `${currentUser.name} 프로필` : 'Score X 프로필');
+  profileAvatar.title = currentUser?.title || currentUser?.name || 'Score X 프로필';
   const titleBadge = document.querySelector('#profile-title-badge');
   titleBadge.textContent = currentUser?.title || '';
   titleBadge.hidden = !currentUser?.title;
@@ -263,9 +263,9 @@ function renderShopItems() {
     const category = document.createElement('span');
     category.className = 'shop-item-category';
     category.textContent = {
-      'display-name': 'CREW ID',
+      'display-name': 'PLAYER ID',
       avatar: 'PROFILE AVATAR',
-      title: 'CREW TITLE',
+      title: 'PLAYER TITLE',
       background: 'RANK BACKGROUND'
     }[item.type] || 'PROFILE ITEM';
     const title = document.createElement('h3');
@@ -338,13 +338,13 @@ async function loadShopItems() {
   if (!response.ok) throw new Error(result.error || '상점 상품을 불러오지 못했습니다.');
   shopItems = result.items;
   renderShopItems();
-  if (!currentProfile) setShopMessage('상점을 이용하려면 먼저 관제실에서 로그인하세요.');
-  else setShopMessage('미니게임에서 크레딧을 모아 크루 프로필을 꾸며보세요.');
+  if (!currentProfile) setShopMessage('상점을 이용하려면 먼저 게임 홈에서 로그인하세요.');
+  else setShopMessage('미니게임에서 크레딧을 모아 프로필을 꾸며보세요.');
 }
 
 async function purchaseShopItem(itemId, displayName, button) {
   if (!activePlayer) {
-    setShopMessage('상점을 이용하려면 먼저 관제실에서 로그인하세요.', true);
+    setShopMessage('상점을 이용하려면 먼저 게임 홈에서 로그인하세요.', true);
     return;
   }
   button.disabled = true;
@@ -359,7 +359,7 @@ async function purchaseShopItem(itemId, displayName, button) {
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || '구매를 완료하지 못했습니다.');
     currentProfile = result.profile;
-    setShopMessage(`${result.profile.name} 크루 프로필을 업데이트했습니다.`);
+    setShopMessage(`${result.profile.name} 프로필을 업데이트했습니다.`);
     await refreshScoreboard();
   } catch (error) {
     setShopMessage(error.message || '구매를 완료하지 못했습니다.', true);
