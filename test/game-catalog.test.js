@@ -64,9 +64,17 @@ test('game views load per-game player best-score rankings', () => {
   const styles = read('styles.css');
   assert.ok(app.includes('refreshGameLeaderboard(name)'));
   assert.ok(app.includes('/api/leaderboard/games/${encodeURIComponent(gameId)}'));
+  assert.ok(app.includes("player.isCurrentUser ? ' is-current-player' : ''"));
   assert.ok(app.includes('refreshGameLeaderboard(game);'));
   assert.ok(server.includes('const gameLeaderboardMatch = /^\\/api\\/leaderboard\\/games\\/'));
-  assert.ok(styles.includes('.game-leaderboard-list'));
+  assert.ok(styles.includes('.game-leaderboard-row.is-current-player .game-leaderboard-player'));
+});
+
+test('investment navigation waits for the player to press the game start button', () => {
+  const app = read('app.js');
+  assert.match(app, /await openGame\(nextGame, true,[\s\S]*?\}\);/);
+  assert.doesNotMatch(app, /await openGame\(nextGame, true,[\s\S]*?\}, true\);/);
+  assert.match(app, /await gameElement\.whenReady\(\);[\s\S]*?if \(startImmediately\) await lifecycle\.onStart\?\.\(\);/);
 });
 
 test('hello_game example is discoverable after copying it into games/', () => {

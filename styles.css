@@ -993,6 +993,7 @@ button:focus-visible, a:focus-visible { outline-color: var(--green); }
 .game-leaderboard-row { min-width: 0; display: flex; align-items: center; gap: 6px; border-top: 1px solid #243140; padding-top: 5px; font-size: 10px; }
 .game-leaderboard-rank { flex: 0 0 18px; color: #65d6c9; font: 9px "DM Mono", monospace; }
 .game-leaderboard-player { min-width: 0; overflow: hidden; color: #c8d2dc; text-overflow: ellipsis; white-space: nowrap; }
+.game-leaderboard-row.is-current-player .game-leaderboard-player { color: var(--green); }
 .game-leaderboard-row > strong { margin-left: auto; color: #e5ebf2; font: 10px "DM Mono", monospace; white-space: nowrap; }
 .score-block > strong { color: #edf2f7; }
 .score-unit { color: #8291a3; }

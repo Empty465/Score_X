@@ -863,7 +863,7 @@ async function launchNextInvestmentGame() {
     updateInvestmentCancelVisibility();
     showView('investment');
     setInvestmentMessage(message, true);
-  }, true);
+  });
 }
 
 function handleInvestmentProgress(result) {
@@ -1003,7 +1003,7 @@ async function refreshGameLeaderboard(gameId) {
     if (!response.ok) throw new Error(result.error || '게임 랭킹을 불러오지 못했습니다.');
     list.replaceChildren(...result.players.map((player) => {
       const row = document.createElement('li');
-      row.className = 'game-leaderboard-row';
+      row.className = `game-leaderboard-row${player.isCurrentUser ? ' is-current-player' : ''}`;
       const rank = document.createElement('span');
       rank.className = 'game-leaderboard-rank';
       rank.textContent = String(player.rank).padStart(2, '0');

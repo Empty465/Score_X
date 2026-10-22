@@ -628,11 +628,13 @@ async function handleApi(request, response, url) {
       sendJson(response, 404, { error: '알 수 없는 게임입니다.' });
       return;
     }
+    const accountId = getAuthenticatedAccountId(request);
     const players = loadPlayers().byScore
       .filter((player) => player.scores[game] > 0)
       .sort((left, right) => right.scores[game] - left.scores[game] || left.id - right.id)
       .map((player, index) => ({
         rank: index + 1,
+        isCurrentUser: player.id === accountId,
         name: player.name,
         avatar: player.avatar,
         title: player.title,
