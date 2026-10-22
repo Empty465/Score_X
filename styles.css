@@ -748,6 +748,11 @@ kbd { border-color: #314965; background: #14253a; color: #bfcee0; }
 .shop-notice.is-error { border-color: #704156; color: #ffadbd; }
 .shop-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin: 24px 0 13px; }
 .shop-section-heading h2 { margin: 0; color: #e9f2ff; font: 20px "Jua", sans-serif; }
+.shop-filter { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+.shop-filter[hidden] { display: none; }
+.shop-filter-btn { padding: 8px 16px; border: 1px solid #2b3949; border-radius: 999px; background: #111a27; color: #9eb4ca; font: inherit; font-size: 14px; cursor: pointer; }
+.shop-filter-btn:hover { border-color: #54b9ae; color: #e9f2ff; }
+.shop-filter-btn.is-active { border-color: #54b9ae; background: #153632; color: #79e0d4; }
 .shop-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
 .shop-item { min-width: 0; display: flex; flex-direction: column; border: 1px solid #263d56; border-radius: 8px; padding: 14px; background: linear-gradient(155deg, #112137, #0b1727 78%); box-shadow: 0 8px 22px #02091430; }
 .shop-item-preview { height: 77px; display: grid; place-items: center; margin-bottom: 13px; border: 1px solid #263b58; border-radius: 6px; background: radial-gradient(ellipse at 50% 55%, #233959, #111b2d 75%); color: #b9f8ed; font: 30px "Jua", sans-serif; text-shadow: 0 0 16px #65e6d160; }
@@ -1062,3 +1067,91 @@ kbd { border-color: #344456; background: #172330; color: #ced7e0; }
   .scoreboard-summary, .scoreboard-ranking { border-color: #283544; }
   .day-badge { width: 96px; height: 58px; }
 }
+
+/* 랭킹 배경 꾸미기 (랭킹 행과 상점 미리보기 공용) */
+.ranking-row.ranking-bg-background-aurora, .shop-item-preview.ranking-bg-background-aurora {
+  background:
+    radial-gradient(ellipse 60% 140% at 15% 0%, #3ff0b866, transparent 60%),
+    radial-gradient(ellipse 50% 120% at 70% 100%, #7a5cff66, transparent 65%),
+    radial-gradient(ellipse 40% 100% at 100% 20%, #2fb8ff55, transparent 70%),
+    linear-gradient(100deg, #0d3b54, #123a5c 50%, #1b2f66);
+  background-size: 160% 160%, 160% 160%, 160% 160%, 100% 100%;
+  box-shadow: inset 3px 0 0 #3ff0b8, 0 0 14px #3ff0b822;
+  animation: rank-bg-drift 9s ease-in-out infinite alternate;
+}
+.ranking-row.ranking-bg-background-nebula, .shop-item-preview.ranking-bg-background-nebula {
+  background:
+    radial-gradient(circle at 18% 30%, #ff6fd877, transparent 45%),
+    radial-gradient(circle at 80% 70%, #8a5bff88, transparent 50%),
+    radial-gradient(circle 2px at 12% 25%, #fff, transparent 100%),
+    radial-gradient(circle 1.5px at 38% 72%, #fff, transparent 100%),
+    radial-gradient(circle 2px at 62% 28%, #ffd9ff, transparent 100%),
+    radial-gradient(circle 1.5px at 88% 55%, #fff, transparent 100%),
+    linear-gradient(100deg, #2a1745, #3a1f63 55%, #1f1f5c);
+  background-size: 150% 150%, 150% 150%, auto, auto, auto, auto, 100% 100%;
+  box-shadow: inset 3px 0 0 #d36bff, 0 0 14px #b45bff2a;
+  animation: rank-bg-drift 11s ease-in-out infinite alternate;
+}
+.ranking-row.ranking-bg-background-solar, .shop-item-preview.ranking-bg-background-solar {
+  background:
+    radial-gradient(circle at 92% 50%, #fff2a8cc, #ffb23c88 18%, transparent 48%),
+    radial-gradient(ellipse 70% 150% at 100% 50%, #ff7a2f66, transparent 70%),
+    repeating-linear-gradient(115deg, transparent 0 14px, #ffc86a14 14px 16px),
+    linear-gradient(100deg, #3b2012, #6b3516 60%, #8a4a14);
+  box-shadow: inset 3px 0 0 #ffb23c, 0 0 14px #ff9a3c2a;
+  animation: rank-bg-glow 4s ease-in-out infinite alternate;
+}
+.shop-item-preview[class*="ranking-bg-"] { position: relative; overflow: hidden; }
+@keyframes rank-bg-drift { from { background-position: 0% 0%, 100% 100%, 0% 50%, 0 0, 0 0, 0 0, 0 0; } to { background-position: 100% 100%, 0% 0%, 100% 50%, 0 0, 0 0, 0 0, 0 0; } }
+@keyframes rank-bg-glow { from { filter: brightness(.95); } to { filter: brightness(1.18); } }
+
+/* 글씨 크기 확대: 랭킹 및 사이트 전반 (최종 오버라이드) */
+.ranking-row { min-height: 38px; gap: 10px; }
+.ranking-avatar { width: 28px; height: 28px; font-size: 16px; }
+.ranking-number { width: 24px; font-size: 14px; }
+.ranking-name { font-size: 16px; }
+.ranking-row > strong { font-size: 16px; }
+.ranking-row > strong small { font-size: 12px; }
+.ranking-title, .ranking-tier { font-size: 12px; }
+.ranking-heading h2 { font-size: 20px; }
+.ranking-heading > span { font-size: 12px; }
+.ranking-empty { font-size: 15px; }
+.ranking-detail { flex-basis: calc(100% - 34px); margin-left: 34px; font-size: 13px; }
+.score-game-item, .scoreboard-foot, .scoreboard-message { font-size: 14px; }
+.scoreboard-kicker, .scoreboard-label { font-size: 13px; }
+.tier-badge, .profile-title-badge { font-size: 13px; }
+.section-note, .section-kicker, .eyebrow, .game-number { font-size: 13px; }
+.nav-item { font-size: 16px; }
+.today-stamp, .breadcrumb, .welcome-copy, .game-category { font-size: 15px; }
+.best-chip, .best-chip b, .play-link, .card-info p { font-size: 15px; }
+.mission-subtitle, .board-caption, .panel-label, .record-row, .control-copy { font-size: 15px; }
+.investment-hero-copy > p, .investment-status-panel p, .investment-step p,
+.investment-option-description, .shop-item > p { font-size: 15px; }
+.investment-status-kicker, .investment-outcomes, .investment-note,
+.shop-footnote, .shop-notice, .shop-item-price { font-size: 13px; }
+.shop-item-price strong { font-size: 15px; }
+.shop-hero p { font-size: 14px; }
+.shop-wallet > span { font-size: 12px; }
+
+@media (max-width: 760px) {
+  .ranking-name, .ranking-row > strong { font-size: 15px; }
+  .ranking-title, .ranking-tier, .ranking-detail { font-size: 12px; }
+  .shop-item > p, .shop-item-price { font-size: 12px; }
+  .shop-item-price strong { font-size: 13px; }
+  .shop-hero p { font-size: 12px; }
+  .nav-item { font-size: 13px; }
+}
+
+.ranking-row { padding-left: 14px; }
+.ranking-detail { flex-basis: calc(100% - 48px); margin-left: 48px; }
+
+#investment-form { max-width: none; width: 100%; }
+.investment-options { gap: 14px; }
+@media (min-width: 761px) { .investment-status-panel { padding: 22px 32px; gap: 24px; } }
+
+ul.investment-outcomes { display: grid; gap: 4px; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid #ffffff1a; list-style: none; font-size: 14px; line-height: 1.4; }
+.investment-outcomes li { display: flex; justify-content: space-between; gap: 10px; }
+.investment-outcomes li span { color: #a9bbd0; }
+.investment-outcomes li b { color: #e6eef8; font: 500 14px "DM Mono", monospace; white-space: nowrap; }
+.investment-outcomes li:first-child span, .investment-outcomes li:first-child b { color: #ff9a9a; }
+.investment-outcomes li:last-child span, .investment-outcomes li:last-child b { color: #79e0b4; }
