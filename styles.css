@@ -1179,3 +1179,7 @@ ul.investment-outcomes { display: grid; gap: 4px; margin: 10px 0 0; padding: 10p
 .game-heading > div:not(.heading-mark) { flex: 1 1 auto; }
 .mission-subtitle { max-width: none; }
 @media (max-width: 760px) { .mission-subtitle { max-width: none; } }
+
+.dev-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; padding: 9px 16px; background: rgba(101, 230, 209, 0.1); border-bottom: 1px solid var(--line); color: var(--ink); font-size: 14px; text-align: center; }
+.dev-notice a { color: var(--green); font-weight: 700; text-decoration: underline; white-space: nowrap; }
+.dev-notice a:hover, .dev-notice a:focus-visible { color: var(--blue); }
