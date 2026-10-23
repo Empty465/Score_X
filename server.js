@@ -5,7 +5,7 @@ const { randomInt, randomBytes, createHash, scryptSync, timingSafeEqual } = requ
 const { DatabaseSync } = require('node:sqlite');
 const { createGameRegistry, resolveGameAsset } = require('./lib/game-registry.js');
 
-const host = process.env.HOST || '127.0.0.1';
+const host = process.env.HOST || (process.env.PORT ? '0.0.0.0' : '127.0.0.1');
 const port = Number(process.env.PORT || 3000);
 const databasePath = process.env.DB_PATH || path.join(__dirname, 'DB', 'scorex.sqlite');
 fs.mkdirSync(path.dirname(databasePath), { recursive: true });
