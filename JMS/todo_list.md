@@ -6,17 +6,20 @@
 - [ ] 최고 점수에 따른 티어 간격 조정 및 티어 리스트(체계) 확인 가능한 요소 추가
 - [ ] 깃허브에 바로 표시되는 README.md 파일 '~'(물결)이 의도하지 않은 취소선으로 표시되는 문제 해결
 - [ ] 점수 검증 및 데이터 신뢰성 (5.4)
-  - [ ] 게임 종료 결과(gameId, finalScore, playTimeSeconds, isCleared) 형식·게임 ID 서버 검증
-  - [ ] 게임별 점수 범위·플레이 시간 검증 규칙 구현
+  - [x] 게임 종료 결과(game, points, playId, durationMs) 형식·게임 ID 서버 검증 (문자열·불리언 등 비숫자 점수 거부, `parseScorePayload`)
+  - [x] 게임별 점수 범위·플레이 시간 검증 규칙 구현 (매니페스트 `maxScore`·`minDurationMs`)
   - [ ] 지원 가능한 게임의 액션 타임스탬프·체크섬 검증 적용
-  - [ ] 중복 제출·세션 재사용 방지
-  - [ ] 비정상 점수·시간·액션 기록 거부 및 서버 로그 기록 (클라이언트 제출만으로 점수를 신뢰하지 않도록 강화)
+  - [x] 중복 제출·세션 재사용 방지 (`play_sessions.used_at` 조건부 UPDATE, 동시 제출 테스트 포함)
+  - [x] 비정상 점수·시간·액션 기록 거부 및 서버 로그 기록 (`[score-rejected]` 로그, 형식 오류·playId 누락 포함)
 - [ ] 테스트·배포 (5.6)
-  - [ ] 인증, 게스트, 최고 기록 합산 점수판, 보유 CR 점수판, 보상 지급, 출석, 투자, 상점 API 테스트 추가
-  - [ ] 기존 게임별 점수 적립과 투자 임무 진행의 통합 회귀 테스트
+  - [x] 인증, 게스트, 최고 기록 합산 점수판, 보유 CR 점수판, 보상 지급, 출석, 투자, 상점 API 테스트 추가 (`test/api.test.js`, `test/score-validation.test.js`, 동시 요청 테스트 포함)
+  - [x] 기존 게임별 점수 적립과 투자 임무 진행의 통합 회귀 테스트 (`test/api.test.js`의 투자 임무 진행·정산 테스트)
   - [ ] 개발·배포 환경을 `package.json`의 Node.js 24 이상 요구사항에 맞추고 실행 검증
-- [ ] 무료 호스팅에서 DB 유지를 위한 Turso(libSQL) 비동기 DB 전환 (배경: Render 무료 플랜은 재시작 시 `DB/scorex.sqlite` 초기화, Fly.io는 유료)
-  - [ ] `@libsql/client` 설치, `TURSO_DATABASE_URL`·`TURSO_AUTH_TOKEN`이 없으면 로컬 `file:` SQLite로 연결해 기존 로컬 개발 방식 유지
+- [ ] 무료 호스팅에서 DB 유지를 위한 Turso(libSQL) 비동기 DB 전환 (배경: Render 무료 플랜은 재시작 시 `DB/scorex.sqlite` 초기화가 되기 떄문.)
+  - [ ] `@libsql/client` 설치, `TURSO_DATABASE_URL`·`TURSO_AUTH_TOKEN`이 없으면 로컬 `file:` SQLite(`DB/scorex.sqlite`)로 연결해, 코드 수정 없이 로컬은 로컬 DB·Render는 Turso에 연결되도록 환경 변수로만 분기 (로컬에는 `TURSO_*`를 설정하지 않으면 운영 DB에 연결되지 않음)
+  - [ ] 서버 시작 로그에 연결 대상(로컬 파일/Turso URL)을 표시하고, 토큰은 로그·커밋에 노출하지 않음
+  - [ ] 필요 시 테스트용 별도 Turso DB(`scorex-dev`)를 만들어 운영 데이터와 분리
+  - [ ] `DB/scorex.sqlite`가 Git에 추적 중이므로 `.gitignore` 추가와 `git rm --cached` 여부 결정 (개인 계정 정보 포함 여부 확인)
   - [ ] `server.js`의 동기 `DatabaseSync` 호출(약 49곳)을 `await` 방식으로 변경하고 관련 함수·요청 핸들러를 `async`로 전환 (`await` 누락 주의)
   - [ ] 트랜잭션 구간(점수 제출, 재화 차감, 투자 정산, 출석 보상)을 `transaction()`/`batch()`로 재작성하고, 비동기 전환으로 생길 수 있는 동시 요청 레이스(출석 보상 중복 수령, 재화 이중 차감) 방지 보강
   - [ ] 서버 시작 시 스키마 생성·마이그레이션(구 `users` 스키마 폐기, `investment_runs` 검사)을 비동기로 변경

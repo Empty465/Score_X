@@ -296,19 +296,32 @@ class ScoreRejection extends Error {
   }
 }
 
+function rejectScore(game, accountId, points, message, status = 400) {
+  console.warn(`[score-rejected] game=${String(game).slice(0, 40)} account=${accountId ?? 'guest'} points=${String(points).slice(0, 20)} reason=${message}`);
+  throw new ScoreRejection(message, status);
+}
+
+// 점수 제출 본문의 형식을 엄격히 검사한다. 문자열·불리언 등을 숫자로 변환해 통과시키지 않는다.
+function parseScorePayload(payload, accountId) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) rejectScore('?', accountId, '?', '게임 점수 정보가 올바르지 않습니다.');
+  const { game, points } = payload;
+  const fail = () => rejectScore(game, accountId, points, '게임 점수 정보가 올바르지 않습니다.');
+  if (typeof game !== 'string' || !allGameIds().includes(game)) fail();
+  if (typeof points !== 'number' || !Number.isInteger(points) || points < 0 || points > 100000) fail();
+  if (payload.playId !== undefined && payload.playId !== null && typeof payload.playId !== 'string') fail();
+  return { game, points };
+}
+
 // 제출된 점수가 서버가 발급한 플레이 세션과 매니페스트 규칙에 맞는지 검사한다. 사용 처리는 하지 않는다.
 function validatePlay(payload, points, game, accountId) {
   const manifest = gameRegistry.get(game);
+  const reject = (message, status = 400) => rejectScore(game, accountId, points, message, status);
   if (payload.playId === undefined || payload.playId === null) {
-    if (manifest) throw new ScoreRejection('이 게임은 플레이 세션(playId)이 필요합니다.');
+    if (manifest) reject('이 게임은 플레이 세션(playId)이 필요합니다.');
     return null;
   }
-  const play = typeof payload.playId === 'string' ? findPlay.get(payload.playId) : null;
+  const play = findPlay.get(payload.playId);
   const now = Date.now();
-  const reject = (message, status = 400) => {
-    console.warn(`[score-rejected] game=${game} account=${accountId ?? 'guest'} points=${points} reason=${message}`);
-    throw new ScoreRejection(message, status);
-  };
   if (!play || play.game !== game || (play.account_id ?? null) !== (accountId ?? null)) reject('유효하지 않은 플레이 세션입니다.');
   if (play.used_at !== null) reject('이미 제출된 플레이 세션입니다.', 409);
   const elapsed = now - Number(play.started_at);
@@ -725,13 +738,9 @@ async function handleApi(request, response, url) {
 
   if (request.method === 'POST' && url.pathname === '/api/scores') {
     const payload = await readJson(request);
-    const points = Number(payload.points);
-    if (!allGameIds().includes(payload.game) || !Number.isInteger(points) || points < 0 || points > 100000) {
-      sendJson(response, 400, { error: '게임 점수 정보가 올바르지 않습니다.' });
-      return;
-    }
-    const creditsEarned = Math.max(1, Math.floor(points / 100));
     const accountId = getAuthenticatedAccountId(request);
+    const { points } = parseScorePayload(payload, accountId);
+    const creditsEarned = Math.max(1, Math.floor(points / 100));
     const play = validatePlay(payload, points, payload.game, accountId);
     if (!accountId) {
       // 게스트 플레이: 결과 연출용 값만 돌려주고 아무것도 저장하지 않는다.
