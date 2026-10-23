@@ -48,7 +48,7 @@ async function startServer(t) {
 }
 
 async function register(json, loginId, nickname = `닉${loginId}`) {
-  const result = await json('POST', '/api/auth/register', { loginId, password: 'password123', nickname });
+  const result = await json('POST', '/api/auth/register', { loginId, password: 'password123', passwordConfirm: 'password123', nickname });
   assert.equal(result.status, 201, `가입 실패: ${JSON.stringify(result.body)}`);
   return { cookie: result.headers.get('set-cookie').split(';')[0], user: result.body.user };
 }
@@ -64,13 +64,16 @@ async function submitScore(json, cookie, game, points) {
 test('회원가입은 입력을 검증하고 환영 재화를 지급하며 민감 정보를 노출하지 않는다', async (t) => {
   const json = await startServer(t);
   const post = (body) => json('POST', '/api/auth/register', body);
-  const valid = { loginId: 'user_01', password: 'password123', nickname: '파일럿' };
+  const valid = { loginId: 'user_01', password: 'password123', passwordConfirm: 'password123', nickname: '파일럿' };
 
+  assert.equal((await post({ ...valid, passwordConfirm: 'password124' })).status, 400);
+  assert.equal((await post({ ...valid, passwordConfirm: undefined })).status, 400);
+  assert.equal((await post({ ...valid, password: 'short', passwordConfirm: 'short' })).status, 400);
   assert.equal((await post({ ...valid, loginId: 'abc' })).status, 400);
   assert.equal((await post({ ...valid, loginId: 'has space' })).status, 400);
   assert.equal((await post({ ...valid, loginId: 'a'.repeat(21) })).status, 400);
   assert.equal((await post({ ...valid, password: 'short' })).status, 400);
-  assert.equal((await post({ ...valid, password: 'x'.repeat(65) })).status, 400);
+  assert.equal((await post({ ...valid, password: 'x'.repeat(65), passwordConfirm: 'x'.repeat(65) })).status, 400);
   assert.equal((await post({ ...valid, nickname: 'a' })).status, 400);
   assert.equal((await post({ ...valid, nickname: 'a'.repeat(17) })).status, 400);
   assert.equal((await post({ ...valid, loginId: 12345678 })).status, 400);
@@ -90,10 +93,32 @@ test('회원가입은 입력을 검증하고 환영 재화를 지급하며 민�
   assert.equal((await post({ ...valid, loginId: 'user_02' })).status, 409, '중복 닉네임');
 });
 
+test('회원탈퇴는 로그인과 비밀번호가 필요하고 계정 데이터를 모두 삭제한다', async (t) => {
+  const json = await startServer(t);
+  const { cookie } = await register(json, 'leave01', '탈퇴유저');
+  const other = await register(json, 'stay01', '남는유저');
+  await submitScore(json, cookie, 'reaction', 100);
+
+  assert.equal((await json('POST', '/api/auth/delete', { password: 'password123' })).status, 401, '비로그인');
+  assert.equal((await json('POST', '/api/auth/delete', { password: 'wrongpass1' }, cookie)).status, 403);
+  assert.equal((await json('POST', '/api/auth/delete', {}, cookie)).status, 403);
+  assert.equal((await json('GET', '/api/auth/me', undefined, cookie)).body.user.name, '탈퇴유저', '실패 시 계정 유지');
+
+  const deleted = await json('POST', '/api/auth/delete', { password: 'password123' }, cookie);
+  assert.equal(deleted.status, 200);
+  assert.match(deleted.headers.get('set-cookie'), /Max-Age=0/);
+  assert.equal((await json('GET', '/api/auth/me', undefined, cookie)).body.user, null);
+  assert.equal((await json('POST', '/api/auth/login', { loginId: 'leave01', password: 'password123' })).status, 401);
+  assert.equal((await json('GET', '/api/auth/me', undefined, other.cookie)).body.user.name, '남는유저');
+
+  const again = await register(json, 'leave01', '탈퇴유저');
+  assert.equal(again.user.credits, 500, '같은 아이디·닉네임으로 재가입 가능');
+});
+
 test('같은 아이디로 동시에 가입해도 한 계정만 만들어진다', async (t) => {
   const json = await startServer(t);
   const results = await Promise.all(Array.from({ length: 6 }, (_, index) => (
-    json('POST', '/api/auth/register', { loginId: 'dupe_01', password: 'password123', nickname: `동시${index}` })
+    json('POST', '/api/auth/register', { loginId: 'dupe_01', password: 'password123', passwordConfirm: 'password123', nickname: `동시${index}` })
   )));
   assert.deepEqual(results.map((result) => result.status).sort(), [201, 409, 409, 409, 409, 409]);
 });

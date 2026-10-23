@@ -147,9 +147,34 @@ function renderFeatureAccess() {
   document.querySelector('#shop-footnote').hidden = isGuest;
 }
 
+let missionResultPending = false;
+
+function showMissionPending(game, points, returnToInvestment) {
+  const dialog = document.querySelector('#mission-result-dialog');
+  const confirm = document.querySelector('#mission-result-confirm');
+  missionResultPending = true;
+  missionResultReturnsToInvestment = returnToInvestment;
+  document.querySelector('#mission-result-title').textContent = `${getGame(game).title} 완료`;
+  document.querySelector('#mission-result-copy').textContent = '결과 처리 중입니다. 잠시만 기다려 주세요...';
+  document.querySelector('#mission-result-score').textContent = `${formatPoints(points)} PTS`;
+  document.querySelector('#mission-result-credits').textContent = '계산 중...';
+  document.querySelector('#mission-result-total').textContent = '';
+  dialog.setAttribute('aria-busy', 'true');
+  confirm.disabled = true;
+  if (!dialog.open) dialog.showModal();
+}
+
+function hideMissionPending() {
+  const dialog = document.querySelector('#mission-result-dialog');
+  missionResultPending = false;
+  dialog.removeAttribute('aria-busy');
+  document.querySelector('#mission-result-confirm').disabled = false;
+}
+
 function showMissionResult(game, points, result, returnToInvestment) {
   const gameName = getGame(game).title;
   const dialog = document.querySelector('#mission-result-dialog');
+  hideMissionPending();
   missionResultReturnsToInvestment = returnToInvestment;
   const isGuest = result.saved === false;
   document.querySelector('#mission-result-title').textContent = `${gameName} 완료`;
@@ -676,6 +701,8 @@ function setAuthMode(mode) {
   const isRegister = mode === 'register';
   document.querySelector('#auth-nickname').hidden = !isRegister;
   document.querySelector('#auth-nickname').required = isRegister;
+  document.querySelector('#auth-password-confirm').hidden = !isRegister;
+  document.querySelector('#auth-password-confirm').required = isRegister;
   document.querySelector('#auth-password').autocomplete = isRegister ? 'new-password' : 'current-password';
   document.querySelector('#auth-submit').firstChild.textContent = isRegister ? '가입하기 ' : '로그인 ';
   document.querySelector('#auth-toggle').textContent = isRegister ? '로그인으로' : '회원가입';
@@ -690,7 +717,14 @@ async function submitAuth(event) {
     loginId: form.elements.loginId.value.trim(),
     password: form.elements.password.value
   };
-  if (isRegister) body.nickname = form.elements.nickname.value.trim();
+  if (isRegister) {
+    if (body.password !== form.elements.passwordConfirm.value) {
+      setPlayerMessage('비밀번호 확인이 일치하지 않습니다.', true);
+      return;
+    }
+    body.passwordConfirm = form.elements.passwordConfirm.value;
+    body.nickname = form.elements.nickname.value.trim();
+  }
   submit.disabled = true;
   setPlayerMessage(isRegister ? '계정을 만들고 있습니다.' : '로그인하고 있습니다.');
   try {
@@ -726,6 +760,34 @@ async function logout() {
   }
 }
 
+async function submitDeleteAccount(event) {
+  event.preventDefault();
+  const dialog = document.querySelector('#delete-account-dialog');
+  const input = document.querySelector('#delete-account-password');
+  const message = document.querySelector('#delete-account-message');
+  const submit = document.querySelector('#delete-account-submit');
+  submit.disabled = true;
+  message.textContent = '';
+  try {
+    ensureScoreServer();
+    const response = await fetch('/api/auth/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: input.value })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || '회원탈퇴에 실패했습니다.');
+    input.value = '';
+    dialog.close();
+    await refreshScoreboard();
+    setPlayerMessage('회원탈퇴가 완료되었습니다. 그동안 이용해 주셔서 감사합니다.');
+  } catch (error) {
+    message.textContent = error.message || '회원탈퇴에 실패했습니다.';
+  } finally {
+    submit.disabled = false;
+  }
+}
+
 async function awardScore(game, points, play = {}) {
   const earned = Math.max(0, Math.floor(points));
   const returnToInvestment = investmentGameInProgress === game;
@@ -733,6 +795,7 @@ async function awardScore(game, points, play = {}) {
   updateInvestmentCancelVisibility();
   try {
     ensureScoreServer();
+    showMissionPending(game, earned, returnToInvestment);
     const response = await fetch('/api/scores', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -750,6 +813,10 @@ async function awardScore(game, points, play = {}) {
       setPlayerMessage('게스트 플레이 결과는 저장되지 않아요. 로그인하면 기록과 보상이 쌓입니다.');
     }
   } catch (error) {
+    if (missionResultPending) {
+      hideMissionPending();
+      document.querySelector('#mission-result-dialog').close();
+    }
     setPlayerMessage(error.message || '점수 서버에 연결할 수 없습니다.', true);
     return null;
   }
@@ -1283,6 +1350,9 @@ document.querySelector('#mission-result-confirm').addEventListener('click', () =
   document.querySelector('#mission-result-dialog').close();
 });
 document.querySelector('#mission-result-dialog').addEventListener('close', continueInvestmentRun);
+document.querySelector('#mission-result-dialog').addEventListener('cancel', (event) => {
+  if (missionResultPending) event.preventDefault();
+});
 document.querySelector('#attendance-keyboard-reveal').addEventListener('click', claimAttendanceReward);
 document.querySelector('#attendance-close').addEventListener('click', () => attendanceDialog.close());
 attendanceDialog.addEventListener('close', () => {
@@ -1317,6 +1387,13 @@ loadInvestmentOptions().catch((error) => setInvestmentMessage(error.message || '
 document.querySelector('#player-form').addEventListener('submit', submitAuth);
 document.querySelector('#auth-toggle').addEventListener('click', () => setAuthMode(authMode === 'login' ? 'register' : 'login'));
 document.querySelector('#logout-button').addEventListener('click', logout);
+document.querySelector('#delete-account-button').addEventListener('click', () => {
+  document.querySelector('#delete-account-password').value = '';
+  document.querySelector('#delete-account-message').textContent = '';
+  document.querySelector('#delete-account-dialog').showModal();
+});
+document.querySelector('#delete-account-dismiss').addEventListener('click', () => document.querySelector('#delete-account-dialog').close());
+document.querySelector('#delete-account-form').addEventListener('submit', submitDeleteAccount);
 renderScoreboard({ players: [], currentUser: null });
 // 게임 목록을 먼저 받아야 점수판의 게임별 항목이 채워집니다.
 loadGameMenu()

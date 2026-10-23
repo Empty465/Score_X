@@ -14,6 +14,8 @@ npm start
 
 Turso 환경 변수를 설정하지 않으면 계속 로컬 SQLite에 연결됩니다. 연결 대상은 서버 시작 로그에 표시되며 인증 토큰은 로그에 출력되지 않습니다. Render에서는 `TURSO_DATABASE_URL`과 `TURSO_AUTH_TOKEN`을 서비스 환경 변수로 등록해야 합니다.
 
+시간 기준: DB의 `created_at`, `claimed_at` 등 기록 시각은 UTC로 저장됩니다(한국 시간보다 9시간 느림). 출석 기준일은 한국 시간(KST) 00:00(UTC 15:00)에 바뀝니다.
+
 외부에서 임시 접속하려면 `winget install Cloudflare.cloudflared`로 Cloudflared를 설치한 뒤 별도 터미널에서 `cloudflared tunnel --url http://127.0.0.1:3000`을 실행하고 표시된 `trycloudflare.com` 주소를 사용합니다.
 
 서버를 종료하려면 실행 터미널에서 Ctrl+C를 누릅니다.

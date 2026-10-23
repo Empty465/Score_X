@@ -18,14 +18,13 @@
 - [ ] 무료 호스팅에서 DB 유지를 위한 Turso(libSQL) 비동기 DB 전환 (배경: Render 무료 플랜은 재시작 시 `DB/scorex.sqlite` 초기화가 되기 떄문.)
   - [x] `@libsql/client` 설치, 두 Turso 환경변수 설정 시 원격 DB 사용, 미설정 시 로컬 `file:` SQLite 사용 (부분 설정은 시작 오류)
   - [x] 서버 시작 로그에 연결 대상(로컬 파일/Turso 주소)을 표시하고 토큰을 로그에 노출하지 않음
-  - [ ] 필요 시 테스트용 별도 Turso DB(`scorex-dev`)를 만들어 운영 데이터와 분리
   - [x] `DB/scorex.sqlite`는 Git 추적 대상이 아니며 `.gitignore`에서 이미 제외됨; `node_modules/`도 제외 처리 (DB 파일은 수정하지 않음)
   - [x] `server.js`의 동기 `DatabaseSync` 호출을 비동기 `await` 호출로 전환
   - [x] 점수 제출·재화 변경·투자·출석을 비동기 트랜잭션으로 처리하고 조건부 갱신/제약으로 동시 요청 보호
   - [x] 서버 시작 시 스키마 생성·마이그레이션을 비동기로 처리
   - [x] 플레이 정리와 세션 발급을 `batch()`로 묶어 DB 왕복 감소
   - [x] 비동기 DB 로컬 통합 테스트 및 기존 동시 요청 회귀 테스트 통과
-  - [ ] Turso DB 생성, 환경 변수 `TURSO_DATABASE_URL`·`TURSO_AUTH_TOKEN`을 호스팅에 등록(토큰은 커밋 금지), 무료 한도 확인
+  - [x] Turso DB 생성, 환경 변수 `TURSO_DATABASE_URL`·`TURSO_AUTH_TOKEN`을 호스팅에 등록(토큰은 커밋 금지), 무료 한도 확인
   - [ ] 배포 후 재시작·재배포해도 계정·점수가 유지되는지 확인
   - [x] `How to Run.txt`에 로컬 실행 및 Turso 환경변수 설정 방법 반영
   - [x] `HOST` 기본값은 `PORT`가 있으면 `0.0.0.0` 사용

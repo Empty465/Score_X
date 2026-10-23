@@ -261,6 +261,11 @@ const profileSelect = `
 const findProfileById = database.prepare(`${profileSelect} WHERE accounts.id = ?`);
 const getAllProfiles = database.prepare(`${profileSelect} ORDER BY accounts.id`);
 const findAccountByLogin = database.prepare('SELECT id, password_hash, password_salt FROM accounts WHERE login_id = ?');
+const findAccountById = database.prepare('SELECT id, password_hash, password_salt FROM accounts WHERE id = ?');
+const ACCOUNT_DATA_TABLES = [
+  'sessions', 'play_sessions', 'investment_runs', 'user_cosmetics', 'score_events',
+  'best_scores', 'attendance_claims', 'credit_ledger', 'wallets', 'profiles'
+];
 const findNickname = database.prepare('SELECT account_id FROM profiles WHERE nickname = ?');
 const insertAccount = database.prepare('INSERT INTO accounts (login_id, password_hash, password_salt) VALUES (?, ?, ?)');
 const insertProfile = database.prepare('INSERT INTO profiles (account_id, nickname) VALUES (?, ?)');
@@ -584,6 +589,10 @@ async function handleApi(request, response, url) {
       sendJson(response, 400, { error: '비밀번호는 8자 이상 64자 이하로 입력해 주세요.' });
       return;
     }
+    if (payload.passwordConfirm !== password) {
+      sendJson(response, 400, { error: '비밀번호 확인이 일치하지 않습니다.' });
+      return;
+    }
     if (!nickname) {
       sendJson(response, 400, { error: '닉네임은 2자 이상 16자 이하로 입력해 주세요.' });
       return;
@@ -623,6 +632,30 @@ async function handleApi(request, response, url) {
   if (request.method === 'POST' && url.pathname === '/api/auth/logout') {
     const token = readSessionToken(request);
     if (token) await deleteSession.run(hashToken(token));
+    sendJson(response, 200, { ok: true }, { 'Set-Cookie': sessionCookie(request, '', 0) });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/auth/delete') {
+    const accountId = await getAuthenticatedAccountId(request);
+    if (!accountId) {
+      sendJson(response, 401, { error: '로그인이 필요합니다.' });
+      return;
+    }
+    const payload = await readJson(request);
+    const password = typeof payload.password === 'string' ? payload.password : '';
+    const account = password && password.length <= 64 ? await findAccountById.get(accountId) : null;
+    if (!account || !verifyPassword(password, account.password_salt, account.password_hash)) {
+      sendJson(response, 403, { error: '비밀번호가 올바르지 않습니다.' });
+      return;
+    }
+    await runInTransaction(async () => {
+      for (const table of ACCOUNT_DATA_TABLES) {
+        await database.prepare(`DELETE FROM ${table} WHERE account_id = ?`).run(accountId);
+      }
+      await database.prepare('DELETE FROM accounts WHERE id = ?').run(accountId);
+    });
+    console.log(`[account-deleted] accountId=${accountId}`);
     sendJson(response, 200, { ok: true }, { 'Set-Cookie': sessionCookie(request, '', 0) });
     return;
   }

@@ -72,6 +72,8 @@
               <input id="auth-login-id" name="loginId" type="text" maxlength="20" autocomplete="username" placeholder="아이디" required>
               <label class="sr-only" for="auth-password">비밀번호</label>
               <input id="auth-password" name="password" type="password" maxlength="64" autocomplete="current-password" placeholder="비밀번호" required>
+              <label class="sr-only" for="auth-password-confirm">비밀번호 확인</label>
+              <input id="auth-password-confirm" name="passwordConfirm" type="password" maxlength="64" autocomplete="new-password" placeholder="비밀번호 확인" hidden>
               <label class="sr-only" for="auth-nickname">닉네임</label>
               <input id="auth-nickname" name="nickname" type="text" minlength="2" maxlength="16" autocomplete="nickname" placeholder="닉네임 (2~16자, 점수판에 표시)" hidden>
               <div class="auth-actions">
@@ -81,6 +83,7 @@
             </form>
             <div class="scoreboard-player-form" id="auth-session" hidden>
               <button type="button" class="auth-secondary" id="logout-button">로그아웃</button>
+              <button type="button" class="auth-secondary" id="delete-account-button">회원탈퇴</button>
             </div>
             <p class="scoreboard-message" id="player-message" role="status" aria-live="polite">SQLite 점수 서버에 연결하는 중...</p>
           </div>
@@ -275,6 +278,21 @@
       <button class="primary-button investment-cancel-confirm" id="investment-cancel-confirm" type="button">50% 환급 후 취소</button>
     </div>
   </dialog>
+  <dialog class="investment-result-dialog" id="delete-account-dialog" aria-labelledby="delete-account-title">
+    <form method="dialog"><button class="dialog-close" aria-label="닫기">×</button></form>
+    <span class="section-kicker">ACCOUNT DELETION</span>
+    <h2 id="delete-account-title">회원탈퇴</h2>
+    <p class="investment-cancel-warning">탈퇴하면 점수, 보유 CR, 아이템, 투자 기록이 모두 삭제되며 복구할 수 없습니다. 계속하려면 비밀번호를 입력하세요.</p>
+    <form id="delete-account-form">
+      <label class="sr-only" for="delete-account-password">비밀번호</label>
+      <input id="delete-account-password" type="password" maxlength="64" autocomplete="current-password" placeholder="비밀번호" required>
+      <p class="scoreboard-message" id="delete-account-message" role="alert"></p>
+      <div class="investment-confirm-actions">
+        <button class="text-button" id="delete-account-dismiss" type="button">취소</button>
+        <button class="primary-button investment-cancel-confirm" id="delete-account-submit" type="submit">탈퇴하기</button>
+      </div>
+    </form>
+  </dialog>
   <div class="game-loading-indicator" id="game-loading-indicator" role="status" aria-live="polite" hidden>
     <span class="game-loading-spinner" aria-hidden="true"></span>
     <span id="game-loading-message">미니게임을 불러오는 중...</span>
@@ -293,7 +311,7 @@
     <form method="dialog"><button class="dialog-close" aria-label="나중에 받기">×</button></form>
     <span class="section-kicker">DAILY CHECK-IN</span>
     <h2 id="attendance-title">오늘의 출석 보상</h2>
-    <p>복권을 긁어 100~500 CR 출석 보상을 확인하세요. 보상은 하루 한 번 받을 수 있습니다.</p>
+    <p>복권을 긁어 100~500 CR 출석 보상을 확인하세요. 보상은 하루 한 번 받을 수 있습니다.<br><small>출석 기준일은 한국 시간(KST) 00:00에 바뀝니다. (UTC 15:00)</small></p>
     <div class="attendance-scratch-card">
       <strong id="attendance-reward">??? CR</strong>
       <canvas id="attendance-scratch-canvas" aria-label="마우스나 손가락으로 긁어 출석 보상 확인"></canvas>
