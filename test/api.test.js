@@ -115,6 +115,18 @@ test('회원탈퇴는 로그인과 비밀번호가 필요하고 계정 데이터
   assert.equal(again.user.credits, 500, '같은 아이디·닉네임으로 재가입 가능');
 });
 
+test('로그인 실패가 5회 쌓이면 429로 제한하고 올바른 비밀번호도 잠시 거부한다', async (t) => {
+  const json = await startServer(t);
+  await register(json, 'brute01', '무차별유저');
+
+  for (let i = 0; i < 5; i += 1) {
+    assert.equal((await json('POST', '/api/auth/login', { loginId: 'brute01', password: 'wrongpass1' })).status, 401);
+  }
+  const locked = await json('POST', '/api/auth/login', { loginId: 'brute01', password: 'password123' });
+  assert.equal(locked.status, 429);
+  assert.equal(locked.headers.get('retry-after'), '60');
+});
+
 test('같은 아이디로 동시에 가입해도 한 계정만 만들어진다', async (t) => {
   const json = await startServer(t);
   const results = await Promise.all(Array.from({ length: 6 }, (_, index) => (

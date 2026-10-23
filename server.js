@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { randomInt, randomBytes, createHash, scryptSync, timingSafeEqual } = require('node:crypto');
 const { createDatabase } = require('./lib/database.js');
+const { createLoginLimiter } = require('./lib/login-limiter.js');
 const { createGameRegistry, resolveGameAsset } = require('./lib/game-registry.js');
 
 const host = process.env.HOST || (process.env.PORT ? '0.0.0.0' : '127.0.0.1');
@@ -383,6 +384,23 @@ function readSessionToken(request) {
   return null;
 }
 
+const loginLimiter = createLoginLimiter();
+
+function getClientIp(request) {
+  const forwarded = request.headers['x-forwarded-for'];
+  const first = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : '';
+  return first || request.socket.remoteAddress || 'unknown';
+}
+
+function rejectIfLocked(response, keys) {
+  const waitMs = loginLimiter.retryAfterMs(keys);
+  if (!waitMs) return false;
+  const seconds = Math.ceil(waitMs / 1000);
+  const message = seconds > 60 ? `${Math.ceil(seconds / 60)}분` : `${seconds}초`;
+  sendJson(response, 429, { error: `비밀번호를 여러 번 틀려 잠시 제한되었습니다. ${message} 후에 다시 시도해 주세요.`, retryAfterSeconds: seconds }, { 'Retry-After': String(seconds) });
+  return true;
+}
+
 async function getAuthenticatedAccountId(request) {
   const token = readSessionToken(request);
   if (!token) return null;
@@ -620,11 +638,15 @@ async function handleApi(request, response, url) {
     const payload = await readJson(request);
     const loginId = typeof payload.loginId === 'string' ? payload.loginId.trim() : '';
     const password = typeof payload.password === 'string' ? payload.password : '';
+    const limiterKeys = [`ip:${getClientIp(request)}`, `login:${loginId.toLowerCase()}`];
+    if (rejectIfLocked(response, limiterKeys)) return;
     const account = loginId && password.length <= 64 ? await findAccountByLogin.get(loginId) : null;
     if (!account || !verifyPassword(password, account.password_salt, account.password_hash)) {
+      loginLimiter.recordFailure(limiterKeys);
       sendJson(response, 401, { error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
       return;
     }
+    loginLimiter.recordSuccess(limiterKeys.slice(1));
     sendJson(response, 200, { user: await buildProfile(account.id) }, { 'Set-Cookie': await startSession(request, account.id) });
     return;
   }
@@ -644,11 +666,15 @@ async function handleApi(request, response, url) {
     }
     const payload = await readJson(request);
     const password = typeof payload.password === 'string' ? payload.password : '';
+    const limiterKeys = [`ip:${getClientIp(request)}`, `delete:${accountId}`];
+    if (rejectIfLocked(response, limiterKeys)) return;
     const account = password && password.length <= 64 ? await findAccountById.get(accountId) : null;
     if (!account || !verifyPassword(password, account.password_salt, account.password_hash)) {
+      loginLimiter.recordFailure(limiterKeys);
       sendJson(response, 403, { error: '비밀번호가 올바르지 않습니다.' });
       return;
     }
+    loginLimiter.recordSuccess(limiterKeys.slice(1));
     await runInTransaction(async () => {
       for (const table of ACCOUNT_DATA_TABLES) {
         await database.prepare(`DELETE FROM ${table} WHERE account_id = ?`).run(accountId);
