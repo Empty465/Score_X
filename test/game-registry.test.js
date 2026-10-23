@@ -3,7 +3,7 @@ const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { DatabaseSync } = require('node:sqlite');
+const { createClient } = require('@libsql/client');
 const test = require('node:test');
 const { normalizeManifest, createGameRegistry, resolveGameAsset } = require('../lib/game-registry.js');
 
@@ -88,8 +88,8 @@ test('server issues play sessions and validates score submissions', async (t) =>
   const gamesDir = path.join(dir, 'games');
   const databasePath = path.join(dir, 'test.sqlite');
   writeGame(gamesDir, 'demo_game', validManifest);
-  const legacyDatabase = new DatabaseSync(databasePath);
-  legacyDatabase.exec(`
+  const legacyDatabase = createClient({ url: `file:${databasePath}` });
+  await legacyDatabase.executeMultiple(`
     CREATE TABLE accounts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       login_id TEXT NOT NULL COLLATE NOCASE UNIQUE,
@@ -156,14 +156,18 @@ test('server issues play sessions and validates score submissions', async (t) =>
     try { if ((await fetch(`${base}/api/games`)).ok) break; } catch { /* 서버 시작 대기 */ }
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  const migratedDatabase = new DatabaseSync(databasePath);
-  const playSessionColumns = migratedDatabase.prepare('PRAGMA table_info(play_sessions)').all().map((column) => column.name);
-  assert.equal(playSessionColumns.includes('difficulty'), false);
-  const migratedPlay = migratedDatabase.prepare('SELECT play_id, game, seed FROM play_sessions').get();
-  assert.equal(migratedPlay.play_id, 'legacy-play');
-  assert.equal(migratedPlay.game, 'demo_game');
-  assert.equal(migratedPlay.seed, 123);
-  migratedDatabase.close();
+  const migratedDatabase = createClient({ url: `file:${databasePath}` });
+  try {
+    const columns = await migratedDatabase.execute('PRAGMA table_info(play_sessions)');
+    const playSessionColumns = columns.rows.map((column) => column.name);
+    assert.equal(playSessionColumns.includes('difficulty'), false);
+    const migratedPlay = (await migratedDatabase.execute('SELECT play_id, game, seed FROM play_sessions')).rows[0];
+    assert.equal(migratedPlay.play_id, 'legacy-play');
+    assert.equal(migratedPlay.game, 'demo_game');
+    assert.equal(migratedPlay.seed, 123);
+  } finally {
+    migratedDatabase.close();
+  }
 
   const json = async (method, url, body, cookie) => {
     const response = await fetch(base + url, {
@@ -199,7 +203,7 @@ test('server issues play sessions and validates score submissions', async (t) =>
   // playId 없이 점수를 보낼 수 없다.
   assert.equal((await json('POST', '/api/scores', { game: 'demo_game', points: 100 })).status, 400);
 
-  const reg = await json('POST', '/api/auth/register', { loginId: 'tester01', password: 'password123', nickname: '테스터' });
+  const reg = await json('POST', '/api/auth/register', { loginId: 'tester01', password: 'password123', passwordConfirm: 'password123', privacyConsent: true, nickname: '테스터' });
   assert.equal(reg.status, 201);
   const cookie = reg.headers.get('set-cookie').split(';')[0];
 

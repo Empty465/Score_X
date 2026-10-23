@@ -1,8 +1,21 @@
-1. nodejs 24 설치
-2. 터미널에 winget install Cloudflare.cloudflared 로 Cloudflared 설치
-3. vscode 재시작
-4. 터미널에 node server.js 입력 후 실행
-5. 새 터미널을 열고 cloudflared tunnel --url http://127.0.0.1:3000 입력 후 실행
-6. ...trycloudflare.com 주소 복사 후 브라우저에 붙여넣기
+1. Node.js 24 이상을 설치합니다.
+2. 프로젝트 폴더에서 `npm install` 후 `npm start`를 실행합니다.
+3. 브라우저에서 `http://127.0.0.1:3000`을 엽니다.
 
-종료하려면 해당 터미널에서 Ctrl+C를 누르면 된다.
+기본 실행은 `DB/scorex.sqlite` 로컬 파일을 사용합니다. 별도 설정 없이 로컬 DB만 사용되며, `DB_PATH`를 지정하면 테스트용 파일 경로를 바꿀 수 있습니다.
+
+Turso를 사용하려면 Turso에서 데이터베이스와 인증 토큰을 만든 뒤 두 환경 변수를 모두 설정합니다. 둘 중 하나만 설정하면 서버가 시작되지 않습니다. 토큰을 코드나 저장소에 기록하지 마세요.
+
+```powershell
+$env:TURSO_DATABASE_URL = "libsql://<database>.turso.io"
+$env:TURSO_AUTH_TOKEN = "<auth-token>"
+npm start
+```
+
+Turso 환경 변수를 설정하지 않으면 계속 로컬 SQLite에 연결됩니다. 연결 대상은 서버 시작 로그에 표시되며 인증 토큰은 로그에 출력되지 않습니다. Render에서는 `TURSO_DATABASE_URL`과 `TURSO_AUTH_TOKEN`을 서비스 환경 변수로 등록해야 합니다.
+
+시간 기준: DB의 `created_at`, `claimed_at` 등 기록 시각은 UTC로 저장됩니다(한국 시간보다 9시간 느림). 출석 기준일은 한국 시간(KST) 00:00(UTC 15:00)에 바뀝니다.
+
+외부에서 임시 접속하려면 `winget install Cloudflare.cloudflared`로 Cloudflared를 설치한 뒤 별도 터미널에서 `cloudflared tunnel --url http://127.0.0.1:3000`을 실행하고 표시된 `trycloudflare.com` 주소를 사용합니다.
+
+서버를 종료하려면 실행 터미널에서 Ctrl+C를 누릅니다.

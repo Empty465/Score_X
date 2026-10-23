@@ -82,6 +82,7 @@ h1, h2, h3, p { margin-top: 0; }
 .scoreboard-player-form button span { margin-left: 3px; }
 .scoreboard-message { min-height: 13px; margin: 6px 0 0; color: #d0d5c3; font-size: 8px; line-height: 1.5; }
 .scoreboard-message.is-error { color: #ffd0b9; }
+.scoreboard-message.scoreboard-fair-play { min-height: 0; color: #ffd98a; }
 .scoreboard-ranking { min-width: 0; border-left: 1px solid #ffffff1e; padding: 17px 16px 13px; }
 .ranking-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .ranking-heading h2 { margin: 0; color: #f3f2e9; font: 14px "Jua", sans-serif; }
@@ -1179,3 +1180,23 @@ ul.investment-outcomes { display: grid; gap: 4px; margin: 10px 0 0; padding: 10p
 .game-heading > div:not(.heading-mark) { flex: 1 1 auto; }
 .mission-subtitle { max-width: none; }
 @media (max-width: 760px) { .mission-subtitle { max-width: none; } }
+
+.dev-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; padding: 9px 16px; background: rgba(101, 230, 209, 0.1); border-bottom: 1px solid var(--line); color: var(--ink); font-size: 14px; text-align: center; }
+.dev-notice a { color: var(--green); font-weight: 700; text-decoration: underline; white-space: nowrap; }
+.dev-notice a:hover, .dev-notice a:focus-visible { color: var(--blue); }
+
+.scoreboard-player-form .privacy-consent { flex: 1 1 100%; font-size: 10px; color: #c3d0e0; }
+.scoreboard-player-form .privacy-consent[hidden] { display: none; }
+.privacy-consent-check { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: bold; }
+.scoreboard-player-form .privacy-consent-check input { flex: 0 0 auto; width: 14px; height: 14px; padding: 0; accent-color: var(--green); }
+.privacy-consent-summary { margin: 6px 0 0; padding: 6px 8px; list-style: none; display: grid; gap: 3px; border: 1px solid #35516e; border-radius: 4px; line-height: 1.4; }
+.privacy-consent-summary strong { margin-right: 4px; color: var(--green); }
+
+button.tier-badge { cursor: pointer; background: transparent; font-family: inherit; }
+button.tier-badge:hover, button.tier-badge:focus-visible { background: #65e6d122; outline: 2px solid var(--green); outline-offset: 2px; }
+.tier-list { margin: 10px 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.tier-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid #35516e; border-radius: 6px; }
+.tier-row strong { min-width: 64px; }
+.tier-row span { flex: 1; color: #9fb4cc; font-family: "DM Mono", monospace; }
+.tier-row em { font-style: normal; color: var(--green); font-weight: bold; }
+.tier-row.is-current { border-color: var(--green); background: #65e6d114; }

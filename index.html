@@ -40,6 +40,10 @@
     </aside>
 
     <main class="main-content">
+      <div class="dev-notice" role="note">
+        <span>현재 이 사이트는 개발중인 상태 입니다. 언제든지 버그 및 개선 사항을 받고 있습니다.</span>
+        <a href="https://forms.gle/NDam12rjWpgH1bsk6" target="_blank" rel="noopener noreferrer">건의 사항 남기기</a>
+      </div>
       <header class="topbar">
         <div class="breadcrumb"><span>SCORE X</span><span class="crumb-slash">/</span><strong id="breadcrumb-current">게임 홈</strong></div>
         <div class="topbar-right"><span class="topbar-date" id="today-date"></span><button class="wallet-chip" type="button" data-view="shop" aria-label="재화 상점 열기"><span>◇</span><strong id="wallet-balance">—</strong><small>CR</small></button><span class="avatar">🚀</span></div>
@@ -60,7 +64,7 @@
             <div class="scoreboard-kicker"><span>●</span> PLAYER PERFORMANCE</div>
             <div class="scoreboard-label">최고 기록 합산 점수 · PTS</div>
             <div class="scoreboard-total"><strong id="total-score">0</strong><span>PTS</span></div>
-            <span class="tier-badge" id="total-tier">훈련생</span>
+            <button type="button" class="tier-badge" id="total-tier" aria-haspopup="dialog" title="티어 목록 보기">훈련생</button>
             <div class="scoreboard-foot" id="current-player-label">로그인하면 순위에 참여할 수 있어요.</div>
             <span class="profile-title-badge" id="profile-title-badge" hidden></span>
             <form class="scoreboard-player-form" id="player-form">
@@ -68,8 +72,23 @@
               <input id="auth-login-id" name="loginId" type="text" maxlength="20" autocomplete="username" placeholder="아이디" required>
               <label class="sr-only" for="auth-password">비밀번호</label>
               <input id="auth-password" name="password" type="password" maxlength="64" autocomplete="current-password" placeholder="비밀번호" required>
+              <label class="sr-only" for="auth-password-confirm">비밀번호 확인</label>
+              <input id="auth-password-confirm" name="passwordConfirm" type="password" maxlength="64" autocomplete="new-password" placeholder="비밀번호 확인" hidden>
               <label class="sr-only" for="auth-nickname">닉네임</label>
               <input id="auth-nickname" name="nickname" type="text" minlength="2" maxlength="16" autocomplete="nickname" placeholder="닉네임 (2~16자, 점수판에 표시)" hidden>
+              <div class="privacy-consent" id="auth-privacy" hidden>
+                <label class="privacy-consent-check">
+                  <input id="auth-privacy-consent" name="privacyConsent" type="checkbox">
+                  <span>(필수) 개인정보 수집·이용에 동의합니다.</span>
+                </label>
+                <ul class="privacy-consent-summary">
+                  <li><strong>수집 항목</strong> 아이디, 비밀번호(암호화 저장), 닉네임, 게임 기록(점수·CR·아이템·투자)</li>
+                  <li><strong>이용 목적</strong> 회원 식별·로그인, 점수·랭킹·보상 제공, 부정 이용 방지</li>
+                  <li><strong>보유 기간</strong> 회원탈퇴 시까지이며, 탈퇴하면 즉시 삭제됩니다.</li>
+                  <li><strong>IP 주소</strong> 로그인 시도 제한을 위해 서버 메모리에 일시적으로만 이용하며 DB에 저장하지 않습니다.</li>
+                  <li><strong>동의 거부</strong> 거부할 수 있으며, 이 경우 회원가입은 불가하고 게스트로 플레이할 수 있습니다.</li>
+                </ul>
+              </div>
               <div class="auth-actions">
                 <button type="submit" id="auth-submit">로그인 <span>↗</span></button>
                 <button type="button" class="auth-secondary" id="auth-toggle">회원가입</button>
@@ -77,9 +96,10 @@
             </form>
             <div class="scoreboard-player-form" id="auth-session" hidden>
               <button type="button" class="auth-secondary" id="logout-button">로그아웃</button>
+              <button type="button" class="auth-secondary" id="delete-account-button">회원탈퇴</button>
             </div>
             <p class="scoreboard-message" id="player-message" role="status" aria-live="polite">SQLite 점수 서버에 연결하는 중...</p>
-          </div>
+                        <p class="scoreboard-message scoreboard-fair-play">⚠ 부정행위(비정상 점수 조작, 매크로·변조 등)가 확인되면 해당 점수 및 재화(CR)가 말소될 수 있습니다.</p>          </div>
           <div class="scoreboard-ranking">
             <div class="ranking-heading"><h2>최고 기록 랭킹</h2><span>TOP 10 · PTS · 상세 보기</span></div>
             <ol id="score-rankings" aria-label="최고 기록 합산 점수 순위"></ol>
@@ -271,6 +291,29 @@
       <button class="primary-button investment-cancel-confirm" id="investment-cancel-confirm" type="button">50% 환급 후 취소</button>
     </div>
   </dialog>
+  <dialog class="investment-result-dialog tier-dialog" id="tier-dialog" aria-labelledby="tier-dialog-title">
+    <form method="dialog"><button class="dialog-close" aria-label="닫기">×</button></form>
+    <span class="section-kicker">TIER SYSTEM</span>
+    <h2 id="tier-dialog-title">티어 목록</h2>
+    <p id="tier-dialog-copy"></p>
+    <ol class="tier-list" id="tier-list"></ol>
+    <button class="primary-button" id="tier-dialog-close" type="button">확인</button>
+  </dialog>
+  <dialog class="investment-result-dialog" id="delete-account-dialog" aria-labelledby="delete-account-title">
+    <form method="dialog"><button class="dialog-close" aria-label="닫기">×</button></form>
+    <span class="section-kicker">ACCOUNT DELETION</span>
+    <h2 id="delete-account-title">회원탈퇴</h2>
+    <p class="investment-cancel-warning">탈퇴하면 점수, 보유 CR, 아이템, 투자 기록이 모두 삭제되며 복구할 수 없습니다. 계속하려면 비밀번호를 입력하세요.</p>
+    <form id="delete-account-form">
+      <label class="sr-only" for="delete-account-password">비밀번호</label>
+      <input id="delete-account-password" type="password" maxlength="64" autocomplete="current-password" placeholder="비밀번호" required>
+      <p class="scoreboard-message" id="delete-account-message" role="alert"></p>
+      <div class="investment-confirm-actions">
+        <button class="text-button" id="delete-account-dismiss" type="button">취소</button>
+        <button class="primary-button investment-cancel-confirm" id="delete-account-submit" type="submit">탈퇴하기</button>
+      </div>
+    </form>
+  </dialog>
   <div class="game-loading-indicator" id="game-loading-indicator" role="status" aria-live="polite" hidden>
     <span class="game-loading-spinner" aria-hidden="true"></span>
     <span id="game-loading-message">미니게임을 불러오는 중...</span>
@@ -289,7 +332,7 @@
     <form method="dialog"><button class="dialog-close" aria-label="나중에 받기">×</button></form>
     <span class="section-kicker">DAILY CHECK-IN</span>
     <h2 id="attendance-title">오늘의 출석 보상</h2>
-    <p>복권을 긁어 100~500 CR 출석 보상을 확인하세요. 보상은 하루 한 번 받을 수 있습니다.</p>
+    <p>복권을 긁어 100~500 CR 출석 보상을 확인하세요. 보상은 하루 한 번 받을 수 있습니다.<br><small>출석 기준일은 한국 시간(KST) 00:00에 바뀝니다. (UTC 15:00)</small></p>
     <div class="attendance-scratch-card">
       <strong id="attendance-reward">??? CR</strong>
       <canvas id="attendance-scratch-canvas" aria-label="마우스나 손가락으로 긁어 출석 보상 확인"></canvas>
