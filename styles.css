@@ -1183,3 +1183,10 @@ ul.investment-outcomes { display: grid; gap: 4px; margin: 10px 0 0; padding: 10p
 .dev-notice { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; padding: 9px 16px; background: rgba(101, 230, 209, 0.1); border-bottom: 1px solid var(--line); color: var(--ink); font-size: 14px; text-align: center; }
 .dev-notice a { color: var(--green); font-weight: 700; text-decoration: underline; white-space: nowrap; }
 .dev-notice a:hover, .dev-notice a:focus-visible { color: var(--blue); }
+
+.scoreboard-player-form .privacy-consent { flex: 1 1 100%; font-size: 10px; color: #c3d0e0; }
+.scoreboard-player-form .privacy-consent[hidden] { display: none; }
+.privacy-consent-check { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: bold; }
+.scoreboard-player-form .privacy-consent-check input { flex: 0 0 auto; width: 14px; height: 14px; padding: 0; accent-color: var(--green); }
+.privacy-consent-summary { margin: 6px 0 0; padding: 6px 8px; list-style: none; display: grid; gap: 3px; border: 1px solid #35516e; border-radius: 4px; line-height: 1.4; }
+.privacy-consent-summary strong { margin-right: 4px; color: var(--green); }

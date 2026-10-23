@@ -48,7 +48,7 @@ async function startServer(t) {
 }
 
 async function register(json, loginId, nickname = `닉${loginId}`) {
-  const result = await json('POST', '/api/auth/register', { loginId, password: 'password123', passwordConfirm: 'password123', nickname });
+  const result = await json('POST', '/api/auth/register', { loginId, password: 'password123', passwordConfirm: 'password123', privacyConsent: true, nickname });
   assert.equal(result.status, 201, `가입 실패: ${JSON.stringify(result.body)}`);
   return { cookie: result.headers.get('set-cookie').split(';')[0], user: result.body.user };
 }
@@ -64,8 +64,11 @@ async function submitScore(json, cookie, game, points) {
 test('회원가입은 입력을 검증하고 환영 재화를 지급하며 민감 정보를 노출하지 않는다', async (t) => {
   const json = await startServer(t);
   const post = (body) => json('POST', '/api/auth/register', body);
-  const valid = { loginId: 'user_01', password: 'password123', passwordConfirm: 'password123', nickname: '파일럿' };
+  const valid = { loginId: 'user_01', password: 'password123',   passwordConfirm: 'password123', privacyConsent: true, nickname: '파일럿' };
 
+    assert.equal((await post({ ...valid, privacyConsent: false })).status, 400);
+    assert.equal((await post({ ...valid, privacyConsent: 'true' })).status, 400);
+    assert.equal((await post({ ...valid, privacyConsent: undefined })).status, 400);
   assert.equal((await post({ ...valid, passwordConfirm: 'password124' })).status, 400);
   assert.equal((await post({ ...valid, passwordConfirm: undefined })).status, 400);
   assert.equal((await post({ ...valid, password: 'short', passwordConfirm: 'short' })).status, 400);
@@ -130,7 +133,7 @@ test('로그인 실패가 5회 쌓이면 429로 제한하고 올바른 비밀번
 test('같은 아이디로 동시에 가입해도 한 계정만 만들어진다', async (t) => {
   const json = await startServer(t);
   const results = await Promise.all(Array.from({ length: 6 }, (_, index) => (
-    json('POST', '/api/auth/register', { loginId: 'dupe_01', password: 'password123', passwordConfirm: 'password123', nickname: `동시${index}` })
+    json('POST', '/api/auth/register', { loginId: 'dupe_01', password: 'password123', passwordConfirm: 'password123', privacyConsent: true, nickname: `동시${index}` })
   )));
   assert.deepEqual(results.map((result) => result.status).sort(), [201, 409, 409, 409, 409, 409]);
 });

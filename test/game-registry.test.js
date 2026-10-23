@@ -203,7 +203,7 @@ test('server issues play sessions and validates score submissions', async (t) =>
   // playId 없이 점수를 보낼 수 없다.
   assert.equal((await json('POST', '/api/scores', { game: 'demo_game', points: 100 })).status, 400);
 
-  const reg = await json('POST', '/api/auth/register', { loginId: 'tester01', password: 'password123', passwordConfirm: 'password123', nickname: '테스터' });
+  const reg = await json('POST', '/api/auth/register', { loginId: 'tester01', password: 'password123', passwordConfirm: 'password123', privacyConsent: true, nickname: '테스터' });
   assert.equal(reg.status, 201);
   const cookie = reg.headers.get('set-cookie').split(';')[0];
 

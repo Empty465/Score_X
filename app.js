@@ -703,6 +703,9 @@ function setAuthMode(mode) {
   document.querySelector('#auth-nickname').required = isRegister;
   document.querySelector('#auth-password-confirm').hidden = !isRegister;
   document.querySelector('#auth-password-confirm').required = isRegister;
+  document.querySelector('#auth-privacy').hidden = !isRegister;
+  document.querySelector('#auth-privacy-consent').required = isRegister;
+  if (!isRegister) document.querySelector('#auth-privacy-consent').checked = false;
   document.querySelector('#auth-password').autocomplete = isRegister ? 'new-password' : 'current-password';
   document.querySelector('#auth-submit').firstChild.textContent = isRegister ? '가입하기 ' : '로그인 ';
   document.querySelector('#auth-toggle').textContent = isRegister ? '로그인으로' : '회원가입';
@@ -723,6 +726,7 @@ async function submitAuth(event) {
       return;
     }
     body.passwordConfirm = form.elements.passwordConfirm.value;
+    body.privacyConsent = form.elements.privacyConsent.checked;
     body.nickname = form.elements.nickname.value.trim();
   }
   submit.disabled = true;

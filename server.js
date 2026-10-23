@@ -611,6 +611,10 @@ async function handleApi(request, response, url) {
       sendJson(response, 400, { error: '비밀번호 확인이 일치하지 않습니다.' });
       return;
     }
+    if (payload.privacyConsent !== true) {
+      sendJson(response, 400, { error: '개인정보 수집·이용에 동의해야 회원가입할 수 있습니다.' });
+      return;
+    }
     if (!nickname) {
       sendJson(response, 400, { error: '닉네임은 2자 이상 16자 이하로 입력해 주세요.' });
       return;

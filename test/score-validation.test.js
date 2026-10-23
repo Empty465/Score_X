@@ -50,7 +50,7 @@ async function startServer(t) {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function registerUser(json, loginId) {
-  const reg = await json('POST', '/api/auth/register', { loginId, password: 'password123', passwordConfirm: 'password123', nickname: `유저${loginId.slice(-3)}` });
+  const reg = await json('POST', '/api/auth/register', { loginId, password: 'password123', passwordConfirm: 'password123', privacyConsent: true, nickname: `유저${loginId.slice(-3)}` });
   assert.equal(reg.status, 201);
   return { cookie: reg.headers.get('set-cookie').split(';')[0], credits: reg.body.user.credits };
 }
