@@ -16,19 +16,19 @@
   - [x] 기존 게임별 점수 적립과 투자 임무 진행의 통합 회귀 테스트 (`test/api.test.js`의 투자 임무 진행·정산 테스트)
   - [ ] 개발·배포 환경을 `package.json`의 Node.js 24 이상 요구사항에 맞추고 실행 검증
 - [ ] 무료 호스팅에서 DB 유지를 위한 Turso(libSQL) 비동기 DB 전환 (배경: Render 무료 플랜은 재시작 시 `DB/scorex.sqlite` 초기화가 되기 떄문.)
-  - [ ] `@libsql/client` 설치, `TURSO_DATABASE_URL`·`TURSO_AUTH_TOKEN`이 없으면 로컬 `file:` SQLite(`DB/scorex.sqlite`)로 연결해, 코드 수정 없이 로컬은 로컬 DB·Render는 Turso에 연결되도록 환경 변수로만 분기 (로컬에는 `TURSO_*`를 설정하지 않으면 운영 DB에 연결되지 않음)
-  - [ ] 서버 시작 로그에 연결 대상(로컬 파일/Turso URL)을 표시하고, 토큰은 로그·커밋에 노출하지 않음
+  - [x] `@libsql/client` 설치, 두 Turso 환경변수 설정 시 원격 DB 사용, 미설정 시 로컬 `file:` SQLite 사용 (부분 설정은 시작 오류)
+  - [x] 서버 시작 로그에 연결 대상(로컬 파일/Turso 주소)을 표시하고 토큰을 로그에 노출하지 않음
   - [ ] 필요 시 테스트용 별도 Turso DB(`scorex-dev`)를 만들어 운영 데이터와 분리
-  - [ ] `DB/scorex.sqlite`가 Git에 추적 중이므로 `.gitignore` 추가와 `git rm --cached` 여부 결정 (개인 계정 정보 포함 여부 확인)
-  - [ ] `server.js`의 동기 `DatabaseSync` 호출(약 49곳)을 `await` 방식으로 변경하고 관련 함수·요청 핸들러를 `async`로 전환 (`await` 누락 주의)
-  - [ ] 트랜잭션 구간(점수 제출, 재화 차감, 투자 정산, 출석 보상)을 `transaction()`/`batch()`로 재작성하고, 비동기 전환으로 생길 수 있는 동시 요청 레이스(출석 보상 중복 수령, 재화 이중 차감) 방지 보강
-  - [ ] 서버 시작 시 스키마 생성·마이그레이션(구 `users` 스키마 폐기, `investment_runs` 검사)을 비동기로 변경
-  - [ ] 한 요청의 쿼리 수를 `batch()`로 묶어 네트워크 지연 최소화
-  - [ ] `test/`의 DB 의존 테스트를 비동기로 수정하고 동시 요청 테스트 추가
+  - [x] `DB/scorex.sqlite`는 Git 추적 대상이 아니며 `.gitignore`에서 이미 제외됨; `node_modules/`도 제외 처리 (DB 파일은 수정하지 않음)
+  - [x] `server.js`의 동기 `DatabaseSync` 호출을 비동기 `await` 호출로 전환
+  - [x] 점수 제출·재화 변경·투자·출석을 비동기 트랜잭션으로 처리하고 조건부 갱신/제약으로 동시 요청 보호
+  - [x] 서버 시작 시 스키마 생성·마이그레이션을 비동기로 처리
+  - [x] 플레이 정리와 세션 발급을 `batch()`로 묶어 DB 왕복 감소
+  - [x] 비동기 DB 로컬 통합 테스트 및 기존 동시 요청 회귀 테스트 통과
   - [ ] Turso DB 생성, 환경 변수 `TURSO_DATABASE_URL`·`TURSO_AUTH_TOKEN`을 호스팅에 등록(토큰은 커밋 금지), 무료 한도 확인
   - [ ] 배포 후 재시작·재배포해도 계정·점수가 유지되는지 확인
-  - [ ] `How to Run.txt`에 환경 변수와 로컬 실행 방법 반영
-  - [ ] `HOST` 기본값을 `PORT`가 있으면 `0.0.0.0`으로 변경 (호스팅 외부 접속용)
+  - [x] `How to Run.txt`에 로컬 실행 및 Turso 환경변수 설정 방법 반영
+  - [x] `HOST` 기본값은 `PORT`가 있으면 `0.0.0.0` 사용
 
 ---
 

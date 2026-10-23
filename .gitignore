@@ -1,3 +1,4 @@
 ﻿DB/*.sqlite*
 scorex.sqlite*
 scores.sqlite*
+/node_modules/

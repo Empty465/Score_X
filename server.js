@@ -2,14 +2,14 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const { randomInt, randomBytes, createHash, scryptSync, timingSafeEqual } = require('node:crypto');
-const { DatabaseSync } = require('node:sqlite');
+const { createDatabase } = require('./lib/database.js');
 const { createGameRegistry, resolveGameAsset } = require('./lib/game-registry.js');
 
 const host = process.env.HOST || (process.env.PORT ? '0.0.0.0' : '127.0.0.1');
 const port = Number(process.env.PORT || 3000);
 const databasePath = process.env.DB_PATH || path.join(__dirname, 'DB', 'scorex.sqlite');
-fs.mkdirSync(path.dirname(databasePath), { recursive: true });
-const database = new DatabaseSync(databasePath);
+if (!process.env.TURSO_DATABASE_URL) fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+const database = createDatabase();
 const gamesDirectory = process.env.GAMES_DIR || path.join(__dirname, 'games');
 const gameRegistry = createGameRegistry({
   gamesDir: gamesDirectory,
@@ -122,19 +122,19 @@ const publicFiles = new Map([
   ['/tools/harness.html', ['tools/harness.html', 'text/html; charset=utf-8']]
 ]);
 
-// 이름 기반의 이전 스키마(users)는 계정 체계와 호환되지 않으므로 폐기하고 새로 만든다.
-const hasLegacySchema = database.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'users'").get();
-if (hasLegacySchema) {
-  database.exec(`
+async function initializeDatabase() {
+  const hasLegacySchema = await database.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'users'").get();
+  if (hasLegacySchema) {
+    await database.exec(`
     PRAGMA foreign_keys = OFF;
     DROP TABLE IF EXISTS investment_runs;
     DROP TABLE IF EXISTS user_cosmetics;
     DROP TABLE IF EXISTS score_events;
     DROP TABLE IF EXISTS users;
   `);
-}
+  }
 
-database.exec(`
+  await database.exec(`
   PRAGMA foreign_keys = ON;
   CREATE TABLE IF NOT EXISTS accounts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -223,16 +223,15 @@ database.exec(`
   CREATE INDEX IF NOT EXISTS sessions_account_idx ON sessions(account_id);
 `);
 
-if (database.prepare('PRAGMA table_info(play_sessions)').all().some((column) => column.name === 'difficulty')) {
-  database.exec('ALTER TABLE play_sessions DROP COLUMN difficulty');
-}
+  if ((await database.prepare('PRAGMA table_info(play_sessions)').all()).some((column) => column.name === 'difficulty')) {
+    await database.prepare('ALTER TABLE play_sessions DROP COLUMN difficulty').run();
+  }
 
-const investmentRunsSchema = database.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'investment_runs'").get().sql;
-if (!investmentRunsSchema.includes("'cancelled'")) {
-  database.exec(`
-    BEGIN IMMEDIATE;
-    ALTER TABLE investment_runs RENAME TO investment_runs_legacy;
-    CREATE TABLE investment_runs (
+  const investmentRunsSchema = await database.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'investment_runs'").get();
+  if (!investmentRunsSchema.sql.includes("'cancelled'")) {
+    await runInTransaction(async () => {
+      await database.prepare('ALTER TABLE investment_runs RENAME TO investment_runs_legacy').run();
+      await database.prepare(`CREATE TABLE investment_runs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       account_id INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
       stake INTEGER NOT NULL CHECK (stake > 0),
@@ -244,13 +243,13 @@ if (!investmentRunsSchema.includes("'cancelled'")) {
       reward INTEGER NOT NULL DEFAULT 0 CHECK (reward >= 0),
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       completed_at TEXT
-    );
-    INSERT INTO investment_runs (id, account_id, stake, risk, games_json, progress, status, outcome, reward, created_at, completed_at)
-      SELECT id, account_id, stake, risk, games_json, progress, status, outcome, reward, created_at, completed_at
-      FROM investment_runs_legacy;
-    DROP TABLE investment_runs_legacy;
-    COMMIT;
-  `);
+    )`).run();
+      await database.prepare(`INSERT INTO investment_runs (id, account_id, stake, risk, games_json, progress, status, outcome, reward, created_at, completed_at)
+        SELECT id, account_id, stake, risk, games_json, progress, status, outcome, reward, created_at, completed_at
+        FROM investment_runs_legacy`).run();
+      await database.prepare('DROP TABLE investment_runs_legacy').run();
+    });
+  }
 }
 
 const profileSelect = `
@@ -287,7 +286,6 @@ const getLatestInvestment = database.prepare('SELECT * FROM investment_runs WHER
 const insertPlay = database.prepare('INSERT INTO play_sessions (play_id, account_id, game, seed, started_at) VALUES (?, ?, ?, ?, ?)');
 const findPlay = database.prepare('SELECT * FROM play_sessions WHERE play_id = ?');
 const markPlayUsed = database.prepare('UPDATE play_sessions SET used_at = ? WHERE play_id = ? AND used_at IS NULL');
-const deleteStalePlays = database.prepare('DELETE FROM play_sessions WHERE started_at < ?');
 
 class ScoreRejection extends Error {
   constructor(message, status = 400) {
@@ -313,14 +311,14 @@ function parseScorePayload(payload, accountId) {
 }
 
 // 제출된 점수가 서버가 발급한 플레이 세션과 매니페스트 규칙에 맞는지 검사한다. 사용 처리는 하지 않는다.
-function validatePlay(payload, points, game, accountId) {
+async function validatePlay(payload, points, game, accountId) {
   const manifest = gameRegistry.get(game);
   const reject = (message, status = 400) => rejectScore(game, accountId, points, message, status);
   if (payload.playId === undefined || payload.playId === null) {
     if (manifest) reject('이 게임은 플레이 세션(playId)이 필요합니다.');
     return null;
   }
-  const play = findPlay.get(payload.playId);
+  const play = await findPlay.get(payload.playId);
   const now = Date.now();
   if (!play || play.game !== game || (play.account_id ?? null) !== (accountId ?? null)) reject('유효하지 않은 플레이 세션입니다.');
   if (play.used_at !== null) reject('이미 제출된 플레이 세션입니다.', 409);
@@ -336,29 +334,25 @@ function validatePlay(payload, points, game, accountId) {
   return play;
 }
 
-function consumePlay(play) {
-  if (play && markPlayUsed.run(Date.now(), play.play_id).changes !== 1) throw new ScoreRejection('이미 제출된 플레이 세션입니다.', 409);
+async function consumePlay(play) {
+  if (play && (await markPlayUsed.run(Date.now(), play.play_id)).changes !== 1) throw new ScoreRejection('이미 제출된 플레이 세션입니다.', 409);
 }
 
 function runInTransaction(work) {
-  database.exec('BEGIN IMMEDIATE');
-  try {
-    const result = work();
-    database.exec('COMMIT');
-    return result;
-  } catch (error) {
-    database.exec('ROLLBACK');
-    throw error;
-  }
+  return database.transaction(work);
 }
 
 // 잔액 변경은 항상 이 함수로만 하고, 변동 내역을 원장에 남긴다. 트랜잭션 안에서 호출해야 한다.
-function adjustCredits(accountId, delta, reason, ref = '') {
-  const updated = database.prepare('UPDATE wallets SET credits = credits + ? WHERE account_id = ? AND credits + ? >= 0')
+async function adjustCredits(accountId, delta, reason, ref = '') {
+  const updated = await database.prepare('UPDATE wallets SET credits = credits + ? WHERE account_id = ? AND credits + ? >= 0')
     .run(delta, accountId, delta);
-  if (updated.changes !== 1) throw new Error('보유 크레딧이 부족합니다.');
-  const balance = Number(getWalletCredits.get(accountId).credits);
-  insertLedger.run(accountId, delta, balance, reason, String(ref));
+  if (updated.changes !== 1) {
+    const error = new Error('보유 크레딧이 부족합니다.');
+    error.status = 400;
+    throw error;
+  }
+  const balance = Number((await getWalletCredits.get(accountId)).credits);
+  await insertLedger.run(accountId, delta, balance, reason, String(ref));
   return balance;
 }
 
@@ -384,10 +378,10 @@ function readSessionToken(request) {
   return null;
 }
 
-function getAuthenticatedAccountId(request) {
+async function getAuthenticatedAccountId(request) {
   const token = readSessionToken(request);
   if (!token) return null;
-  return findSession.get(hashToken(token), Date.now())?.account_id ?? null;
+  return (await findSession.get(hashToken(token), Date.now()))?.account_id ?? null;
 }
 
 function sessionCookie(request, value, maxAgeSeconds) {
@@ -395,10 +389,10 @@ function sessionCookie(request, value, maxAgeSeconds) {
   return `${SESSION_COOKIE}=${value}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAgeSeconds}${secure}`;
 }
 
-function startSession(request, accountId) {
+async function startSession(request, accountId) {
   const token = randomBytes(32).toString('hex');
-  deleteExpiredSessions.run(Date.now());
-  insertSession.run(hashToken(token), accountId, Date.now() + SESSION_DAYS * 86400000);
+  await deleteExpiredSessions.run(Date.now());
+  await insertSession.run(hashToken(token), accountId, Date.now() + SESSION_DAYS * 86400000);
   return sessionCookie(request, token, SESSION_DAYS * 86400);
 }
 
@@ -417,10 +411,18 @@ function readJson(request) {
     request.setEncoding('utf8');
     request.on('data', (chunk) => {
       body += chunk;
-      if (body.length > 4096) reject(new Error('요청 크기가 너무 큽니다.'));
+      if (body.length > 4096) {
+        const error = new Error('요청 크기가 너무 큽니다.');
+        error.status = 400;
+        reject(error);
+      }
     });
     request.on('end', () => {
-      try { resolve(JSON.parse(body || '{}')); } catch { reject(new Error('올바른 JSON 형식이 아닙니다.')); }
+      try { resolve(JSON.parse(body || '{}')); } catch {
+        const error = new Error('올바른 JSON 형식이 아닙니다.');
+        error.status = 400;
+        reject(error);
+      }
     });
     request.on('error', reject);
   });
@@ -439,7 +441,7 @@ function bestsToScores(rows) {
   return scores;
 }
 
-function serializePlayer(row, scores, includeCosmetics = false) {
+async function serializePlayer(row, scores, includeCosmetics = false) {
   const title = titles.find((option) => option.id === row.title_id);
   const total = Object.values(scores).reduce((sum, value) => sum + value, 0);
   return {
@@ -450,7 +452,7 @@ function serializePlayer(row, scores, includeCosmetics = false) {
     titleId: row.title_id || '',
     title: title ? `${title.emoji} ${title.label}` : '',
     backgroundId: row.background_id || '',
-    ...(includeCosmetics ? { ownedCosmetics: getUserCosmetics.all(row.id).map((item) => item.item_id) } : {}),
+    ...(includeCosmetics ? { ownedCosmetics: (await getUserCosmetics.all(row.id)).map((item) => item.item_id) } : {}),
     rank: null,
     total,
     tier: getTier(total),
@@ -459,18 +461,23 @@ function serializePlayer(row, scores, includeCosmetics = false) {
   };
 }
 
-function buildProfile(accountId) {
-  const row = findProfileById.get(accountId);
-  return serializePlayer(row, bestsToScores(getAccountBests.all(accountId)), true);
+async function buildProfile(accountId) {
+  const [row, bests] = await Promise.all([
+    findProfileById.get(accountId),
+    getAccountBests.all(accountId)
+  ]);
+  return serializePlayer(row, bestsToScores(bests), true);
 }
 
-function loadPlayers() {
+async function loadPlayers() {
   const bestsByAccount = new Map();
-  getAllBests.all().forEach((row) => {
+  const [bests, profiles] = await Promise.all([getAllBests.all(), getAllProfiles.all()]);
+  bests.forEach((row) => {
     if (!bestsByAccount.has(row.account_id)) bestsByAccount.set(row.account_id, []);
     bestsByAccount.get(row.account_id).push(row);
   });
-  const players = getAllProfiles.all().map((row) => serializePlayer(row, bestsToScores(bestsByAccount.get(row.id) || [])));
+  const players = await Promise.all(profiles
+    .map((row) => serializePlayer(row, bestsToScores(bestsByAccount.get(row.id) || []))));
   const byScore = [...players].sort((left, right) => right.total - left.total || left.id - right.id);
   const byCredits = [...players].sort((left, right) => right.credits - left.credits || left.id - right.id);
   byScore.forEach((player, index) => { player.rank = index + 1; });
@@ -560,7 +567,7 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === 'GET' && url.pathname === '/api/health') {
-    sendJson(response, 200, { status: 'ok', database: 'sqlite' });
+    sendJson(response, 200, { status: 'ok', database: database.kind });
     return;
   }
 
@@ -583,20 +590,20 @@ async function handleApi(request, response, url) {
     }
     const salt = randomBytes(16).toString('hex');
     const passwordHash = hashPassword(password, salt);
-    const created = runInTransaction(() => {
-      if (findAccountByLogin.get(loginId)) return { error: '이미 사용 중인 아이디입니다.' };
-      if (findNickname.get(nickname)) return { error: '이미 사용 중인 닉네임입니다.' };
-      const accountId = Number(insertAccount.run(loginId, passwordHash, salt).lastInsertRowid);
-      insertProfile.run(accountId, nickname);
-      insertWallet.run(accountId);
-      adjustCredits(accountId, WELCOME_CREDITS, 'welcome');
+    const created = await runInTransaction(async () => {
+      if (await findAccountByLogin.get(loginId)) return { error: '이미 사용 중인 아이디입니다.' };
+      if (await findNickname.get(nickname)) return { error: '이미 사용 중인 닉네임입니다.' };
+      const accountId = Number((await insertAccount.run(loginId, passwordHash, salt)).lastInsertRowid);
+      await insertProfile.run(accountId, nickname);
+      await insertWallet.run(accountId);
+      await adjustCredits(accountId, WELCOME_CREDITS, 'welcome');
       return { accountId };
     });
     if (created.error) {
       sendJson(response, 409, { error: created.error });
       return;
     }
-    sendJson(response, 201, { user: buildProfile(created.accountId) }, { 'Set-Cookie': startSession(request, created.accountId) });
+    sendJson(response, 201, { user: await buildProfile(created.accountId) }, { 'Set-Cookie': await startSession(request, created.accountId) });
     return;
   }
 
@@ -604,49 +611,48 @@ async function handleApi(request, response, url) {
     const payload = await readJson(request);
     const loginId = typeof payload.loginId === 'string' ? payload.loginId.trim() : '';
     const password = typeof payload.password === 'string' ? payload.password : '';
-    const account = loginId && password.length <= 64 ? findAccountByLogin.get(loginId) : null;
+    const account = loginId && password.length <= 64 ? await findAccountByLogin.get(loginId) : null;
     if (!account || !verifyPassword(password, account.password_salt, account.password_hash)) {
       sendJson(response, 401, { error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
       return;
     }
-    sendJson(response, 200, { user: buildProfile(account.id) }, { 'Set-Cookie': startSession(request, account.id) });
+    sendJson(response, 200, { user: await buildProfile(account.id) }, { 'Set-Cookie': await startSession(request, account.id) });
     return;
   }
 
   if (request.method === 'POST' && url.pathname === '/api/auth/logout') {
     const token = readSessionToken(request);
-    if (token) deleteSession.run(hashToken(token));
+    if (token) await deleteSession.run(hashToken(token));
     sendJson(response, 200, { ok: true }, { 'Set-Cookie': sessionCookie(request, '', 0) });
     return;
   }
 
   if (request.method === 'GET' && url.pathname === '/api/auth/me') {
-    const accountId = getAuthenticatedAccountId(request);
-    sendJson(response, 200, { user: accountId ? buildProfile(accountId) : null });
+    const accountId = await getAuthenticatedAccountId(request);
+    sendJson(response, 200, { user: accountId ? await buildProfile(accountId) : null });
     return;
   }
 
   if ((request.method === 'GET' && url.pathname === '/api/attendance/status') ||
       (request.method === 'POST' && url.pathname === '/api/attendance/claim')) {
-    const accountId = getAuthenticatedAccountId(request);
+    const accountId = await getAuthenticatedAccountId(request);
     if (!accountId) {
       sendJson(response, 401, { error: '로그인이 필요합니다.' });
       return;
     }
     const claimDate = getAttendanceDate();
     if (request.method === 'GET') {
-      const claim = getAttendanceClaim.get(accountId, claimDate);
+      const claim = await getAttendanceClaim.get(accountId, claimDate);
       sendJson(response, 200, { date: claimDate, eligible: !claim });
       return;
     }
-    const claim = runInTransaction(() => {
-      if (getAttendanceClaim.get(accountId, claimDate)) {
-        return { status: 409, error: '오늘 출석 보상은 이미 받았습니다.' };
-      }
+    const claim = await runInTransaction(async () => {
       const reward = randomInt(100, 501);
-      database.prepare('INSERT INTO attendance_claims (account_id, claim_date, reward) VALUES (?, ?, ?)')
-        .run(accountId, claimDate, reward);
-      const credits = adjustCredits(accountId, reward, 'attendance_daily', claimDate);
+      const inserted = await database.prepare(`INSERT INTO attendance_claims (account_id, claim_date, reward)
+        VALUES (?, ?, ?) ON CONFLICT(account_id, claim_date) DO NOTHING RETURNING reward`)
+        .get(accountId, claimDate, reward);
+      if (!inserted) return { status: 409, error: '오늘 출석 보상은 이미 받았습니다.' };
+      const credits = await adjustCredits(accountId, reward, 'attendance_daily', claimDate);
       return { reward, credits, date: claimDate };
     });
     if (claim.error) {
@@ -671,17 +677,17 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === 'GET' && url.pathname === '/api/leaderboard') {
-    const { byScore, byCredits } = loadPlayers();
-    const accountId = getAuthenticatedAccountId(request);
+    const { byScore, byCredits } = await loadPlayers();
+    const accountId = await getAuthenticatedAccountId(request);
     const currentUser = accountId ? byScore.find((player) => player.id === accountId) || null : null;
-    if (currentUser) currentUser.ownedCosmetics = getUserCosmetics.all(currentUser.id).map((item) => item.item_id);
+    if (currentUser) currentUser.ownedCosmetics = (await getUserCosmetics.all(currentUser.id)).map((item) => item.item_id);
     sendJson(response, 200, {
       players: byScore.slice(0, 10),
-      creditPlayers: byCredits.slice(0, 10).map((player) => ({
+      creditPlayers: await Promise.all(byCredits.slice(0, 10).map(async (player) => ({
         ...player,
         rank: player.creditRank,
-        latestInvestment: serializeInvestmentSummary(getLatestInvestment.get(player.id))
-      })),
+        latestInvestment: serializeInvestmentSummary(await getLatestInvestment.get(player.id))
+      }))),
       currentUser
     });
     return;
@@ -694,8 +700,8 @@ async function handleApi(request, response, url) {
       sendJson(response, 404, { error: '알 수 없는 게임입니다.' });
       return;
     }
-    const accountId = getAuthenticatedAccountId(request);
-    const players = loadPlayers().byScore
+    const accountId = await getAuthenticatedAccountId(request);
+    const players = (await loadPlayers()).byScore
       .filter((player) => player.scores[game] > 0)
       .sort((left, right) => right.scores[game] - left.scores[game] || left.id - right.id)
       .map((player, index) => ({
@@ -730,33 +736,36 @@ async function handleApi(request, response, url) {
     const playId = randomBytes(16).toString('hex');
     const seed = randomInt(1, 2 ** 31);
     const now = Date.now();
-    deleteStalePlays.run(now - PLAY_MAX_AGE_MS);
-    insertPlay.run(playId, getAuthenticatedAccountId(request), payload.game, seed, now);
+    const accountId = await getAuthenticatedAccountId(request);
+    await database.batch([
+      { sql: 'DELETE FROM play_sessions WHERE started_at < ?', args: [now - PLAY_MAX_AGE_MS] },
+      { sql: 'INSERT INTO play_sessions (play_id, account_id, game, seed, started_at) VALUES (?, ?, ?, ?, ?)', args: [playId, accountId, payload.game, seed, now] }
+    ]);
     sendJson(response, 201, { playId, game: payload.game, seed, startedAt: now });
     return;
   }
 
   if (request.method === 'POST' && url.pathname === '/api/scores') {
     const payload = await readJson(request);
-    const accountId = getAuthenticatedAccountId(request);
+    const accountId = await getAuthenticatedAccountId(request);
     const { points } = parseScorePayload(payload, accountId);
     const creditsEarned = Math.max(1, Math.floor(points / 100));
-    const play = validatePlay(payload, points, payload.game, accountId);
+    const play = await validatePlay(payload, points, payload.game, accountId);
     if (!accountId) {
       // 게스트 플레이: 결과 연출용 값만 돌려주고 아무것도 저장하지 않는다.
-      runInTransaction(() => consumePlay(play));
+      await runInTransaction(() => consumePlay(play));
       sendJson(response, 200, { saved: false, guest: true, score: points, creditsEarned, reroll: null, investment: null });
       return;
     }
     let investment = null;
     let reroll = null;
-    const outcome = runInTransaction(() => {
-      consumePlay(play);
-      const previousBest = Number(getAccountBests.all(accountId).find((row) => row.game === payload.game)?.best_points || 0);
-      const scoreId = Number(insertScore.run(accountId, payload.game, points, creditsEarned).lastInsertRowid);
-      if (points > previousBest) upsertBestScore.run(accountId, payload.game, points);
-      adjustCredits(accountId, creditsEarned, 'mission_reward', `score:${scoreId}`);
-      const activeRun = getActiveInvestment.get(accountId);
+    const outcome = await runInTransaction(async () => {
+      await consumePlay(play);
+      const previousBest = Number((await getAccountBests.all(accountId)).find((row) => row.game === payload.game)?.best_points || 0);
+      const scoreId = Number((await insertScore.run(accountId, payload.game, points, creditsEarned)).lastInsertRowid);
+      if (points > previousBest) await upsertBestScore.run(accountId, payload.game, points);
+      await adjustCredits(accountId, creditsEarned, 'mission_reward', `score:${scoreId}`);
+      const activeRun = await getActiveInvestment.get(accountId);
       investment = serializeInvestment(activeRun);
       if (activeRun) {
         const sequence = JSON.parse(activeRun.games_json);
@@ -765,19 +774,19 @@ async function handleApi(request, response, url) {
           if (nextProgress === sequence.length) {
             const result = chooseOutcome(activeRun.risk);
             const reward = Math.floor(Number(activeRun.stake) * result.multiplier);
-            database.prepare(`
+            await database.prepare(`
               UPDATE investment_runs
               SET progress = ?, status = 'completed', outcome = ?, reward = ?, completed_at = CURRENT_TIMESTAMP
               WHERE id = ? AND status = 'active'
             `).run(nextProgress, result.id, reward, activeRun.id);
-            if (reward > 0) adjustCredits(accountId, reward, 'investment_payout', `run:${activeRun.id}`);
+            if (reward > 0) await adjustCredits(accountId, reward, 'investment_payout', `run:${activeRun.id}`);
             investment = {
               ...serializeInvestment({ ...activeRun, progress: nextProgress, status: 'completed', outcome: result.id, reward }),
               outcomeName: result.name,
               multiplier: result.multiplier
             };
           } else {
-            database.prepare("UPDATE investment_runs SET progress = ? WHERE id = ? AND status = 'active'")
+            await database.prepare("UPDATE investment_runs SET progress = ? WHERE id = ? AND status = 'active'")
               .run(nextProgress, activeRun.id);
             investment = serializeInvestment({ ...activeRun, progress: nextProgress });
           }
@@ -787,13 +796,13 @@ async function handleApi(request, response, url) {
       }
       return { previousBest };
     });
-    const scores = bestsToScores(getAccountBests.all(accountId));
+    const scores = bestsToScores(await getAccountBests.all(accountId));
     const totalBestScore = Object.values(scores).reduce((sum, value) => sum + value, 0);
     sendJson(response, 201, {
       saved: true,
       score: points,
       creditsEarned,
-      credits: Number(getWalletCredits.get(accountId).credits),
+      credits: Number((await getWalletCredits.get(accountId)).credits),
       bestScore: scores[payload.game],
       isNewBest: points > outcome.previousBest,
       totalBestScore,
@@ -805,33 +814,33 @@ async function handleApi(request, response, url) {
   }
 
   // 이 아래의 API는 로그인한 계정만 사용할 수 있다.
-  const accountId = getAuthenticatedAccountId(request);
+  const accountId = await getAuthenticatedAccountId(request);
   if (!accountId) {
     sendJson(response, 401, { error: '로그인이 필요합니다.' });
     return;
   }
 
   if (request.method === 'GET' && url.pathname === '/api/investment/active') {
-    sendJson(response, 200, { run: serializeInvestment(getActiveInvestment.get(accountId)) });
+    sendJson(response, 200, { run: serializeInvestment(await getActiveInvestment.get(accountId)) });
     return;
   }
 
   if (request.method === 'POST' && url.pathname === '/api/investment/cancel') {
-    const cancelled = runInTransaction(() => {
-      const run = getActiveInvestment.get(accountId);
+    const cancelled = await runInTransaction(async () => {
+      const run = await getActiveInvestment.get(accountId);
       if (!run) return { error: '취소할 진행 중인 투자가 없습니다.' };
       const refund = Math.floor(Number(run.stake) / 2);
-      const updated = database.prepare(`
+      const updated = await database.prepare(`
         UPDATE investment_runs
         SET status = 'cancelled', outcome = 'cancelled', reward = ?, completed_at = CURRENT_TIMESTAMP
         WHERE id = ? AND status = 'active'
       `).run(refund, run.id);
       if (updated.changes !== 1) return { error: '투자 상태가 변경되어 취소할 수 없습니다.' };
-      if (refund > 0) adjustCredits(accountId, refund, 'investment_cancel_refund', `run:${run.id}`);
+      if (refund > 0) await adjustCredits(accountId, refund, 'investment_cancel_refund', `run:${run.id}`);
       return {
-        run: serializeInvestment(database.prepare('SELECT * FROM investment_runs WHERE id = ?').get(run.id)),
+        run: serializeInvestment(await database.prepare('SELECT * FROM investment_runs WHERE id = ?').get(run.id)),
         refund,
-        credits: Number(getWalletCredits.get(accountId).credits)
+        credits: Number((await getWalletCredits.get(accountId)).credits)
       };
     });
     if (cancelled.error) {
@@ -854,14 +863,14 @@ async function handleApi(request, response, url) {
       sendJson(response, 400, { error: '투자 위험 옵션이 올바르지 않습니다.' });
       return;
     }
-    const started = runInTransaction(() => {
-      if (getActiveInvestment.get(accountId)) return { status: 409, error: '진행 중인 투자 임무를 먼저 완료해 주세요.' };
-      if (Number(getWalletCredits.get(accountId).credits) < stake) {
+    const started = await runInTransaction(async () => {
+      if (await getActiveInvestment.get(accountId)) return { status: 409, error: '진행 중인 투자 임무를 먼저 완료해 주세요.' };
+      if (Number((await getWalletCredits.get(accountId)).credits) < stake) {
         return { status: 400, error: '보유 크레딧보다 큰 금액은 투자할 수 없습니다.' };
       }
-      const runId = Number(database.prepare('INSERT INTO investment_runs (account_id, stake, risk, games_json) VALUES (?, ?, ?, ?)')
-        .run(accountId, stake, risk.id, JSON.stringify(shuffledGames())).lastInsertRowid);
-      adjustCredits(accountId, -stake, 'investment_stake', `run:${runId}`);
+      const runId = Number((await database.prepare('INSERT INTO investment_runs (account_id, stake, risk, games_json) VALUES (?, ?, ?, ?)')
+        .run(accountId, stake, risk.id, JSON.stringify(shuffledGames()))).lastInsertRowid);
+      await adjustCredits(accountId, -stake, 'investment_stake', `run:${runId}`);
       return { runId };
     });
     if (started.error) {
@@ -869,8 +878,8 @@ async function handleApi(request, response, url) {
       return;
     }
     sendJson(response, 201, {
-      run: serializeInvestment(database.prepare('SELECT * FROM investment_runs WHERE id = ?').get(started.runId)),
-      credits: Number(getWalletCredits.get(accountId).credits)
+      run: serializeInvestment(await database.prepare('SELECT * FROM investment_runs WHERE id = ?').get(started.runId)),
+      credits: Number((await getWalletCredits.get(accountId)).credits)
     });
     return;
   }
@@ -890,22 +899,22 @@ async function handleApi(request, response, url) {
         return;
       }
     }
-    const purchase = runInTransaction(() => {
+    const purchase = await runInTransaction(async () => {
       if (item.type === 'display-name') {
-        const holder = findNickname.get(nickname);
+        const holder = await findNickname.get(nickname);
         if (holder && holder.account_id === accountId) return { status: 400, error: '현재 사용 중인 닉네임입니다.' };
         if (holder) return { status: 409, error: '이미 사용 중인 닉네임입니다.' };
-      } else if (getUserCosmetics.all(accountId).some((owned) => owned.item_id === item.id)) {
+      } else if ((await getUserCosmetics.all(accountId)).some((owned) => owned.item_id === item.id)) {
         return { status: 409, error: '이미 보유한 아이템입니다.' };
       }
-      if (Number(getWalletCredits.get(accountId).credits) < item.price) {
+      if (Number((await getWalletCredits.get(accountId)).credits) < item.price) {
         return { status: 400, error: '보유 크레딧이 부족합니다.' };
       }
-      adjustCredits(accountId, -item.price, 'shop_purchase', item.id);
+      await adjustCredits(accountId, -item.price, 'shop_purchase', item.id);
       if (item.type === 'display-name') {
-        database.prepare('UPDATE profiles SET nickname = ? WHERE account_id = ?').run(nickname, accountId);
+        await database.prepare('UPDATE profiles SET nickname = ? WHERE account_id = ?').run(nickname, accountId);
       } else {
-        database.prepare('INSERT INTO user_cosmetics (account_id, item_id) VALUES (?, ?)').run(accountId, item.id);
+        await database.prepare('INSERT INTO user_cosmetics (account_id, item_id) VALUES (?, ?)').run(accountId, item.id);
       }
       return {};
     });
@@ -913,33 +922,33 @@ async function handleApi(request, response, url) {
       sendJson(response, purchase.status, { error: purchase.error });
       return;
     }
-    sendJson(response, 200, { purchased: item.id, profile: buildProfile(accountId) });
+    sendJson(response, 200, { purchased: item.id, profile: await buildProfile(accountId) });
     return;
   }
 
   if (request.method === 'POST' && url.pathname === '/api/profile/equip') {
     const payload = await readJson(request);
     const item = shopItems.find((option) => option.id === payload.itemId && option.type !== 'display-name');
-    if (!item || !getUserCosmetics.all(accountId).some((owned) => owned.item_id === item.id)) {
+    if (!item || !(await getUserCosmetics.all(accountId)).some((owned) => owned.item_id === item.id)) {
       sendJson(response, 403, { error: '해당 아이템을 먼저 구매해 주세요.' });
       return;
     }
     const equippedColumn = { avatar: 'avatar_id', title: 'title_id', background: 'background_id' }[item.type];
     const equippedValue = item.avatarId || item.titleId || item.backgroundId;
-    database.prepare(`UPDATE profiles SET ${equippedColumn} = ? WHERE account_id = ?`).run(equippedValue, accountId);
-    sendJson(response, 200, { profile: buildProfile(accountId) });
+    await database.prepare(`UPDATE profiles SET ${equippedColumn} = ? WHERE account_id = ?`).run(equippedValue, accountId);
+    sendJson(response, 200, { profile: await buildProfile(accountId) });
     return;
   }
 
   if (request.method === 'POST' && url.pathname === '/api/profile/avatar') {
     const payload = await readJson(request);
     const avatar = avatars.find((option) => option.id === payload.avatarId);
-    if (!avatar || (avatar.id !== 'pilot' && !getUserCosmetics.all(accountId).some((owned) => owned.item_id === `avatar-${avatar.id}`))) {
+    if (!avatar || (avatar.id !== 'pilot' && !(await getUserCosmetics.all(accountId)).some((owned) => owned.item_id === `avatar-${avatar.id}`))) {
       sendJson(response, 403, { error: '해당 프로필 아이콘을 먼저 구매해 주세요.' });
       return;
     }
-    database.prepare('UPDATE profiles SET avatar_id = ? WHERE account_id = ?').run(avatar.id, accountId);
-    sendJson(response, 200, { profile: buildProfile(accountId) });
+    await database.prepare('UPDATE profiles SET avatar_id = ? WHERE account_id = ?').run(avatar.id, accountId);
+    sendJson(response, 200, { profile: await buildProfile(accountId) });
     return;
   }
 
@@ -950,7 +959,9 @@ const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${host}:${port}`);
   if (url.pathname.startsWith('/api/')) {
     try { await handleApi(request, response, url); } catch (error) {
-      if (!response.headersSent) sendJson(response, error.status || 400, { error: error.message || '요청을 처리하지 못했습니다.' });
+      const status = error.status || 500;
+      if (!error.status) console.error('[api-error]', error);
+      if (!response.headersSent) sendJson(response, status, { error: status === 500 ? '요청을 처리하지 못했습니다.' : error.message });
       else response.destroy();
     }
     return;
@@ -1008,14 +1019,23 @@ const server = http.createServer(async (request, response) => {
   });
 });
 
-server.listen(port, host, () => {
-  console.log(`Playground running at http://${host}:${port}`);
-  console.log(`SQLite database: ${databasePath}`);
+async function startServer() {
+  await initializeDatabase();
+  server.listen(port, host, () => {
+    console.log(`Playground running at http://${host}:${port}`);
+    console.log(`${database.kind === 'turso' ? 'Turso' : 'SQLite'} database: ${database.target}`);
+  });
+}
+
+startServer().catch(async (error) => {
+  console.error('Database initialization failed:', error);
+  await database.close();
+  process.exitCode = 1;
 });
 
 function shutdown() {
-  server.close(() => {
-    database.close();
+  server.close(async () => {
+    await database.close();
     process.exit(0);
   });
 }
