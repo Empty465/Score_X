@@ -64,7 +64,7 @@
             <div class="scoreboard-kicker"><span>●</span> PLAYER PERFORMANCE</div>
             <div class="scoreboard-label">최고 기록 합산 점수 · PTS</div>
             <div class="scoreboard-total"><strong id="total-score">0</strong><span>PTS</span></div>
-            <span class="tier-badge" id="total-tier">훈련생</span>
+            <button type="button" class="tier-badge" id="total-tier" aria-haspopup="dialog" title="티어 목록 보기">훈련생</button>
             <div class="scoreboard-foot" id="current-player-label">로그인하면 순위에 참여할 수 있어요.</div>
             <span class="profile-title-badge" id="profile-title-badge" hidden></span>
             <form class="scoreboard-player-form" id="player-form">
@@ -290,6 +290,14 @@
       <button class="text-button" id="investment-cancel-dismiss" type="button">계속 진행</button>
       <button class="primary-button investment-cancel-confirm" id="investment-cancel-confirm" type="button">50% 환급 후 취소</button>
     </div>
+  </dialog>
+  <dialog class="investment-result-dialog tier-dialog" id="tier-dialog" aria-labelledby="tier-dialog-title">
+    <form method="dialog"><button class="dialog-close" aria-label="닫기">×</button></form>
+    <span class="section-kicker">TIER SYSTEM</span>
+    <h2 id="tier-dialog-title">티어 목록</h2>
+    <p id="tier-dialog-copy"></p>
+    <ol class="tier-list" id="tier-list"></ol>
+    <button class="primary-button" id="tier-dialog-close" type="button">확인</button>
   </dialog>
   <dialog class="investment-result-dialog" id="delete-account-dialog" aria-labelledby="delete-account-title">
     <form method="dialog"><button class="dialog-close" aria-label="닫기">×</button></form>

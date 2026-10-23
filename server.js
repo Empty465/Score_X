@@ -451,11 +451,19 @@ function readJson(request) {
   });
 }
 
+const TIERS = [
+  { name: '훈련생', min: 0 },
+  { name: '항해사', min: 1500 },
+  { name: '개척자', min: 3500 },
+  { name: '함장', min: 7000 },
+  { name: '전설', min: 12000 }
+];
+
 function getTier(score) {
-  if (score >= 3500) return '함장';
-  if (score >= 2000) return '개척자';
-  if (score >= 1000) return '항해사';
-  return '훈련생';
+  for (let index = TIERS.length - 1; index > 0; index -= 1) {
+    if (score >= TIERS[index].min) return TIERS[index].name;
+  }
+  return TIERS[0].name;
 }
 
 function bestsToScores(rows) {
@@ -751,7 +759,8 @@ async function handleApi(request, response, url) {
         rank: player.creditRank,
         latestInvestment: serializeInvestmentSummary(await getLatestInvestment.get(player.id))
       }))),
-      currentUser
+      currentUser,
+      tiers: TIERS
     });
     return;
   }

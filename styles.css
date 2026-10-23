@@ -1190,3 +1190,12 @@ ul.investment-outcomes { display: grid; gap: 4px; margin: 10px 0 0; padding: 10p
 .scoreboard-player-form .privacy-consent-check input { flex: 0 0 auto; width: 14px; height: 14px; padding: 0; accent-color: var(--green); }
 .privacy-consent-summary { margin: 6px 0 0; padding: 6px 8px; list-style: none; display: grid; gap: 3px; border: 1px solid #35516e; border-radius: 4px; line-height: 1.4; }
 .privacy-consent-summary strong { margin-right: 4px; color: var(--green); }
+
+button.tier-badge { cursor: pointer; background: transparent; font-family: inherit; }
+button.tier-badge:hover, button.tier-badge:focus-visible { background: #65e6d122; outline: 2px solid var(--green); outline-offset: 2px; }
+.tier-list { margin: 10px 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.tier-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid #35516e; border-radius: 6px; }
+.tier-row strong { min-width: 64px; }
+.tier-row span { flex: 1; color: #9fb4cc; font-family: "DM Mono", monospace; }
+.tier-row em { font-style: normal; color: var(--green); font-weight: bold; }
+.tier-row.is-current { border-color: var(--green); background: #65e6d114; }

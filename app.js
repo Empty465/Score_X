@@ -198,7 +198,41 @@ function ensureScoreServer() {
   }
 }
 
+let scoreTiers = [];
+
+function showTierDialog() {
+  const total = currentProfile?.total ?? 0;
+  const currentName = currentProfile?.tier;
+  const list = document.querySelector('#tier-list');
+  list.replaceChildren(...scoreTiers.map((tier, index) => {
+    const next = scoreTiers[index + 1];
+    const item = document.createElement('li');
+    item.className = 'tier-row';
+    if (tier.name === currentName) item.classList.add('is-current');
+    const name = document.createElement('strong');
+    name.textContent = tier.name;
+    const range = document.createElement('span');
+    range.textContent = next ? `${formatPoints(tier.min)} ~ ${formatPoints(next.min - 1)} PTS` : `${formatPoints(tier.min)} PTS 이상`;
+    item.append(name, range);
+    if (tier.name === currentName) {
+      const mark = document.createElement('em');
+      mark.textContent = '현재';
+      item.append(mark);
+    }
+    return item;
+  }));
+  const currentIndex = scoreTiers.findIndex((tier) => tier.name === currentName);
+  const next = currentIndex >= 0 ? scoreTiers[currentIndex + 1] : null;
+  document.querySelector('#tier-dialog-copy').textContent = !currentProfile
+    ? '티어는 게임별 최고 기록 합산 점수로 정해집니다. 로그인하면 내 티어를 확인할 수 있어요.'
+    : next
+      ? `현재 ${formatPoints(total)} PTS · 다음 티어 ${next.name}까지 ${formatPoints(next.min - total)} PTS`
+      : `현재 ${formatPoints(total)} PTS · 최고 티어입니다.`;
+  document.querySelector('#tier-dialog').showModal();
+}
+
 function renderScoreboard(data) {
+  if (Array.isArray(data.tiers)) scoreTiers = data.tiers;
   const currentUser = data.currentUser;
   currentProfile = currentUser;
   document.querySelector('#total-score').textContent = formatPoints(currentUser?.total || 0);
@@ -1391,6 +1425,8 @@ loadInvestmentOptions().catch((error) => setInvestmentMessage(error.message || '
 document.querySelector('#player-form').addEventListener('submit', submitAuth);
 document.querySelector('#auth-toggle').addEventListener('click', () => setAuthMode(authMode === 'login' ? 'register' : 'login'));
 document.querySelector('#logout-button').addEventListener('click', logout);
+document.querySelector('#total-tier').addEventListener('click', showTierDialog);
+document.querySelector('#tier-dialog-close').addEventListener('click', () => document.querySelector('#tier-dialog').close());
 document.querySelector('#delete-account-button').addEventListener('click', () => {
   document.querySelector('#delete-account-password').value = '';
   document.querySelector('#delete-account-message').textContent = '';
