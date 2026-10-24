@@ -39,6 +39,9 @@ test('new orbital mini-games are discovered and implement the game protocol', ()
       'roundEnemyCount = Math.min(18, 4 + round)',
       'roundEnemyCount - enemies.length',
       'score = Math.min(MAX_SCORE, score + 10 + round * 5)',
+      "context.textAlign = 'right'",
+      "context.fillText(`LIVES ${'♥ '.repeat(lives)}`, WIDTH - 20, 30)",
+      "context.textAlign = 'left'",
       'index < 135',
       'context.ellipse(WIDTH / 2, 385, 205, 90'
     ],

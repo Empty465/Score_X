@@ -117,7 +117,9 @@
       context.font = '16px ui-monospace, monospace';
       context.fillText(`ROUND ${round}`, 20, 30);
       context.fillText(`SCORE ${score}`, 20, 54);
-      context.fillText(`LIVES ${'♥ '.repeat(lives)}`, WIDTH - 105, 30);
+      context.textAlign = 'right';
+      context.fillText(`LIVES ${'♥ '.repeat(lives)}`, WIDTH - 20, 30);
+      context.textAlign = 'left';
       enemies.forEach((enemy, index) => drawShip(enemy.x - 15, enemy.y, ['#f27d69', '#e7b55b', '#7ee2cf'][index % 3], true));
       playerShots.forEach((shot) => {
         context.fillStyle = '#a8fff2';
