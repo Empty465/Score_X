@@ -1183,6 +1183,9 @@ function showView(name) {
     throw new Error(`등록되지 않은 화면입니다: ${name}`);
   }
   const previous = document.querySelector('.view.is-visible');
+  if (previous !== target) {
+    closeFooterNotices();
+  }
   const previousGame = previous?.id.replace(/^view-/, '');
   if (investmentGameInProgress === previousGame && previousGame !== name) investmentGameInProgress = null;
   if (previousGame && previousGame !== name && gameCatalogById.has(previousGame)) {
@@ -1199,6 +1202,12 @@ function showView(name) {
   if (name === 'investment' && activePlayer) {
     loadActiveInvestment().catch((error) => setInvestmentMessage(error.message || '투자 정보를 불러오지 못했습니다.', true));
   }
+}
+
+function closeFooterNotices() {
+  document.querySelectorAll('.page-footer details[open]').forEach((details) => {
+    details.open = false;
+  });
 }
 
 function setGameLoading(game, isLoading) {
@@ -1297,6 +1306,9 @@ async function openGame(id, shouldLaunch, onError = (message) => {
 }
 
 document.addEventListener('click', (event) => {
+  if (event.target.closest('.view.is-visible .board-overlay button, .view.is-visible .rocket-overlay button')) {
+    closeFooterNotices();
+  }
   if (event.target.closest('[data-open-login]')) {
     showView('home');
     document.querySelector('#auth-login-id').focus();
