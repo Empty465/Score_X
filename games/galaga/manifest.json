@@ -1,0 +1,16 @@
+{
+  "id": "galaga",
+  "protocol": 1,
+  "title": "궤도 방어 전술",
+  "shortTitle": "궤도방어",
+  "category": "ORBITAL DEFENSE",
+  "description": "우주선을 좌우로 움직여 적 편대를 격추하세요.",
+  "icon": "✦",
+  "maxScore": 100000,
+  "minDurationMs": 0,
+  "aspectRatio": "5:6",
+  "input": ["keyboard", "touch"],
+  "hud": ["score", "lives", "status"],
+  "version": "1.0.0",
+  "authors": ["score-x"]
+}

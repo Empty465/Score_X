@@ -25,6 +25,7 @@ function writeGame(dir, id, manifest) {
   fs.writeFileSync(path.join(dir, id, 'manifest.json'), JSON.stringify(manifest));
   fs.writeFileSync(path.join(dir, id, 'index.html'), '<!doctype html><title>demo</title>');
   fs.writeFileSync(path.join(dir, id, 'game.js'), 'console.log(1)');
+  fs.writeFileSync(path.join(dir, id, 'adapter.js'), 'export default { id: "demo_game" }');
 }
 
 test('manifest validation normalizes defaults and rejects bad input', () => {
@@ -182,6 +183,7 @@ test('server issues play sessions and validates score submissions', async (t) =>
   const list = await json('GET', '/api/games');
   assert.equal(list.status, 200);
   assert.deepEqual(list.body.games.map((game) => game.id), ['demo_game']);
+  assert.equal(list.body.games[0].adapter, true);
   const migratedLeaderboard = await json('GET', '/api/leaderboard');
   const migratedInvestment = migratedLeaderboard.body.creditPlayers.find((player) => player.name === '기존유저').latestInvestment;
   assert.equal(migratedInvestment.status, 'completed');
@@ -190,6 +192,9 @@ test('server issues play sessions and validates score submissions', async (t) =>
   const asset = await fetch(`${base}/games/demo_game/game.js`);
   assert.equal(asset.status, 200);
   assert.equal(asset.headers.get('access-control-allow-origin'), '*');
+  const adapter = await fetch(`${base}/games/demo_game/adapter.js`);
+  assert.equal(adapter.status, 200);
+  assert.match(await adapter.text(), /demo_game/);
   assert.equal((await fetch(`${base}/games/demo_game/%2e%2e/%2e%2e/server.js`)).status, 404);
   for (const route of ['/sdk/scorex-sdk.js', '/shell/scorex-game.js', '/tools/harness.html']) {
     assert.equal((await fetch(base + route)).status, 200, `${route} must be served`);

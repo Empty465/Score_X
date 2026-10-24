@@ -21,7 +21,7 @@ Score X 미니게임 개발 안내
 새 게임을 만들 때 주로 다루는 파일:
 
 - games/<게임ID>/manifest.json, index.html — 게임 정보와 iframe 안에서 실행되는 게임 본체 (코드 수정 없이 메뉴에 등장)
-- games/<게임ID>.js, index.html의 view-<게임ID>, styles.css — 전용 화면이 필요할 때만 (선택)
+- games/<게임ID>/adapter.js, index.html의 view-<게임ID>, styles.css — 전용 화면이 필요할 때만 (선택)
 
 게임 메뉴와 카드는 매니페스트에서 생성되므로 HTML에 중복으로 추가하지 마세요. 전용 어댑터는 default export로 생명주기를 내보내고, 최고 기록과 점수 제출은 window.Playground의 공통 API를 사용합니다.
 

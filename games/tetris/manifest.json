@@ -1,0 +1,16 @@
+{
+  "id": "tetris",
+  "protocol": 1,
+  "title": "화물 적재 최적화",
+  "shortTitle": "화물적재",
+  "category": "CARGO STACKING",
+  "description": "블록을 쌓아 적재 줄을 완성하세요.",
+  "icon": "▦",
+  "maxScore": 100000,
+  "minDurationMs": 0,
+  "aspectRatio": "1:2",
+  "input": ["keyboard", "touch"],
+  "hud": ["score", "status"],
+  "version": "1.0.0",
+  "authors": ["score-x"]
+}

@@ -1,4 +1,4 @@
-// 메인 화면에서 <scorex-game>을 만들고 HUD·게임오버·오류 이벤트를 화면 어댑터(games/<id>.js)에 연결하는 공용 도우미입니다.
+// 메인 화면에서 <scorex-game>을 만들고 HUD·게임오버·오류 이벤트를 화면 어댑터(games/<id>/adapter.js)에 연결하는 공용 도우미입니다.
 import '/shell/scorex-game.js';
 
 export function mountGame({ id, host, onHud, onGameOver, onError }) {

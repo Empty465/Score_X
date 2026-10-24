@@ -64,6 +64,8 @@ games/
 
 매니페스트 검증에 실패한 게임은 목록에서 제외하고 서버 로그에 사유를 남깁니다.
 
+Shell은 세로형 터치 기기에서 가로형 게임 화면을 더 넓게 보여주기 위해 iframe 비율을 `1:1`로 확장합니다. 세로형 매니페스트 비율은 유지하며, 가로 화면이나 비터치 기기에서는 매니페스트 비율을 사용합니다.
+
 ## 4. 통신 방식
 
 ### 4.1 iframe 설정
@@ -197,7 +199,7 @@ Shell: 게임 전환/닫기 시 destroy → destroyed 대기(최대 2초) → if
 - [`sdk/scorex-sdk.js`](./sdk/scorex-sdk.js): 핸드셰이크·봉투·검증을 감싼 단일 파일 SDK. 게임 `index.html`에서 `<script src="../../sdk/scorex-sdk.js"></script>`로 불러옵니다(상대 경로라 `games/<id>/`, `examples/<id>/` 어디서든 동작).
   - `Scorex.onInit / onStart / onPause / onResume / onResize / onDestroy(handler)` → `Scorex.connect({ gameId, gameVersion })` → `Scorex.started()`, `Scorex.hud({...})`(초당 약 10회로 제한), `Scorex.gameOver({ score, durationMs, result, meta })`(playId당 1회, `playId`는 자동 첨부), `Scorex.error(code, message)`
 - [`shell/scorex-game.js`](./shell/scorex-game.js): Shell용 `<scorex-game game-id="...">` Web Component. 이벤트 `scorex-ready`, `scorex-prepared`, `scorex-started`, `scorex-hud`, `scorex-gameover`, `scorex-error`를 발생시키며, 메서드는 `load()`, `whenReady()`, `prepare()`, `start()`, `play()`, `pause()`, `resume()`, `destroy()`입니다. 점수 제출은 하지 않고 `scorex-gameover`를 받은 Shell이 `/api/scores`로 제출합니다. 탭이 숨겨지면 자동으로 `pause`/`resume`을 보냅니다.
-- [`shell/game-host.js`](./shell/game-host.js): Shell 어댑터(`games/<id>.js`) 공용 도우미. `mountGame({ id, host, onHud, onGameOver, onError })`가 `<scorex-game>`을 만들어 붙이고 `{ ensure, start, reload, pause, resume }`을 돌려줍니다. 시작에 성공하면 `start()`는 `true`를 반환합니다.
+- [`shell/game-host.js`](./shell/game-host.js): Shell 어댑터(`games/<id>/adapter.js`) 공용 도우미. `mountGame({ id, host, onHud, onGameOver, onError })`가 `<scorex-game>`을 만들어 붙이고 `{ ensure, start, reload, pause, resume }`을 돌려줍니다. 시작에 성공하면 `start()`는 `true`를 반환합니다.
 - [`tools/harness.html`](./tools/harness.html): 목업 Shell 하니스. 서버·DB 없이 게임을 실행하고 메시지 로그, HUD, 서버 검증 시뮬레이션(maxScore·minDurationMs·경과 시간·playId 재사용)을 보여 줍니다.
 - [`examples/hello_game/`](./examples/hello_game): 최소 구현 예제 게임(매니페스트 포함).
 
@@ -233,7 +235,7 @@ python -m http.server 8099 --bind 127.0.0.1
 | 점수 제출 | 게임이 `awardScore` 호출 | `game_over` → Shell 어댑터가 서버에 제출 |
 | 점수 검증 | 값을 그대로 수용 | `playId`·`maxScore`·`minDurationMs` 검증 |
 
-남은 사항 없음: 메뉴·카드·기본 게임 화면은 `GET /api/games`(매니페스트)에서 생성되며, `games/catalog.js`는 제거되었습니다. 전용 화면이 필요한 게임만 `index.html`의 `view-<id>`와 `games/<id>.js` 어댑터(default export 생명주기)를 둡니다. 자세한 절차는 [games/README.md](./games/README.md)를 참고합니다.
+남은 사항 없음: 메뉴·카드·기본 게임 화면은 `GET /api/games`(매니페스트)에서 생성되며, `games/catalog.js`는 제거되었습니다. 전용 화면이 필요한 게임만 `index.html`의 `view-<id>`와 `games/<id>/adapter.js` 어댑터(default export 생명주기)를 둡니다. 자세한 절차는 [games/README.md](./games/README.md)를 참고합니다.
 
 ## 11. 변경 이력
 

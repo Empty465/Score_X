@@ -453,10 +453,10 @@ function readJson(request) {
 
 const TIERS = [
   { name: '훈련생', min: 0 },
-  { name: '항해사', min: 1500 },
-  { name: '개척자', min: 3500 },
-  { name: '함장', min: 7000 },
-  { name: '전설', min: 12000 }
+  { name: '항해사', min: 1650 },
+  { name: '개척자', min: 3650 },
+  { name: '함장', min: 7150 },
+  { name: '전설', min: 12150 }
 ];
 
 function getTier(score) {
@@ -792,7 +792,7 @@ async function handleApi(request, response, url) {
   if (request.method === 'GET' && url.pathname === '/api/games') {
     const games = gameRegistry.list().map((manifest) => ({
       ...manifest,
-      adapter: fs.existsSync(path.join(gamesDirectory, `${manifest.id}.js`))
+      adapter: fs.existsSync(path.join(gamesDirectory, manifest.id, 'adapter.js'))
     }));
     sendJson(response, 200, { protocol: 1, games });
     return;
@@ -1065,14 +1065,7 @@ const server = http.createServer(async (request, response) => {
     });
     return;
   }
-  // 화면 어댑터(games/<id>.js)는 저장소의 최상위 파일만 제공합니다. 외부 게임 폴더 안의 스크립트는 iframe 안에서만 실행됩니다.
-  const adapterMatch = /^\/games\/([a-z][a-z0-9_]{1,31})\.js$/.exec(pathname);
-  const gameModule = adapterMatch && gameRegistry.get(adapterMatch[1]) && fs.existsSync(path.join(gamesDirectory, `${adapterMatch[1]}.js`))
-    ? { id: adapterMatch[1] }
-    : null;
-  const asset = publicFiles.get(pathname) || (gameModule
-    ? [`games/${gameModule.id}.js`, 'text/javascript; charset=utf-8']
-    : null);
+  const asset = publicFiles.get(pathname);
   if (!asset) {
     response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     response.end('Not found');

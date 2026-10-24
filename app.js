@@ -1155,7 +1155,7 @@ function validateLifecycle(id, lifecycle) {
   return lifecycle;
 }
 
-// 전용 화면(index.html의 view-<id>)과 games/<id>.js 어댑터가 모두 있으면 그것을, 아니면 매니페스트만으로 기본 화면을 만듭니다.
+// 전용 화면(index.html의 view-<id>)과 games/<id>/adapter.js 어댑터가 모두 있으면 그것을, 아니면 매니페스트만으로 기본 화면을 만듭니다.
 async function loadLifecycle(game) {
   const customView = document.querySelector(`#view-${game.id}`);
   if (customView && game.adapter) {

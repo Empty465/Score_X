@@ -16,13 +16,13 @@
 기본 화면 대신 게임별 사이드 패널·오버레이가 필요하면 다음을 추가합니다. 기본 게임 7종이 이 방식입니다.
 
 - `index.html`에 `id="view-<id>"` 화면을 추가합니다. 게임이 들어갈 자리에는 `<div class="game-host" id="<id>-host"></div>`를 둡니다.
-- `games/<id>.js` 어댑터를 만듭니다. `shell/game-host.js`의 `mountGame({ id, host, onHud, onGameOver, onError })`로 게임을 올리고, 모듈의 **default export**로 생명주기 `{ onLaunch, onStart, onShow, onHide, onReset }`를 내보냅니다. 게임별 난이도 선택·전달은 지원하지 않습니다. `onStart`와 `onReset`은 선택 항목이며, 화면 이탈 시 초기 상태 복귀 등에 사용합니다. 필요하면 [`examples/dedicated_screen/adapter-template.js`](../examples/dedicated_screen/adapter-template.js)를 복사해 시작합니다.
+- `games/<id>/adapter.js` 어댑터를 만듭니다. `shell/game-host.js`의 `mountGame({ id, host, onHud, onGameOver, onError })`로 게임을 올리고, 모듈의 **default export**로 생명주기 `{ onLaunch, onStart, onShow, onHide, onReset }`를 내보냅니다. 게임별 난이도 선택·전달은 지원하지 않습니다. `onStart`와 `onReset`은 선택 항목이며, 화면 이탈 시 초기 상태 복귀 등에 사용합니다. 필요하면 [`examples/dedicated_screen/adapter-template.js`](../examples/dedicated_screen/adapter-template.js)를 복사해 시작합니다.
 - `window.Playground`에서 `getBest(id)`, `saveBest(id, value)`, `awardScore(id, points, { playId, durationMs })`를 사용합니다.
-- 화면 `view-<id>`와 어댑터 `games/<id>.js`가 **둘 다** 있을 때만 전용 방식으로 동작하고, 아니면 기본 화면을 씁니다. 서버는 `GET /api/games`의 `adapter` 필드로 어댑터 존재 여부를 알려 줍니다.
+- 화면 `view-<id>`와 어댑터 `games/<id>/adapter.js`가 **둘 다** 있을 때만 전용 방식으로 동작하고, 아니면 기본 화면을 씁니다. 서버는 `GET /api/games`의 `adapter` 필드로 어댑터 존재 여부를 알려 줍니다.
 - 카드 장식(`shell/card-art.js`)은 선택 사항이며, 없으면 `icon` 기반 기본 카드가 사용됩니다.
 
 ## 주의
 
 - iframe은 `sandbox="allow-scripts"`라 `<form>` 제출, `localStorage`, `window.parent`를 쓸 수 없습니다.
-- 어댑터는 저장소의 `games/<id>.js` 최상위 파일만 Shell 출처에서 실행됩니다. 외부 게임 폴더의 스크립트는 iframe 안에서만 실행됩니다.
+- `adapter.js`는 해당 게임을 선택할 때 Shell 출처에서 지연 로드되므로 신뢰된 코드여야 합니다. `game.js` 등 게임 본체 스크립트는 게임 iframe 안에서 실행됩니다.
 - 어댑터는 선택한 게임만 지연 로드되며, 로드에 실패하면 사용자에게 오류를 표시합니다.

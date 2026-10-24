@@ -28,7 +28,7 @@ node server.js
 
 ## 선택 예제: `dedicated_screen/`
 
-게임 전용 화면을 직접 만들고 싶을 때만 참고하는 고급 예제입니다. `view.html`은 프로젝트 루트 `index.html`의 푸터 앞에 추가할 화면이며, `adapter.js`는 `games/<id>.js`로 옮겨서 쓰는 Shell 어댑터입니다. `adapter-template.js`는 새 어댑터를 작성할 때 복사하는 시작 템플릿입니다. 기본 화면보다 설정할 곳이 많으므로 일반적인 신규 게임에는 필요하지 않습니다. 상세 조건은 [게임 추가 안내](../games/README.md#전용-화면이-필요한-경우-선택)를 참고하세요.
+게임 전용 화면을 직접 만들고 싶을 때만 참고하는 고급 예제입니다. `view.html`은 프로젝트 루트 `index.html`의 푸터 앞에 추가할 화면이며, `adapter.js`는 `games/<id>/adapter.js`로 옮겨서 쓰는 Shell 어댑터입니다. `adapter-template.js`는 새 어댑터를 작성할 때 복사하는 시작 템플릿입니다. 기본 화면보다 설정할 곳이 많으므로 일반적인 신규 게임에는 필요하지 않습니다. 상세 조건은 [게임 추가 안내](../games/README.md#전용-화면이-필요한-경우-선택)를 참고하세요.
 
 ## 예제 파일 계약
 
