@@ -1,0 +1,16 @@
+{
+  "id": "dino",
+  "protocol": 1,
+  "title": "행성 탐사 로버 주행",
+  "shortTitle": "로버주행",
+  "category": "ROVER RUN",
+  "description": "점프로 장애물을 넘고 드론은 숙여 피하세요.",
+  "icon": "➤",
+  "maxScore": 100000,
+  "minDurationMs": 0,
+  "aspectRatio": "3:2",
+  "input": ["keyboard", "touch"],
+  "hud": ["score", "status"],
+  "version": "1.0.0",
+  "authors": ["score-x"]
+}

@@ -66,8 +66,10 @@ class ScorexGame extends HTMLElement {
     this._timers = new Map();
     this._lastHudAt = 0;
     this._autoPaused = false;
+    this._mobilePortraitQuery = null;
     this._onWindowMessage = (event) => this._handleHandshake(event);
     this._onVisibility = () => this._handleVisibility();
+    this._onMobilePortraitChange = (event) => this._setFrameAspectRatio(event.matches);
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -95,7 +97,9 @@ class ScorexGame extends HTMLElement {
     try {
       const manifest = this.manifest || await this._fetchManifest();
       this.manifest = manifest;
-      this.frame.style.setProperty('--ratio', String(manifest.aspectRatio || '16:9').replace(':', ' / '));
+      this._mobilePortraitQuery = window.matchMedia('(pointer: coarse) and (orientation: portrait)');
+      this._setFrameAspectRatio(this._mobilePortraitQuery.matches);
+      this._mobilePortraitQuery.addEventListener('change', this._onMobilePortraitChange);
       const iframe = document.createElement('iframe');
       iframe.setAttribute('sandbox', 'allow-scripts');
       iframe.setAttribute('referrerpolicy', 'no-referrer');
@@ -341,6 +345,12 @@ class ScorexGame extends HTMLElement {
     this.frame.style.setProperty('--ratio', `${width} / ${height}`);
   }
 
+  _setFrameAspectRatio(mobilePortrait) {
+    const [width, height] = String(this.manifest.aspectRatio || '16:9').split(':').map(Number);
+    const ratio = mobilePortrait && width > height ? '1 / 1' : `${width} / ${height}`;
+    this.frame.style.setProperty('--ratio', ratio);
+  }
+
   _send(type, payload) {
     if (!this._port) return false;
     this._port.postMessage(envelope(type, payload));
@@ -371,6 +381,8 @@ class ScorexGame extends HTMLElement {
   _teardown() {
     window.removeEventListener('message', this._onWindowMessage);
     document.removeEventListener('visibilitychange', this._onVisibility);
+    this._mobilePortraitQuery?.removeEventListener('change', this._onMobilePortraitChange);
+    this._mobilePortraitQuery = null;
     this._timers.forEach((_key, timer) => clearTimeout(timer));
     this._timers.clear();
     if (this._resizeObserver) { this._resizeObserver.disconnect(); this._resizeObserver = null; }

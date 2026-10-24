@@ -171,7 +171,7 @@ h1, h2, h3, p { margin-top: 0; }
 .game-heading h1 { margin: 8px 0 0; font: 30px "Jua", sans-serif; }
 .heading-mark { margin-left: auto; margin-right: 16px; font: 34px "Jua", sans-serif; }
 .snake-mark { color: #709256; }.memory-mark { color: #e0a458; }.reaction-mark { color: #788fcb; }
-.play-layout { display: grid; grid-template-columns: minmax(280px, 1.5fr) minmax(210px, .8fr); gap: 20px; max-width: 875px; margin: 0 auto; align-items: stretch; }
+.play-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(230px, .85fr); gap: 20px; width: 100%; max-width: 1400px; margin: 0 auto; align-items: stretch; }
 .board-wrap, .memory-board-wrap, .reaction-board-wrap, .mole-board-wrap, .baseball-board-wrap { min-width: 0; position: relative; overflow: hidden; border: 1px solid #e1dfd7; border-radius: 5px; background: #fbfaf7; }
 .board-caption { height: 37px; padding: 0 13px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eae8e0; color: #95968d; font: 9px "DM Mono", monospace; letter-spacing: .45px; }
 .board-caption b { color: #55574f; font-weight: 500; }
@@ -1200,3 +1200,86 @@ button.tier-badge:hover, button.tier-badge:focus-visible { background: #65e6d122
 .tier-row span { flex: 1; color: #9fb4cc; font-family: "DM Mono", monospace; }
 .tier-row em { font-style: normal; color: var(--green); font-weight: bold; }
 .tier-row.is-current { border-color: var(--green); background: #65e6d114; }
+
+@media (min-width: 761px) {
+  .app-shell:has(.game-view.is-visible) {
+    height: 100vh;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .app-shell:has(.game-view.is-visible) > .sidebar {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .app-shell:has(.game-view.is-visible) > .main-content {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  #view-tetris .play-layout {
+    width: min(100%, calc((100vh - 356px) / 2 + 250px));
+    grid-template-columns: minmax(0, min(calc((100vh - 356px) / 2), calc(100% - 250px))) minmax(180px, 1fr);
+  }
+  #view-galaga .play-layout {
+    width: min(100%, calc((100vh - 356px) * 5 / 6 + 250px));
+    grid-template-columns: minmax(0, min(calc((100vh - 356px) * 5 / 6), calc(100% - 250px))) minmax(180px, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  #view-tetris .board-wrap {
+    width: min(100%, max(190px, calc((100vh - 360px) / 2)));
+    justify-self: center;
+  }
+  #view-galaga .board-wrap {
+    width: min(100%, max(190px, calc((100vh - 500px) * 5 / 6)));
+    justify-self: center;
+  }
+}
+
+.game-guide { margin-bottom: 12px; }
+.game-guide-title { margin: 0; color: #dce9f8; font: 15px "Jua", sans-serif; }
+.game-guide-copy { margin: 8px 0 12px; color: #91a5bf; font-size: 12px; line-height: 1.7; }
+.game-guide-controls { display: grid; gap: 7px; }
+.game-guide-control { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.game-guide-keys { display: flex; flex-wrap: wrap; gap: 3px; }
+.game-guide-keys kbd { min-width: 22px; padding: 2px 5px; }
+.game-guide-action { color: #a9bad0; font-size: 11px; text-align: right; }
+.card-galaga .card-info p, .card-tetris .card-info p, .card-dino .card-info p { min-height: 2.8em; line-height: 1.4; white-space: normal; }
+
+.card-galaga .game-art { background: radial-gradient(ellipse at 50% 70%, #173e5a, #091526 76%); }
+.galaga-star { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #b8e6ff; box-shadow: 0 0 7px #8cebdc; }
+.galaga-star.star-one { top: 22%; left: 18%; }
+.galaga-star.star-two { top: 36%; right: 21%; }
+.galaga-star.star-three { bottom: 28%; left: 72%; }
+.galaga-enemy { position: absolute; color: #ff8290; font-size: 22px; text-shadow: 0 0 12px #ff718b88; }
+.galaga-enemy.enemy-one { top: 26%; left: 35%; }
+.galaga-enemy.enemy-two { top: 20%; left: 56%; color: #ffd27d; }
+.galaga-player { position: absolute; bottom: 18%; left: calc(50% - 12px); color: #8ff5e5; font-size: 27px; text-shadow: 0 0 12px #65e6d188; }
+.galaga-shot { position: absolute; width: 2px; height: 16px; border-radius: 2px; background: #a8fff2; box-shadow: 0 0 8px #65e6d1; }
+.galaga-shot.shot-one { bottom: 38%; left: 47%; }
+.galaga-shot.shot-two { bottom: 52%; left: 56%; }
+
+.card-tetris .game-art { background: radial-gradient(ellipse at 50% 100%, #12354a, #091526 76%); }
+.tetris-stack { position: absolute; inset: 12% 34% 10%; overflow: hidden; border: 1px solid #31536b; border-radius: 3px; background-color: #102a3d; background-image: linear-gradient(#ffffff0c 1px, transparent 1px), linear-gradient(90deg, #ffffff0c 1px, transparent 1px); background-size: 10% 5%; }
+.tetris-block { position: absolute; width: 30%; height: 30%; border: 1px solid #ffffff40; border-radius: 2px; background: #65e6d1; box-shadow: 0 0 9px #65e6d144; }
+.tetris-block.block-one { left: 10%; bottom: 10%; }
+.tetris-block.block-two { left: 40%; bottom: 10%; }
+.tetris-block.block-three { left: 70%; bottom: 10%; }
+.tetris-block.block-four { left: 40%; bottom: 40%; background: #8dbbff; }
+.tetris-block.block-five { left: 70%; bottom: 40%; background: #8dbbff; }
+.tetris-block.block-six { left: 70%; bottom: 70%; background: #ffd27d; }
+.tetris-active { position: absolute; top: 16%; left: 20%; width: 60%; height: 14%; border: 1px solid #ffffff70; border-radius: 2px; background: #ff8290; box-shadow: 0 0 12px #ff718b55; }
+
+.card-dino .game-art { background: radial-gradient(ellipse at 50% 85%, #183d51, #0b1929 72%); }
+.dino-moon { position: absolute; top: 15%; right: 18%; width: 25px; aspect-ratio: 1; border-radius: 50%; background: #d9e9d8; box-shadow: 0 0 18px #b1eddb55; }
+.dino-ground { position: absolute; right: 0; bottom: 15%; left: 0; height: 2px; background: #65e6d1; box-shadow: 0 0 10px #65e6d177; }
+.dino-rock { position: absolute; bottom: calc(15% + 2px); left: 69%; width: 13px; height: 20px; border-radius: 8px 8px 2px 2px; background: #9aacc3; }
+.dino-rover { position: absolute; bottom: calc(15% + 4px); left: 29%; width: 54px; height: 24px; border-bottom: 5px solid #65e6d1; }
+.dino-rover::before { content: ""; position: absolute; left: 12px; bottom: 4px; width: 27px; height: 13px; border: 2px solid #8ff5e5; border-radius: 5px 7px 2px 2px; background: #174b58; }
+.dino-rover i { position: absolute; left: 21px; bottom: 17px; width: 15px; height: 8px; border: 1px solid #8ff5e5; border-bottom: 0; transform: skew(-25deg); }
+.dino-rover b, .dino-rover em { position: absolute; bottom: -5px; width: 12px; height: 12px; border: 2px solid #b5c5d3; border-radius: 50%; background: #102033; }
+.dino-rover b { left: 8px; }.dino-rover em { right: 8px; }
+.dino-drone { position: absolute; top: 27%; left: 66%; color: #ff8290; font-size: 16px; text-shadow: 0 0 10px #ff718b; }
+.dino-scan { position: absolute; top: 39%; left: 64%; width: 42px; height: 24px; border-right: 1px solid #ff829088; border-bottom: 1px solid #ff829088; transform: skewY(22deg); }

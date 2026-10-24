@@ -358,9 +358,9 @@ test('랭킹은 게임별 최고 기록 합산·티어·보유 재화 기준으�
   const board = await json('GET', '/api/leaderboard', undefined, alice.cookie);
   assert.equal(board.status, 200);
   assert.deepEqual(board.body.players.map((player) => [player.rank, player.name, player.total]), [[1, '앨리스', 1100], [2, '밥먹자', 400]]);
-  assert.equal(board.body.players[0].tier, '훈련생', '1,100점은 항해사 기준(1,500) 미만');
+  assert.equal(board.body.players[0].tier, '훈련생', '1,100점은 항해사 기준(1,650) 미만');
   assert.equal(board.body.players[1].tier, '훈련생');
-  assert.deepEqual(board.body.tiers.map((tier) => [tier.name, tier.min]), [['훈련생', 0], ['항해사', 1500], ['개척자', 3500], ['함장', 7000], ['전설', 12000]]);
+  assert.deepEqual(board.body.tiers.map((tier) => [tier.name, tier.min]), [['훈련생', 0], ['항해사', 1650], ['개척자', 3650], ['함장', 7150], ['전설', 12150]]);
   assert.equal(board.body.currentUser.name, '앨리스');
 
   const aliceCredits = 500 + 6 + 3 + 5;

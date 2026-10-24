@@ -1,4 +1,4 @@
-// 기본 게임 7종의 카드 장식(순수 외형)입니다. 여기에 없는 게임은 매니페스트의 icon으로 만든 기본 카드를 사용합니다.
+// 기본 게임의 카드 장식(순수 외형)입니다. 여기에 없는 게임은 매니페스트의 icon으로 만든 기본 카드를 사용합니다.
 // artMarkup은 신뢰하는 저장소 코드에서만 가져오며, 매니페스트(외부 입력)에서는 읽지 않습니다.
 export const cardArt = {
   snake: {
@@ -41,6 +41,24 @@ export const cardArt = {
     cardClass: 'clop',
     artClass: 'clop-art',
     artMarkup: '<span class="clop-art-ground"></span><span class="clop-art-flag">⚑</span><span class="clop-art-walker">🤖</span>',
+    bestDefault: '—'
+  },
+  galaga: {
+    cardClass: 'galaga',
+    artClass: 'galaga-art',
+    artMarkup: '<span class="galaga-star star-one"></span><span class="galaga-star star-two"></span><span class="galaga-star star-three"></span><span class="galaga-enemy enemy-one">✦</span><span class="galaga-enemy enemy-two">✦</span><span class="galaga-shot shot-one"></span><span class="galaga-shot shot-two"></span><span class="galaga-player">▲</span>',
+    bestDefault: '—'
+  },
+  tetris: {
+    cardClass: 'tetris',
+    artClass: 'tetris-art',
+    artMarkup: '<span class="tetris-stack"><span class="tetris-block block-one"></span><span class="tetris-block block-two"></span><span class="tetris-block block-three"></span><span class="tetris-block block-four"></span><span class="tetris-block block-five"></span><span class="tetris-block block-six"></span><span class="tetris-active"></span></span>',
+    bestDefault: '—'
+  },
+  dino: {
+    cardClass: 'dino',
+    artClass: 'dino-art',
+    artMarkup: '<span class="dino-moon"></span><span class="dino-ground"></span><span class="dino-rock"></span><span class="dino-rover"><i></i><b></b><em></em></span><span class="dino-drone">◆</span><span class="dino-scan"></span>',
     bestDefault: '—'
   }
 };

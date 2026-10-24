@@ -2,6 +2,33 @@
 import { mountGame } from '/shell/game-host.js';
 
 const HUD_LABELS = { time: '시간', score: '점수', lives: '목숨', progress: '진행', combo: '콤보', status: '상태' };
+const GAME_GUIDES = {
+  galaga: {
+    title: '우주선 조작',
+    copy: '적 편대의 공격을 피하며 우주선을 좌우로 기동하세요. 무기는 자동으로 발사됩니다.',
+    controls: [
+      { keys: ['←', 'A'], action: '왼쪽 이동' },
+      { keys: ['→', 'D'], action: '오른쪽 이동' }
+    ]
+  },
+  tetris: {
+    title: '적재 조작',
+    copy: '블록을 회전하고 이동해 가로 줄을 완성하세요. 낙하 가속은 누르는 동안 적용됩니다.',
+    controls: [
+      { keys: ['←', '→'], action: '이동' },
+      { keys: ['↑', 'W'], action: '회전' },
+      { keys: ['Space', 'S', '↓'], action: '누르는 동안 가속' }
+    ]
+  },
+  dino: {
+    title: '로버 조작',
+    copy: '장애물은 점프로 넘고 저공 비행 드론의 스캔은 숙여 피하세요. 오래 주행할수록 기록이 높아집니다.',
+    controls: [
+      { keys: ['Space', '↑', 'W'], action: '점프' },
+      { keys: ['S', '↓'], action: '숙이기' }
+    ]
+  }
+};
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -40,9 +67,25 @@ export function createGenericGame(meta, section) {
   const bestRow = el('div', 'record-row');
   bestRow.append(el('span', '', '최고 기록'), el('strong', '', ''));
   bestRow.querySelector('strong').append(bestValue, el('small', '', ' 점'));
+  const guide = GAME_GUIDES[meta.id];
   const restart = el('button', 'text-button', '↻ 임무 재시작');
   const side = el('div', 'game-side-panel');
-  side.append(hudList, bestRow, el('div', 'divider'), restart);
+  side.append(hudList, bestRow, el('div', 'divider'));
+  if (guide) {
+    const guideSection = el('section', 'game-guide');
+    guideSection.append(el('h2', 'game-guide-title', guide.title), el('p', 'game-guide-copy', guide.copy));
+    const controls = el('div', 'game-guide-controls');
+    guide.controls.forEach(({ keys, action }) => {
+      const row = el('div', 'game-guide-control');
+      const keyList = el('span', 'game-guide-keys');
+      keys.forEach((key) => keyList.append(el('kbd', '', key)));
+      row.append(keyList, el('span', 'game-guide-action', action));
+      controls.append(row);
+    });
+    guideSection.append(controls);
+    side.append(guideSection);
+  }
+  side.append(restart);
 
   const layout = el('div', 'play-layout');
   layout.append(board, side);

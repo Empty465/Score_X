@@ -76,7 +76,7 @@ git status --short
 ## 3. 파일 소유 범위와 동시 작업
 
 - 원칙적으로 본인 브랜치에서 맡은 기능과 관련된 파일만 수정합니다.
-- 게임 모듈을 맡았다면 `games/<게임ID>/`(manifest.json, index.html)를 만들고, 전용 화면이 필요할 때만 `games/<게임ID>.js` 어댑터와 관련 화면·스타일을 변경합니다. 다른 게임 파일은 담당자와 조율 없이 건드리지 않습니다.
+- 게임 모듈을 맡았다면 `games/<게임ID>/`(manifest.json, index.html)를 만들고, 전용 화면이 필요할 때만 `games/<게임ID>/adapter.js` 어댑터와 관련 화면·스타일을 변경합니다. 다른 게임 파일은 담당자와 조율 없이 건드리지 않습니다.
 - 공용 파일인 `app.js`, `server.js`, `index.html`, `styles.css`, `games/index.js`, `shell/*`, `package.json`은 여러 기능이 함께 의존합니다. 이 파일을 수정하기 전 담당자와 변경 범위 및 인터페이스를 공유합니다.
 - 다른 사람의 기능과 같은 공용 파일을 동시에 수정할 예정이면, 먼저 작업 시점과 담당 구간을 조율합니다. 임의로 상대방 변경을 합치거나 삭제하지 않습니다.
 - API, 데이터베이스 스키마, 점수·재화 규칙, 게임 ID, DOM ID, 이벤트 규약처럼 여러 영역에 영향을 주는 계약을 바꾸기 전에 관련 작업자에게 알리고 합의합니다.
@@ -90,14 +90,14 @@ git status --short
 
 - 프로젝트 요구사항과 게임 기획은 `README.md`, `Technical_Feature.md`, `games/games_thema.md`를 참고합니다.
 - 게임 모듈 연결 방법은 `games/README.md`를 참고합니다.
-- 게임 목록은 `games/*/manifest.json`을 서버가 `GET /api/games`로 제공하고, 앱이 메뉴·카드·기본 게임 화면을 생성합니다. 전용 화면이 있는 게임은 `index.html`의 `id="view-<게임ID>"`와 `games/<게임ID>.js` 어댑터(default export 생명주기)를 함께 두며, 어댑터는 선택 시 ES Module로 지연 로드됩니다.
-- 미니게임 7종은 모두 `sandbox="allow-scripts"` iframe(`<scorex-game>`)에서 실행되며, Shell과는 `postMessage`/`MessageChannel` 규격으로만 통신합니다. 게임 폴더는 `games/<id>/`(`manifest.json`, `index.html`)이고, Shell 쪽은 `games/<id>.js` 어댑터가 `shell/game-host.js`를 사용합니다. 어댑터는 `export default { onLaunch, onShow, onHide }`로 Shell과 생명주기를 연결합니다. 통신 규격·매니페스트·점수 검증은 [MINIGAME_PROTOCOL.md](./MINIGAME_PROTOCOL.md)를 따르고, 이를 변경할 때는 관련 작업자와 먼저 합의합니다. sandbox 안에서는 `<form>` 제출, `localStorage`, `window.parent` 접근이 불가능합니다.
-- 각 게임은 고유하고 일관된 게임 ID를 사용합니다. 매니페스트 ID, 폴더 이름, 화면 ID(`view-<id>`), `data-view`, `data-launch`, 어댑터 파일 이름, 점수 저장 키가 서로 맞는지 확인합니다.
+- 게임 목록은 `games/*/manifest.json`을 서버가 `GET /api/games`로 제공하고, 앱이 메뉴·카드·기본 게임 화면을 생성합니다. 전용 화면이 있는 게임은 `index.html`의 `id="view-<게임ID>"`와 `games/<게임ID>/adapter.js` 어댑터(default export 생명주기)를 함께 두며, 어댑터는 선택 시 ES Module로 지연 로드됩니다.
+- 미니게임은 모두 `sandbox="allow-scripts"` iframe(`<scorex-game>`)에서 실행되며, Shell과는 `postMessage`/`MessageChannel` 규격으로만 통신합니다. 게임 폴더는 `games/<id>/`(`manifest.json`, `index.html`, 게임별 스크립트)이고, Shell 쪽은 `games/<id>/adapter.js` 어댑터가 `shell/game-host.js`를 사용합니다. 어댑터는 `export default { onLaunch, onShow, onHide }`로 Shell과 생명주기를 연결합니다. 통신 규격·매니페스트·점수 검증은 [MINIGAME_PROTOCOL.md](./MINIGAME_PROTOCOL.md)를 따르고, 이를 변경할 때는 관련 작업자와 먼저 합의합니다. sandbox 안에서는 `<form>` 제출, `localStorage`, `window.parent` 접근이 불가능합니다.
+- 각 게임은 고유하고 일관된 게임 ID를 사용합니다. 매니페스트 ID, 폴더 이름, 화면 ID(`view-<id>`), `data-view`, `data-launch`, 어댑터 위치(`games/<id>/adapter.js`), 점수 저장 키가 서로 맞는지 확인합니다.
 - 현재 점수판 규칙:
   - 완료 결과에는 해당 임무 점수와 획득 투자 재화를 함께 표시합니다.
   - 투자 재화는 점수 100점마다 1 CR, 임무 완료 시 최소 1 CR을 지급합니다.
   - 실력 점수는 모든 미니게임의 **게임별 최고 기록** 합산이며, 반복 플레이 점수를 누적 합산하지 않습니다.
-  - 최고 기록 합산 점수의 티어: 훈련생 0–1,499, 항해사 1,500–3,499, 개척자 3,500–6,999, 함장 7,000–11,999, 전설 12,000 이상 (`server.js`의 `TIERS`가 유일한 정의이며 `/api/leaderboard`가 `tiers`로 내려줍니다).
+  - 최고 기록 합산 점수의 티어: 훈련생 0–1,649, 항해사 1,650–3,649, 개척자 3,650–7,149, 함장 7,150–12,149, 전설 12,150 이상 (`server.js`의 `TIERS`가 유일한 정의이며 `/api/leaderboard`가 `tiers`로 내려줍니다).
   - 현재 보유 CR 기준 자산 랭킹은 최고 기록 점수·티어 랭킹과 별도로 유지합니다.
 - 투자, 상점 구매, 장착 기능을 수정할 때 사용자 잔액·점수·인벤토리 상태가 서버와 SQLite에서 일관되게 갱신되는지 확인합니다.
 - 사용자에게 표시되는 문구, 접근성 레이블, 모바일 레이아웃도 기능의 일부로 확인합니다.
