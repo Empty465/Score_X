@@ -122,7 +122,7 @@ test('같은 playId를 동시에 여러 번 제출해도 한 번만 반영된다
   assert.deepEqual(statuses, [201, 409, 409, 409, 409, 409, 409, 409]);
 
   const me = await json('GET', '/api/auth/me', undefined, cookie);
-  assert.equal(me.body.user.credits, credits + 3, '보상은 한 번만 지급되어야 함');
+  assert.equal(me.body.user.credits, credits + 15, '보상은 한 번만 지급되어야 함');
 });
 
 test('점수 저장은 보상 지급과 최고 기록 갱신을 정확히 수행한다', async (t) => {
@@ -134,18 +134,18 @@ test('점수 저장은 보상 지급과 최고 기록 갱신을 정확히 수행
   const submit = (playId, points) => json('POST', '/api/scores', { game: 'alpha', points, playId, durationMs: MIN_DURATION_MS }, cookie);
 
   const first = await submit(plays[0], 250);
-  assert.equal(first.body.creditsEarned, 2);
+  assert.equal(first.body.creditsEarned, 10);
   assert.equal(first.body.bestScore, 250);
   assert.equal(first.body.isNewBest, true);
 
   const lower = await submit(plays[1], 40);
-  assert.equal(lower.body.creditsEarned, 1, '완료 시 최소 1 CR');
+  assert.equal(lower.body.creditsEarned, 5, '기존 최소 보상 1 CR의 5배');
   assert.equal(lower.body.bestScore, 250, '낮은 점수가 최고 기록을 낮추면 안 됨');
   assert.equal(lower.body.isNewBest, false);
 
   const higher = await submit(plays[2], 480);
   assert.equal(higher.body.bestScore, 480);
-  assert.equal(higher.body.credits, credits + 2 + 1 + 4);
+  assert.equal(higher.body.credits, credits + 10 + 5 + 20);
 });
 
 test('게스트 점수는 저장되지 않고 세션은 한 번만 쓸 수 있다', async (t) => {

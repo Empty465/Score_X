@@ -363,8 +363,8 @@ test('랭킹은 게임별 최고 기록 합산·티어·보유 재화 기준으�
   assert.deepEqual(board.body.tiers.map((tier) => [tier.name, tier.min]), [['훈련생', 0], ['항해사', 1650], ['개척자', 3650], ['함장', 7150], ['전설', 12150]]);
   assert.equal(board.body.currentUser.name, '앨리스');
 
-  const aliceCredits = 500 + 6 + 3 + 5;
-  const bobCredits = 500 + 4;
+  const aliceCredits = 500 + 30 + 15 + 25;
+  const bobCredits = 500 + 20;
   assert.deepEqual(board.body.creditPlayers.map((player) => [player.rank, player.name, player.credits]), [[1, '앨리스', aliceCredits], [2, '밥먹자', bobCredits]]);
   assert.equal(board.body.creditPlayers[0].total, 1100, '재화는 최고 기록 합산에 포함되지 않음');
   assert.equal((await json('GET', '/api/leaderboard')).body.currentUser, null);

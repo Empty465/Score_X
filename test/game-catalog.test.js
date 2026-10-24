@@ -226,6 +226,31 @@ test('generic game views are inserted before the page footer', () => {
   assert.ok(app.includes('footer.parentElement.insertBefore(section, footer);'));
 });
 
+test('account information notice in the footer matches the signup notice', () => {
+  const html = read('index.html');
+  const signupNotice = html.match(/<ul class="privacy-consent-summary">([\s\S]*?)<\/ul>/)?.[1];
+  const footerNotice = html.match(/<ul class="privacy-notice-list">([\s\S]*?)<\/ul>/)?.[1];
+  const normalize = (content) => content?.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+
+  assert.ok(html.includes('<details class="privacy-notice">'));
+  assert.ok(html.includes('<summary>계정정보 수집·이용 안내 보기</summary>'));
+  assert.ok(signupNotice);
+  assert.equal(normalize(footerNotice), normalize(signupNotice));
+});
+
+test('terms of service are available from the footer', () => {
+  const html = read('index.html');
+  assert.ok(html.includes('<summary>이용약관 보기</summary>'));
+  assert.ok(html.includes('비정상적인 플레이, 매크로 사용, 게임 데이터 변조 등이 확인되면 해당 계정의 점수 및 재화가 0으로 변경되거나 계정이 삭제될 수 있습니다.'));
+  assert.ok(html.includes('현재 서비스는 테스트 버전입니다. 정식 출시 전까지 데이터베이스에 기록된 점수, 재화 및 상점에서 구매한 항목이 변경되거나 초기화될 수 있으니 이용에 유의해 주세요.'));
+  assert.ok(html.includes('서비스가 중단되거나 종료되면 아이디와 비밀번호는 삭제됩니다.'));
+  assert.ok(html.includes('점수, 재화, 닉네임 및 상점 구매 항목 등 그 밖의 데이터는 제공자가 임의로 보관할 수 있습니다.'));
+  assert.ok(html.includes('닉네임이 불쾌감이나 혐오감을 유발한다고 판단되는 경우, 제공자는 해당 닉네임을 임의로 변경할 수 있습니다.'));
+  assert.ok(html.includes('href="mailto:normal0308@gmail.com"'));
+  assert.ok(html.includes('약관 변경 사항은 본 페이지에 반영하고 시행일을 함께 표시합니다.'));
+  assert.ok(html.includes('<strong>시행일</strong> 2026년 10월 24일'));
+});
+
 test('ranking details open only through click or keyboard activation', () => {
   const app = read('app.js');
   const styles = read('styles.css');

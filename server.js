@@ -821,7 +821,7 @@ async function handleApi(request, response, url) {
     const payload = await readJson(request);
     const accountId = await getAuthenticatedAccountId(request);
     const { points } = parseScorePayload(payload, accountId);
-    const creditsEarned = Math.max(1, Math.floor(points / 100));
+    const creditsEarned = Math.max(1, Math.floor(points / 100)) * 5;
     const play = await validatePlay(payload, points, payload.game, accountId);
     if (!accountId) {
       // 게스트 플레이: 결과 연출용 값만 돌려주고 아무것도 저장하지 않는다.

@@ -161,7 +161,14 @@ h1, h2, h3, p { margin-top: 0; }
 .home-bottom strong { color: #54564e; font-weight: normal; }
 .tip-icon { display: grid; place-items: center; width: 16px; height: 16px; border: 1px solid #a5a69c; border-radius: 50%; font: 10px "DM Mono", monospace; }
 .bottom-doodle { margin-left: auto; color: #ed8a68; font-size: 19px; }
-.page-footer { margin-top: auto; min-height: 41px; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; color: #aaa99f; font: 8px "DM Mono", monospace; letter-spacing: .65px; }
+.page-footer { margin-top: auto; min-height: 41px; border-top: 1px solid var(--line); display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 10px; padding: 12px 0; color: #aaa99f; font: 8px "DM Mono", monospace; letter-spacing: .65px; }
+.privacy-notice { color: var(--muted); font: 11px "Noto Sans KR", sans-serif; letter-spacing: 0; }
+.privacy-notice summary { width: fit-content; color: #69d8cc; cursor: pointer; }
+.privacy-notice summary:hover { text-decoration: underline; }
+.privacy-notice summary:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+.privacy-notice-list { display: grid; gap: 5px; margin: 10px 0 0; padding-left: 18px; line-height: 1.6; }
+.privacy-notice-list strong { margin-right: 5px; color: #c5d2df; }
+.page-footer-brand { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #778698; font: 8px "DM Mono", monospace; letter-spacing: .65px; }
 
 /* Shared game screens */
 .game-view { padding-top: 31px; }
