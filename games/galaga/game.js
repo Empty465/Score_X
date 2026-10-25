@@ -1,6 +1,6 @@
     const WIDTH = 480;
     const HEIGHT = 576;
-    const MAX_SCORE = 100000;
+    const MAX_SCORE = 10000;
     const canvas = document.querySelector('#canvas');
     const context = canvas.getContext('2d');
     const held = new Set();
@@ -224,7 +224,7 @@
       if (invulnerableMs <= 0 && enemyShots.some((shot) => Math.abs(shot.x - playerX) < 22 && shot.y >= 496 && shot.y <= 532)) takeHit();
 
       if (enemies.length === 0 && roundClearMs === 0) {
-        score = Math.min(MAX_SCORE, score + 10 + round * 5);
+        score = Math.min(MAX_SCORE, score + Math.max(1, Math.round((10 + round * 5) / 10)));
         roundClearMs = 1100;
         Scorex.hud({ score, lives, status: 'ROUND CLEAR' });
       } else if (Math.floor(activeMs / 250) !== Math.floor((activeMs - dt) / 250)) {

@@ -453,10 +453,10 @@ function readJson(request) {
 
 const TIERS = [
   { name: '훈련생', min: 0 },
-  { name: '항해사', min: 3000 },
-  { name: '개척자', min: 7000 },
-  { name: '함장', min: 13000 },
-  { name: '전설', min: 20000 }
+  { name: '항해사', min: 2000 },
+  { name: '개척자', min: 4500 },
+  { name: '함장', min: 8500 },
+  { name: '전설', min: 13000 }
 ];
 
 function getTier(score) {

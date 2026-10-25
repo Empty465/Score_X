@@ -38,7 +38,7 @@ test('new orbital mini-games are discovered and implement the game protocol', ()
     galaga: [
       'roundEnemyCount = Math.min(18, 4 + round)',
       'roundEnemyCount - enemies.length',
-      'score = Math.min(MAX_SCORE, score + 10 + round * 5)',
+      'score = Math.min(MAX_SCORE, score + Math.max(1, Math.round((10 + round * 5) / 10)))',
       "context.textAlign = 'right'",
       "context.fillText(`LIVES ${'♥ '.repeat(lives)}`, WIDTH - 20, 30)",
       "context.textAlign = 'left'",
@@ -121,7 +121,7 @@ test('new mini-game controls and status indicators are clearly explained', () =>
   assert.ok(cargoSource.includes('height: calc(100% - 72px)'));
   assert.ok(cargoSource.includes("keyActions[event.key] === 'accelerate'"));
   assert.ok(cargoSource.includes('dropInterval() / (accelerating ? 4 : 1)'));
-  assert.ok(cargoSource.includes('score + [0, 10, 30, 50, 80][cleared] * level()'));
+  assert.ok(cargoSource.includes('score + [0, 5, 15, 25, 40][cleared] * level()'));
   assert.ok(!cargoSource.includes('fallProgress'));
   assert.ok(cargoSource.includes('(current.y + y) * CELL'));
   assert.ok(cargo.includes('.controls button[data-action="accelerate"] { width: 64px;'));

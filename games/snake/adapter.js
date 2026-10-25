@@ -19,11 +19,11 @@ const game = mountGame({
   id: 'snake',
   host: document.querySelector('#snake-host'),
   onHud: (items) => {
-    if (items.score !== undefined) scoreText.textContent = String(Math.round(items.score / 100)).padStart(2, '0');
+    if (items.score !== undefined) scoreText.textContent = String(Math.round(items.score / 50)).padStart(2, '0');
   },
   onError: (message) => showOverlay('실행 오류', message, '다시 시도'),
   async onGameOver({ playId, score, durationMs, meta }) {
-    const debris = meta && typeof meta.debris === 'number' ? meta.debris : Math.round(score / 100);
+    const debris = meta && typeof meta.debris === 'number' ? meta.debris : Math.round(score / 50);
     if (debris > Number(getBest('snake') || 0)) saveBest('snake', debris);
     const earned = await awardScore('snake', score, { playId, durationMs });
     showOverlay('수거 임무 종료', `회수한 파편 ${debris}개 · ${earned === null ? '점수 서버 연결 실패' : `${earned} PTS 기록`}`, '다시 출격');
