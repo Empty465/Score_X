@@ -6,7 +6,7 @@
   "category": "CARGO STACKING",
   "description": "블록을 쌓아 적재 줄을 완성하세요.",
   "icon": "▦",
-  "maxScore": 100000,
+  "maxScore": 50000,
   "minDurationMs": 0,
   "aspectRatio": "1:2",
   "input": ["keyboard", "touch"],

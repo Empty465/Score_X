@@ -77,8 +77,8 @@ function draw() {
 function finish() {
   clearInterval(timer);
   running = false;
-  Scorex.hud({ score: points * 100, status: 'GAME OVER' });
-  Scorex.gameOver({ score: points * 100, durationMs: Math.max(1, ticks * TICK_MS), result: 'fail', meta: { debris: points } });
+  Scorex.hud({ score: points * 50, status: 'GAME OVER' });
+  Scorex.gameOver({ score: points * 50, durationMs: Math.max(1, ticks * TICK_MS), result: 'fail', meta: { debris: points } });
 }
 
 function tick() {
@@ -94,7 +94,7 @@ function tick() {
   if (ate) {
     points += 1;
     placeFood();
-    Scorex.hud({ score: points * 100, status: 'PLAYING' });
+    Scorex.hud({ score: points * 50, status: 'PLAYING' });
   } else {
     snake.pop();
   }

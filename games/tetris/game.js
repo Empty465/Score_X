@@ -5,7 +5,7 @@
     const CELL = 45;
     const BOARD_X = 75;
     const BOARD_Y = 150;
-    const MAX_SCORE = 100000;
+    const MAX_SCORE = 50000;
     const canvas = document.querySelector('#canvas');
     const context = canvas.getContext('2d');
     const hasTouchControls = window.matchMedia('(pointer: coarse)').matches;
@@ -115,7 +115,7 @@
       if (cleared) {
         board = [...Array.from({ length: cleared }, () => Array(COLS).fill(null)), ...remaining];
         lines += cleared;
-        score = Math.min(MAX_SCORE, score + [0, 10, 30, 50, 80][cleared] * level());
+        score = Math.min(MAX_SCORE, score + [0, 5, 15, 25, 40][cleared] * level());
         Scorex.hud({ score, status: `LEVEL ${level()}` });
       }
       spawn();
