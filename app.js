@@ -8,7 +8,72 @@ const titles = {
   shop: '재화 상점'
 };
 const gameNav = document.querySelector('.game-nav');
+const gameNavList = document.querySelector('.nav-games-list');
+const navGames = document.querySelector('#nav-games');
 const gameGrid = document.querySelector('.game-grid');
+const RECENT_KEY = 'scorex.recentGames';
+
+function openLoginForm() {
+  document.querySelector('#player-form').classList.add('is-open');
+  document.querySelector('#auth-login-id').focus();
+}
+document.querySelector('#auth-open').addEventListener('click', openLoginForm);
+
+const RECENT_LIMIT = 3;
+
+const mobileNavQuery = window.matchMedia('(max-width: 760px)');
+// 모바일에서는 게임 목록이 하단 시트로 열리므로 기본은 닫아 둡니다.
+function syncNavGamesForViewport() {
+  navGames.open = false;
+}
+mobileNavQuery.addEventListener('change', syncNavGamesForViewport);
+document.addEventListener('click', (event) => {
+  if (!mobileNavQuery.matches || !navGames.open) return;
+  if (event.target.closest('.nav-games > summary')) return;
+  navGames.open = false;
+});
+
+function readRecentGames() {
+  try {
+    const list = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+    return Array.isArray(list) ? list.filter((id) => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function recordRecentGame(id) {
+  try {
+    const next = [id, ...readRecentGames().filter((item) => item !== id)].slice(0, RECENT_LIMIT);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  } catch {
+    // 저장소를 쓸 수 없는 환경에서는 최근 플레이만 생략합니다.
+  }
+  renderRecentGames();
+}
+
+function renderRecentGames() {
+  const ids = readRecentGames().filter((id) => gameCatalogById.has(id));
+  document.querySelector('#recent-plays').hidden = ids.length === 0;
+  document.querySelector('#nav-recent').hidden = ids.length === 0;
+  document.querySelector('#recent-list').replaceChildren(...ids.map((id) => {
+    const game = gameCatalogById.get(id);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'recent-item';
+    button.dataset.launch = id;
+    const icon = document.createElement('span');
+    icon.className = 'recent-icon';
+    icon.textContent = game.icon;
+    const title = document.createElement('strong');
+    title.textContent = game.title;
+    const action = document.createElement('span');
+    action.className = 'recent-action';
+    action.textContent = '다시 플레이 ↗';
+    button.append(icon, title, action);
+    return button;
+  }));
+}
 
 // 서버의 /api/games(games/*/manifest.json)가 게임 목록의 유일한 출처입니다.
 function sortGames(games) {
@@ -41,16 +106,19 @@ function renderGameMenu(games) {
     navItem.querySelector('.nav-icon').textContent = game.icon;
     navItem.querySelector('.nav-full').textContent = game.title;
     navItem.querySelector('.nav-short').textContent = game.shortTitle;
-    gameNav.append(navItem);
+    gameNavList.append(navItem);
 
     const card = document.createElement('article');
     card.className = `game-card card-${decor?.cardClass ?? 'generic'}`;
     card.innerHTML = `
       <div class="card-topline"><span class="game-number"></span><span class="best-chip"><span>★</span> 최고 <b></b></span></div>
       <div class="game-art ${decor?.artClass ?? 'generic-art'}" aria-hidden="true"></div>
-      <div class="card-info"><div class="card-title-row"><h3></h3><span class="game-category"></span></div><p></p><button class="play-link">게임 시작 <span>↗</span></button></div>`;
+      <div class="card-info"><div class="card-title-row"><h3></h3><span class="game-category"></span></div>      <p></p></div>`;
     card.querySelector('.best-chip b').dataset.best = game.id;
-    card.querySelector('.play-link').dataset.launch = game.id;
+          card.dataset.launch = game.id;
+          card.tabIndex = 0;
+          card.setAttribute('role', 'button');
+          card.setAttribute('aria-label', `${game.title} 시작`);
     if (decor) card.querySelector('.game-art').innerHTML = decor.artMarkup;
     else card.querySelector('.game-art').append(buildGenericArt(game));
     card.querySelector('.game-number').textContent = `NO. ${String(index + 1).padStart(2, '0')}`;
@@ -59,6 +127,8 @@ function renderGameMenu(games) {
     card.querySelector('.card-info p').textContent = game.description;
     gameGrid.append(card);
   });
+  document.querySelector('#nav-games-count').textContent = `(${scoreGames.length})`;
+  renderRecentGames();
   renderBests();
 }
 
@@ -240,7 +310,10 @@ function renderScoreboard(data) {
   document.querySelector('#current-player-label').textContent = currentUser
     ? `${currentUser.name} · 기록 ${currentUser.rank}위 · 자산 ${currentUser.creditRank}위`
     : '로그인하면 순위에 참여할 수 있어요. 게스트 기록은 저장되지 않아요.';
-  document.querySelector('#player-form').hidden = Boolean(currentUser);
+  const playerForm = document.querySelector('#player-form');
+  playerForm.hidden = Boolean(currentUser);
+  if (currentUser) playerForm.classList.remove('is-open');
+  document.querySelector('#auth-open').hidden = Boolean(currentUser);
   document.querySelector('#auth-session').hidden = !currentUser;
   const profileAvatar = document.querySelector('.avatar');
   profileAvatar.textContent = currentUser?.avatar || '🚀';
@@ -380,18 +453,6 @@ function renderScoreboard(data) {
     false,
     'investment'
   );
-
-  const gameBreakdown = document.querySelector('#score-game-breakdown');
-  gameBreakdown.replaceChildren(...scoreGames.map((game) => {
-    const row = document.createElement('li');
-    row.className = 'score-game-item';
-    const label = document.createElement('span');
-    label.textContent = `${game.icon} ${game.title}`;
-    const points = document.createElement('strong');
-    points.textContent = formatPoints(currentUser?.scores?.[game.id] || 0);
-    row.append(label, points);
-    return row;
-  }));
 }
 
 function toggleRankingDetails(row) {
@@ -399,6 +460,15 @@ function toggleRankingDetails(row) {
   row.setAttribute('aria-expanded', String(expanded));
   row.querySelector('.ranking-detail')?.setAttribute('aria-hidden', String(!expanded));
 }
+
+document.querySelectorAll('[data-ranking-toggle]').forEach((toggle) => {
+  toggle.addEventListener('click', () => {
+    const card = toggle.closest('[data-ranking]');
+    const expanded = card.classList.toggle('is-expanded-list');
+    toggle.setAttribute('aria-expanded', String(expanded));
+    toggle.textContent = expanded ? '접기 ▴' : 'TOP 10 전체 보기 ▾';
+  });
+});
 
 document.querySelectorAll('#score-rankings, #credit-rankings').forEach((container) => {
   container.addEventListener('click', (event) => {
@@ -1196,7 +1266,10 @@ function showView(name) {
   document.querySelectorAll('.view').forEach((view) => view.classList.toggle('is-visible', view === target));
   document.querySelectorAll('.nav-item').forEach((item) => item.classList.toggle('is-active', item.dataset.view === name));
   breadcrumbCurrent.textContent = titles[name];
-  updateInvestmentCancelVisibility();
+  if (gameCatalogById.has(name)) {
+    if (!mobileNavQuery.matches) navGames.open = true;
+    recordRecentGame(name);
+  }  updateInvestmentCancelVisibility();
   gameModules.get(name)?.onShow?.();
   if (gameCatalogById.has(name)) refreshGameLeaderboard(name);
   if (name === 'investment' && activePlayer) {
@@ -1311,7 +1384,14 @@ document.addEventListener('click', (event) => {
   }
   if (event.target.closest('[data-open-login]')) {
     showView('home');
-    document.querySelector('#auth-login-id').focus();
+    openLoginForm();
+    return;
+  }
+  const scrollButton = event.target.closest('[data-scroll]');
+  if (scrollButton) {
+    event.preventDefault();
+    showView('home');
+    document.getElementById(scrollButton.dataset.scroll)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     return;
   }
   const button = event.target.closest('[data-view]');
@@ -1322,6 +1402,17 @@ document.addEventListener('click', (event) => {
   else showView(view);
 });
 gameGrid.addEventListener('click', (event) => {
+  const button = event.target.closest('[data-launch]');
+  if (button) openGame(button.dataset.launch, true);
+});
+gameGrid.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  const card = event.target.closest('.game-card[data-launch]');
+  if (!card || card !== event.target) return;
+  event.preventDefault();
+  openGame(card.dataset.launch, true);
+});
+document.querySelector('#recent-list').addEventListener('click', (event) => {
   const button = event.target.closest('[data-launch]');
   if (button) openGame(button.dataset.launch, true);
 });
