@@ -1382,11 +1382,6 @@ button.tier-badge:hover, button.tier-badge:focus-visible { background: #65e6d122
 .card-title-row h3 { max-width: 100%; word-break: keep-all; }
 .game-category { text-align: left; }
 
-.dev-notice[hidden] { display: none; }
-.dev-notice { position: relative; padding-right: 44px; }
-.dev-notice-close { position: absolute; top: 50%; right: 10px; width: 28px; height: 28px; transform: translateY(-50%); border: 0; border-radius: 6px; background: transparent; color: #9fb0c3; font-size: 20px; line-height: 1; cursor: pointer; }
-.dev-notice-close:hover { background: #ffffff14; color: #fff; }
-
 .auth-open { align-self: stretch; margin-top: 12px; padding: 9px 12px; border: 1px solid #3a8d85; border-radius: 6px; background: transparent; color: #72dace; font-size: 13px; cursor: pointer; }
 .auth-open:hover { background: #ffffff0a; }
 .auth-open[hidden] { display: none; }
@@ -1401,7 +1396,7 @@ button.tier-badge:hover, button.tier-badge:focus-visible { background: #65e6d122
 .game-leaderboard-row > strong { font-size: 15px; }
 
 @media (max-width: 760px) {
-  .dev-notice { padding: 6px 40px 6px 12px; font-size: 12px; gap: 2px 10px; }
+  .dev-notice { padding: 6px 12px; font-size: 12px; gap: 2px 10px; }
   .nav-item .nav-short, .nav-games > summary .nav-full { font-size: 10px; }
   .nav-item .nav-icon, .nav-games > summary .nav-icon { height: 20px; font-size: 18px; }
 }

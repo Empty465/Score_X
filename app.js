@@ -19,20 +19,6 @@ function openLoginForm() {
 }
 document.querySelector('#auth-open').addEventListener('click', openLoginForm);
 
-const devNotice = document.querySelector('.dev-notice');
-try {
-  if (sessionStorage.getItem('scorex.devNoticeClosed') === '1') devNotice.hidden = true;
-} catch {
-  // 저장소를 쓸 수 없으면 배너를 계속 보여줍니다.
-}
-document.querySelector('#dev-notice-close').addEventListener('click', () => {
-  devNotice.hidden = true;
-  try {
-    sessionStorage.setItem('scorex.devNoticeClosed', '1');
-  } catch {
-    // 닫은 상태를 기억하지 못해도 동작에는 문제가 없습니다.
-  }
-});
 const RECENT_LIMIT = 3;
 
 const mobileNavQuery = window.matchMedia('(max-width: 760px)');
