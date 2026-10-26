@@ -86,7 +86,7 @@ test('new mini-game controls and status indicators are clearly explained', () =>
   const cargoSource = `${cargo}\n${read('games/tetris/game.js')}`;
   const cargoManifest = JSON.parse(read('games/tetris/manifest.json'));
 
-  assert.ok(rover.includes('Space</kbd> / <kbd>↑</kbd> / <kbd>W</kbd> 점프'));
+  assert.ok(!rover.includes('keyboard-hint'));
   assert.ok(rover.includes('숙이기'));
   assert.ok(rover.includes('data-control="duck" aria-label="숙이기"'));
   assert.ok(!rover.includes('progress'));
@@ -102,12 +102,11 @@ test('new mini-game controls and status indicators are clearly explained', () =>
   assert.ok(roverManifest.description.includes('장애물'));
   assert.equal(defenseManifest.aspectRatio, '5:6');
   assert.ok(defenseSource.includes('<canvas id="canvas" width="480" height="576"'));
-  assert.ok(defenseSource.includes('height: calc(100% - 38px)'));
+  assert.ok(defenseSource.includes('height: 100%'));
   assert.ok(defenseSource.includes('height: calc(100% - 80px)'));
-  assert.ok(defense.includes('<kbd>←</kbd> / <kbd>A</kbd> 왼쪽'));
-  assert.ok(defense.includes('<kbd>→</kbd> / <kbd>D</kbd> 오른쪽'));
+  assert.ok(!defense.includes('keyboard-hint'));
   assert.ok(!defense.includes('자동 발사</span>'));
-  assert.ok(cargo.includes('<kbd>Space</kbd> / <kbd>S</kbd> / <kbd>↓</kbd> 누르는 동안 가속'));
+  assert.ok(!cargo.includes('keyboard-hint'));
   assert.ok(cargoSource.includes('<canvas id="canvas" width="600" height="1200"'));
   assert.equal(cargoManifest.aspectRatio, '1:2');
   assert.ok(cargo.includes('width: 100%; height: 100%'));
@@ -160,6 +159,11 @@ test('new mini-games have dedicated home art and desktop gameplay guides', () =>
   assert.ok(generic.includes("keys: ['Space', '↑', 'W'], action: '점프'"));
   assert.ok(generic.includes("keys: ['S', '↓'], action: '숙이기'"));
   assert.ok(generic.includes("keys: ['Space', 'S', '↓'], action: '누르는 동안 가속'"));
+  for (const id of ['galaga', 'tetris', 'dino']) {
+    const html = read(`games/${id}/index.html`);
+    assert.ok(!html.includes('keyboard-hint'), `${id} should rely on the desktop side guide instead of duplicating keyboard hints below the game`);
+    assert.ok(html.includes('class="controls"'), `${id} should keep touch controls for coarse-pointer devices`);
+  }
 });
 
 test('game screens expand to the available desktop and portrait-touch space', () => {

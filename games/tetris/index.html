@@ -8,8 +8,6 @@
     html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #081727; color: #d8f5ff; font: 14px system-ui, sans-serif; }
     body { position: relative; }
     canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
-    .keyboard-hint { position: absolute; z-index: 1; right: 0; bottom: 8px; left: 0; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 0 8px; color: #a9c1d3; font-size: 12px; white-space: nowrap; }
-    kbd { padding: 2px 6px; border: 1px solid #31506a; border-radius: 4px; background: #102840; color: #e4f5ff; font: inherit; }
     .controls { position: absolute; z-index: 1; right: 0; bottom: 0; left: 0; display: none; box-sizing: border-box; width: 100%; height: 72px; align-items: center; justify-content: center; gap: 8px; padding: 8px 4px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     .controls button { width: 48px; height: 52px; border: 1px solid #315d7b; border-radius: 12px; background: #102840; color: #c5f5ff; font-size: 22px; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     .controls button[data-action="accelerate"] { width: 64px; font-size: 14px; touch-action: none; }
@@ -17,13 +15,11 @@
     @media (pointer: coarse) {
       canvas { top: 0; right: auto; left: 50%; width: auto; height: calc(100% - 72px); aspect-ratio: 1 / 2; transform: translateX(-50%); }
       .controls { display: flex; }
-      .keyboard-hint { display: none; }
     }
   </style>
 </head>
 <body>
   <canvas id="canvas" width="600" height="1200" aria-label="화물 적재 블록 게임 화면"></canvas>
-  <div class="keyboard-hint"><span><kbd>←</kbd> <kbd>→</kbd> 이동</span><span><kbd>↑</kbd> / <kbd>W</kbd> 회전</span><span><kbd>Space</kbd> / <kbd>S</kbd> / <kbd>↓</kbd> 누르는 동안 가속</span></div>
   <div class="controls" aria-label="블록 조작">
     <button type="button" data-action="left" aria-label="왼쪽 이동">◀</button>
     <button type="button" data-action="right" aria-label="오른쪽 이동">▶</button>

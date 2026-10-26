@@ -19,6 +19,7 @@
 ## ✅ 완료 (최신순)
 
 ### 2026-10-26
+- [x] PC 환경의 궤도 방어 전술(`galaga`), 화물 적재 최적화(`tetris`), 행성 탐사 로버 주행(`dino`) iframe 하단 중복 조작키 안내 제거. 우측 게임 안내 패널의 조작 설명은 유지하고 터치 환경의 조작 버튼도 유지하여, PC에서는 게임 화면이 가용 영역을 더 크게 사용하도록 개선 (`games/galaga/index.html`, `games/tetris/index.html`, `games/dino/index.html`, `test/game-catalog.test.js`)
 - [x] 디스플레이 크기(Chrome 100% 기준)에 맞춰 우주 쓰레기 수거(`snake`) 및 미니게임별(`memory`, `clop`, `baseball`, `mole`, `rocket`, `dino`, `reaction`) 화면 크기를 뷰포트 높이(`100vh - 356px`) 비율에 맞게 축소 조정하여 스크롤 없이 한 화면에 맞춤 (`styles.css`, `test/game-catalog.test.js`)
 - [x] 하단 개인정보 수집·이용 안내 및 이용약관 보기가 펼쳐지지 않은 상태(`:not([open])`)에서 iframe 영역을 침범하거나 가리지 않도록 `display: none !important` 및 게임 화면 전용 푸터 여백·간격 최적화 (`styles.css`, `test/game-catalog.test.js`)
 

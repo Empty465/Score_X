@@ -2,9 +2,9 @@
     const HEIGHT = 1200;
     const COLS = 10;
     const ROWS = 20;
-    const CELL = 45;
-    const BOARD_X = 75;
-    const BOARD_Y = 150;
+    const CELL = 48;
+    const BOARD_X = 60;
+    const BOARD_Y = 132;
     const MAX_SCORE = 50000;
     const canvas = document.querySelector('#canvas');
     const context = canvas.getContext('2d');
@@ -141,10 +141,10 @@
       context.fillStyle = background;
       context.fillRect(0, 0, WIDTH, HEIGHT);
       context.fillStyle = '#10283b';
-      context.fillRect(59, 134, 482, 932);
+      context.fillRect(44, 116, 512, 992);
       context.strokeStyle = '#23445a';
       context.lineWidth = 1;
-      context.strokeRect(59.5, 134.5, 481, 931);
+      context.strokeRect(44.5, 116.5, 511, 991);
       context.fillStyle = '#11283b';
       context.fillRect(BOARD_X - 1, BOARD_Y - 1, COLS * CELL + 2, ROWS * CELL + 2);
       for (let row = 0; row < ROWS; row += 1) {
@@ -192,11 +192,6 @@
       nextType && shapes[nextType].forEach((row, y) => row.forEach((cell, x) => {
         if (cell) drawCell(432 + x * 20, 38 + y * 20, nextType, 20);
       }));
-      if (!hasTouchControls) {
-        context.font = '11px system-ui, sans-serif';
-        context.fillStyle = '#64859a';
-        context.fillText('줄을 채워 화물을 정리하세요', 160, 1105);
-      }
     }
 
     function finish() {
