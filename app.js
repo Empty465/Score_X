@@ -143,6 +143,7 @@ const breadcrumbCurrent = document.querySelector('#breadcrumb-current');
 let activePlayer = null;
 let currentProfile = null;
 let investmentHistory = [];
+let profileLatestInvestment = null;
 let shopItems = [];
 let investmentOptions = [];
 let selectedRisk = null;
@@ -315,8 +316,13 @@ function renderProfileMenu() {
   const panelScore = document.querySelector('#profile-panel-score');
   const panelCredits = document.querySelector('#profile-panel-credits');
   const panelRank = document.querySelector('#profile-panel-rank');
+  const panelCreditRank = document.querySelector('#profile-panel-credit-rank');
   const gameRecords = document.querySelector('#profile-game-records');
   const history = document.querySelector('#profile-investment-history');
+  const panel = document.querySelector('#profile-menu-panel');
+
+  panel.classList.remove('ranking-bg-background-aurora', 'ranking-bg-background-nebula', 'ranking-bg-background-solar');
+  if (user?.backgroundId) panel.classList.add(`ranking-bg-${user.backgroundId}`);
 
   avatar.textContent = user?.avatar || '🚀';
   name.textContent = user?.name || '게스트';
@@ -329,6 +335,7 @@ function renderProfileMenu() {
   panelScore.textContent = user ? `${formatPoints(user.total)} PTS` : '— PTS';
   panelCredits.textContent = user ? `${formatPoints(user.credits)} CR` : '— CR';
   panelRank.textContent = user?.rank ? `${formatPoints(user.rank)}위` : '—';
+  panelCreditRank.textContent = user?.creditRank ? `${formatPoints(user.creditRank)}위` : '—';
 
   gameRecords.replaceChildren();
   if (!user) {
@@ -350,47 +357,65 @@ function renderProfileMenu() {
   }
 
   history.replaceChildren();
+  // 투자 결과는 공용 랭킹에서 사용하는 currentUser.latestInvestment와 동일한 데이터를 사용한다.
+  // 상점/프로필 장착 응답으로 currentProfile이 교체되어도 마지막 랭킹 데이터의 투자 결과를 유지한다.
+  const investment = user?.latestInvestment || profileLatestInvestment;
   if (!user) {
     const item = document.createElement('li');
     item.className = 'profile-menu-empty';
-    item.textContent = '로그인하면 최근 투자 기록을 확인할 수 있어요.';
+    item.textContent = '로그인하면 최근 투자 결과를 확인할 수 있어요.';
     history.append(item);
-  } else if (!investmentHistory.length) {
+  } else if (!investment) {
     const item = document.createElement('li');
     item.className = 'profile-menu-empty';
-    item.textContent = '아직 투자 기록이 없습니다.';
+    item.textContent = '아직 투자 결과가 없습니다.';
     history.append(item);
   } else {
-    investmentHistory.forEach((run) => {
-      const item = document.createElement('li');
-      const label = document.createElement('span');
-      label.textContent = run.outcomeName || run.riskName || '투자';
-      const net = document.createElement('strong');
-      net.className = run.net >= 0 ? 'is-profit' : 'is-loss';
-      net.textContent = `${run.net >= 0 ? '+' : ''}${formatPoints(run.net)} CR`;
-      item.append(label, net);
-      history.append(item);
-    });
-  }
-}
+    const item = document.createElement('li');
+    item.classList.add('profile-investment-item');
+    const details = document.createElement('div');
+    details.className = 'profile-investment-details';
 
-async function loadInvestmentHistory() {
-  if (!currentProfile) {
-    investmentHistory = [];
-    renderProfileMenu();
-    return;
+    const heading = document.createElement('strong');
+    heading.textContent = investment ? '최근 투자 결과' : '투자 기록';
+    details.append(heading);
+
+    if (investment) {
+      const info = document.createElement('span');
+      info.textContent = `${investment.riskName} · ${formatPoints(investment.stake)} CR 투자`;
+      details.append(info);
+
+      const result = document.createElement('span');
+      result.className = 'profile-investment-result';
+      if (investment.status === 'completed') {
+        const netDescription = investment.net > 0
+          ? `순이익 +${formatPoints(investment.net)} CR`
+          : investment.net < 0
+            ? `순손실 ${formatPoints(Math.abs(investment.net))} CR`
+            : '손익 없음';
+        result.textContent = `${investment.outcomeName} · ×${investment.multiplier ?? '—'} · ${netDescription}`;
+      } else if (investment.status === 'cancelled') {
+        result.textContent = `투자 취소 · ${formatPoints(investment.reward)} CR 환급 · 순손실 ${formatPoints(Math.abs(investment.net))} CR`;
+      } else {
+        result.textContent = `진행 중 · 임무 ${investment.progress}/${investment.gameCount}`;
+      }
+      details.append(result);
+    } else {
+      const empty = document.createElement('span');
+      empty.textContent = '완료된 투자 기록이 없습니다.';
+      details.append(empty);
+    }
+
+    item.append(details);
+    history.append(item);
   }
-  const response = await fetch('/api/investment/history');
-  if (!response.ok) throw new Error('투자 기록을 불러오지 못했습니다.');
-  const result = await response.json();
-  investmentHistory = result.runs || [];
-  renderProfileMenu();
 }
 
 function renderScoreboard(data) {
   if (Array.isArray(data.tiers)) scoreTiers = data.tiers;
   const currentUser = data.currentUser;
   currentProfile = currentUser;
+  profileLatestInvestment = currentUser?.latestInvestment || null;
   document.querySelector('#total-score').textContent = formatPoints(currentUser?.total || 0);
   document.querySelector('#total-tier').textContent = currentUser?.tier || '훈련생';
   document.querySelector('#current-player-label').textContent = currentUser
@@ -761,7 +786,6 @@ async function refreshScoreboard() {
     ? `${data.currentUser.name}님의 점수판을 불러왔어요.`
     : '서버 연결됨 · 로그인 없이 플레이하면 게스트로 기록이 저장되지 않아요.');
   await loadActiveInvestment();
-  await loadInvestmentHistory();
   await checkAttendance(data.currentUser);
 }
 
@@ -1618,16 +1642,27 @@ document.querySelector('#auth-toggle').addEventListener('click', () => setAuthMo
 document.querySelector('#logout-button').addEventListener('click', logout);
 const profileMenuToggle = document.querySelector('#profile-menu-toggle');
 const profileMenuPanel = document.querySelector('#profile-menu-panel');
+const profileMenuBackdrop = document.querySelector('#profile-menu-backdrop');
+function closeProfileMenu() {
+  profileMenuPanel.hidden = true;
+  profileMenuBackdrop.hidden = true;
+  profileMenuToggle.setAttribute('aria-expanded', 'false');
+}
+function openProfileMenu() {
+  profileMenuPanel.hidden = false;
+  profileMenuBackdrop.hidden = false;
+  profileMenuToggle.setAttribute('aria-expanded', 'true');
+}
 profileMenuToggle.addEventListener('click', () => {
-  const willOpen = profileMenuPanel.hidden;
-  profileMenuPanel.hidden = !willOpen;
-  profileMenuToggle.setAttribute('aria-expanded', String(willOpen));
+  if (profileMenuPanel.hidden) openProfileMenu();
+  else closeProfileMenu();
 });
+profileMenuBackdrop.addEventListener('click', closeProfileMenu);
 document.addEventListener('click', (event) => {
-  if (!event.target.closest('.profile-menu')) {
-    profileMenuPanel.hidden = true;
-    profileMenuToggle.setAttribute('aria-expanded', 'false');
-  }
+  if (!event.target.closest('.profile-menu')) closeProfileMenu();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeProfileMenu();
 });
 document.querySelector('#total-tier').addEventListener('click', showTierDialog);
 document.querySelector('#tier-dialog-close').addEventListener('click', () => document.querySelector('#tier-dialog').close());
