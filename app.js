@@ -722,8 +722,9 @@ async function loadShopItems() {
   if (!response.ok) throw new Error(result.error || '상점 상품을 불러오지 못했습니다.');
   shopItems = result.items;
   renderShopItems();
-  if (!currentProfile) setShopMessage('상점을 이용하려면 먼저 게임 홈에서 로그인하세요.');
-  else setShopMessage('미니게임에서 크레딧을 모아 프로필을 꾸며보세요.');
+  // 로그인 상태는 refreshScoreboard()에서 최신 세션 정보를 반영합니다.
+  // 여기서는 게스트에게만 로그인 안내를 표시하고, 로그인 유저에게는 상단 안내를 숨깁니다.
+  if (!currentProfile && !activePlayer) setShopMessage('상점을 이용하려면 먼저 게임 홈에서 로그인하세요.');
 }
 
 async function purchaseShopItem(itemId, displayName, button) {
@@ -782,6 +783,8 @@ async function refreshScoreboard() {
   const data = await response.json();
   activePlayer = data.currentUser;
   renderScoreboard(data);
+  if (activePlayer) setShopMessage('미니게임 또는 투자를 통해 얻은 CR로 프로필을 꾸며보세요. 출석체크로도 CR을 얻을 수 있습니다.');
+  else if (shopItems.length) setShopMessage('상점을 이용하려면 먼저 게임 홈에서 로그인하세요.');
   setPlayerMessage(data.currentUser
     ? `${data.currentUser.name}님의 점수판을 불러왔어요.`
     : '서버 연결됨 · 로그인 없이 플레이하면 게스트로 기록이 저장되지 않아요.');
