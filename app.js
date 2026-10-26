@@ -142,6 +142,7 @@ async function loadGameMenu() {
 const breadcrumbCurrent = document.querySelector('#breadcrumb-current');
 let activePlayer = null;
 let currentProfile = null;
+let investmentHistory = [];
 let shopItems = [];
 let investmentOptions = [];
 let selectedRisk = null;
@@ -301,6 +302,91 @@ function showTierDialog() {
   document.querySelector('#tier-dialog').showModal();
 }
 
+function renderProfileMenu() {
+  const user = currentProfile;
+  const toggle = document.querySelector('#profile-menu-toggle');
+  const avatar = document.querySelector('#profile-menu-avatar');
+  const name = document.querySelector('#profile-menu-name');
+  const title = document.querySelector('#profile-menu-title');
+  const score = document.querySelector('#profile-menu-score');
+  const panelName = document.querySelector('#profile-panel-name');
+  const panelTitle = document.querySelector('#profile-panel-title');
+  const panelTier = document.querySelector('#profile-panel-tier');
+  const panelScore = document.querySelector('#profile-panel-score');
+  const panelCredits = document.querySelector('#profile-panel-credits');
+  const panelRank = document.querySelector('#profile-panel-rank');
+  const gameRecords = document.querySelector('#profile-game-records');
+  const history = document.querySelector('#profile-investment-history');
+
+  avatar.textContent = user?.avatar || '🚀';
+  name.textContent = user?.name || '게스트';
+  title.textContent = `「${user?.title || '칭호 미장착'}」`;
+  score.textContent = user ? formatPoints(user.total) : '—';
+  toggle.setAttribute('aria-label', user ? `${user.name} 프로필 열기` : '게스트 프로필 열기');
+  panelName.textContent = user?.name || '게스트';
+  panelTitle.textContent = user ? (user.title || '칭호 미장착') : '로그인하면 프로필 정보를 확인할 수 있어요.';
+  panelTier.textContent = user?.tier || '훈련생';
+  panelScore.textContent = user ? `${formatPoints(user.total)} PTS` : '— PTS';
+  panelCredits.textContent = user ? `${formatPoints(user.credits)} CR` : '— CR';
+  panelRank.textContent = user?.rank ? `${formatPoints(user.rank)}위` : '—';
+
+  gameRecords.replaceChildren();
+  if (!user) {
+    const item = document.createElement('li');
+    item.className = 'profile-menu-empty';
+    item.textContent = '로그인하면 게임별 최고 기록을 확인할 수 있어요.';
+    gameRecords.append(item);
+  } else {
+    const games = Object.entries(user.scores || {});
+    games.forEach(([game, value]) => {
+      const item = document.createElement('li');
+      const label = document.createElement('span');
+      label.textContent = gameCatalogById.get(game)?.title || game;
+      const points = document.createElement('strong');
+      points.textContent = `${formatPoints(value)} PTS`;
+      item.append(label, points);
+      gameRecords.append(item);
+    });
+  }
+
+  history.replaceChildren();
+  if (!user) {
+    const item = document.createElement('li');
+    item.className = 'profile-menu-empty';
+    item.textContent = '로그인하면 최근 투자 기록을 확인할 수 있어요.';
+    history.append(item);
+  } else if (!investmentHistory.length) {
+    const item = document.createElement('li');
+    item.className = 'profile-menu-empty';
+    item.textContent = '아직 투자 기록이 없습니다.';
+    history.append(item);
+  } else {
+    investmentHistory.forEach((run) => {
+      const item = document.createElement('li');
+      const label = document.createElement('span');
+      label.textContent = run.outcomeName || run.riskName || '투자';
+      const net = document.createElement('strong');
+      net.className = run.net >= 0 ? 'is-profit' : 'is-loss';
+      net.textContent = `${run.net >= 0 ? '+' : ''}${formatPoints(run.net)} CR`;
+      item.append(label, net);
+      history.append(item);
+    });
+  }
+}
+
+async function loadInvestmentHistory() {
+  if (!currentProfile) {
+    investmentHistory = [];
+    renderProfileMenu();
+    return;
+  }
+  const response = await fetch('/api/investment/history');
+  if (!response.ok) throw new Error('투자 기록을 불러오지 못했습니다.');
+  const result = await response.json();
+  investmentHistory = result.runs || [];
+  renderProfileMenu();
+}
+
 function renderScoreboard(data) {
   if (Array.isArray(data.tiers)) scoreTiers = data.tiers;
   const currentUser = data.currentUser;
@@ -324,6 +410,7 @@ function renderScoreboard(data) {
   titleBadge.hidden = !currentUser?.title;
   document.querySelector('#wallet-balance').textContent = currentUser ? formatPoints(currentUser.credits) : '—';
   document.querySelector('#shop-balance').textContent = currentUser ? formatPoints(currentUser.credits) : '—';
+  renderProfileMenu();
   renderFeatureAccess();
   renderBests();
   renderShopItems();
@@ -674,6 +761,7 @@ async function refreshScoreboard() {
     ? `${data.currentUser.name}님의 점수판을 불러왔어요.`
     : '서버 연결됨 · 로그인 없이 플레이하면 게스트로 기록이 저장되지 않아요.');
   await loadActiveInvestment();
+  await loadInvestmentHistory();
   await checkAttendance(data.currentUser);
 }
 
@@ -1528,6 +1616,19 @@ loadInvestmentOptions().catch((error) => setInvestmentMessage(error.message || '
 document.querySelector('#player-form').addEventListener('submit', submitAuth);
 document.querySelector('#auth-toggle').addEventListener('click', () => setAuthMode(authMode === 'login' ? 'register' : 'login'));
 document.querySelector('#logout-button').addEventListener('click', logout);
+const profileMenuToggle = document.querySelector('#profile-menu-toggle');
+const profileMenuPanel = document.querySelector('#profile-menu-panel');
+profileMenuToggle.addEventListener('click', () => {
+  const willOpen = profileMenuPanel.hidden;
+  profileMenuPanel.hidden = !willOpen;
+  profileMenuToggle.setAttribute('aria-expanded', String(willOpen));
+});
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.profile-menu')) {
+    profileMenuPanel.hidden = true;
+    profileMenuToggle.setAttribute('aria-expanded', 'false');
+  }
+});
 document.querySelector('#total-tier').addEventListener('click', showTierDialog);
 document.querySelector('#tier-dialog-close').addEventListener('click', () => document.querySelector('#tier-dialog').close());
 document.querySelector('#delete-account-button').addEventListener('click', () => {

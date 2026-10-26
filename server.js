@@ -289,6 +289,7 @@ const getAllBests = database.prepare('SELECT account_id, game, best_points FROM 
 const getUserCosmetics = database.prepare('SELECT item_id FROM user_cosmetics WHERE account_id = ?');
 const getActiveInvestment = database.prepare("SELECT * FROM investment_runs WHERE account_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1");
 const getLatestInvestment = database.prepare('SELECT * FROM investment_runs WHERE account_id = ? ORDER BY id DESC LIMIT 1');
+const getInvestmentHistory = database.prepare('SELECT * FROM investment_runs WHERE account_id = ? ORDER BY id DESC LIMIT 3');
 const insertPlay = database.prepare('INSERT INTO play_sessions (play_id, account_id, game, seed, started_at) VALUES (?, ?, ?, ?, ?)');
 const findPlay = database.prepare('SELECT * FROM play_sessions WHERE play_id = ?');
 const markPlayUsed = database.prepare('UPDATE play_sessions SET used_at = ? WHERE play_id = ? AND used_at IS NULL');
@@ -736,6 +737,16 @@ async function handleApi(request, response, url) {
 
   if (request.method === 'GET' && url.pathname === '/api/shop/items') {
     sendJson(response, 200, { items: shopItems });
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/investment/history') {
+    const accountId = await getAuthenticatedAccountId(request);
+    if (!accountId) {
+      sendJson(response, 401, { error: '로그인이 필요합니다.' });
+      return;
+    }
+    sendJson(response, 200, { runs: (await getInvestmentHistory.all(accountId)).map(serializeInvestment) });
     return;
   }
 
