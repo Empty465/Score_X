@@ -154,8 +154,9 @@ h1, h2, h3, p { margin-top: 0; }
 .home-bottom strong { color: #54564e; font-weight: normal; }
 .tip-icon { display: grid; place-items: center; width: 16px; height: 16px; border: 1px solid #a5a69c; border-radius: 50%; font: 10px "DM Mono", monospace; }
 .bottom-doodle { margin-left: auto; color: #ed8a68; font-size: 19px; }
-.page-footer { position: relative; z-index: 5; margin-top: auto; min-height: 41px; border-top: 1px solid var(--line); display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 10px; padding: 12px 0; color: #aaa99f; font: 8px "DM Mono", monospace; letter-spacing: .65px; }
+.page-footer { position: relative; z-index: 5; margin-top: auto; min-height: 41px; border-top: 1px solid var(--line); display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 10px; padding: 12px 0; color: #aaa99f; font: 8px "DM Mono", monospace; letter-spacing: .65px; flex-shrink: 0; }
 .privacy-notice { position: relative; color: var(--muted); font: 11px "Noto Sans KR", sans-serif; letter-spacing: 0; }
+.privacy-notice:not([open]) .privacy-notice-list { display: none !important; }
 .privacy-notice summary { width: fit-content; color: #69d8cc; cursor: pointer; }
 .privacy-notice summary:hover { text-decoration: underline; }
 .privacy-notice summary:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
@@ -165,7 +166,7 @@ h1, h2, h3, p { margin-top: 0; }
 .page-footer-brand { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: #778698; font: 8px "DM Mono", monospace; letter-spacing: .65px; }
 
 /* Shared game screens */
-.game-view { padding-top: 31px; }
+.game-view { padding-top: 31px; padding-bottom: 14px; }
 .game-heading { display: flex; align-items: center; gap: 15px; min-height: 80px; margin-bottom: 15px; position: relative; }
 .back-button { display: grid; place-items: center; width: 36px; height: 36px; flex: 0 0 auto; border: 1px solid #deddd5; border-radius: 50%; background: transparent; color: #666860; font-size: 19px; cursor: pointer; transition: background 150ms ease; }
 .back-button:hover { background: #e9e8df; }
@@ -1216,6 +1217,37 @@ button.tier-badge:hover, button.tier-badge:focus-visible { background: #65e6d122
     width: min(100%, calc((100vh - 356px) * 5 / 6 + 250px));
     grid-template-columns: minmax(0, min(calc((100vh - 356px) * 5 / 6), calc(100% - 250px))) minmax(180px, 1fr);
   }
+  #view-snake .play-layout {
+    width: min(100%, calc((100vh - 356px) * 10 / 11 + 250px));
+    grid-template-columns: minmax(0, min(calc((100vh - 356px) * 10 / 11), calc(100% - 250px))) minmax(180px, 1fr);
+  }
+  #view-memory .play-layout {
+    width: min(100%, calc((100vh - 356px) * 9 / 10 + 250px));
+    grid-template-columns: minmax(0, min(calc((100vh - 356px) * 9 / 10), calc(100% - 250px))) minmax(180px, 1fr);
+  }
+  #view-clop .play-layout {
+    width: min(100%, calc((100vh - 356px) * 6 / 5 + 250px));
+    grid-template-columns: minmax(0, min(calc((100vh - 356px) * 6 / 5), calc(100% - 250px))) minmax(180px, 1fr);
+  }
+  #view-baseball .play-layout,
+  #view-mole .play-layout {
+    width: min(100%, calc((100vh - 356px) * 4 / 3 + 250px));
+    grid-template-columns: minmax(0, min(calc((100vh - 356px) * 4 / 3), calc(100% - 250px))) minmax(180px, 1fr);
+  }
+  #view-rocket .play-layout,
+  #view-dino .play-layout {
+    width: min(100%, calc((100vh - 356px) * 3 / 2 + 250px));
+    grid-template-columns: minmax(0, min(calc((100vh - 356px) * 3 / 2), calc(100% - 250px))) minmax(180px, 1fr);
+  }
+  #view-reaction .play-layout {
+    width: min(100%, calc((100vh - 356px) * 16 / 9 + 250px));
+    grid-template-columns: minmax(0, min(calc((100vh - 356px) * 16 / 9), calc(100% - 250px))) minmax(180px, 1fr);
+  }
+  .app-shell:has(.game-view.is-visible) .page-footer {
+    padding: 8px 0;
+    gap: 8px;
+    flex-shrink: 0;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1225,6 +1257,18 @@ button.tier-badge:hover, button.tier-badge:focus-visible { background: #65e6d122
   }
   #view-galaga .board-wrap {
     width: min(100%, max(190px, calc((100vh - 500px) * 5 / 6)));
+    justify-self: center;
+  }
+  #view-snake .board-wrap {
+    width: min(100%, max(190px, calc((100vh - 360px) * 10 / 11)));
+    justify-self: center;
+  }
+  #view-memory .board-wrap {
+    width: min(100%, max(190px, calc((100vh - 360px) * 9 / 10)));
+    justify-self: center;
+  }
+  #view-clop .board-wrap {
+    width: min(100%, max(190px, calc((100vh - 360px) * 6 / 5)));
     justify-self: center;
   }
 }

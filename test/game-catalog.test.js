@@ -178,6 +178,9 @@ test('game screens expand to the available desktop and portrait-touch space', ()
   assert.ok(styles.includes('#view-tetris .board-wrap'));
   assert.ok(styles.includes('max(190px, calc((100vh - 360px) / 2))'));
   assert.ok(styles.includes('#view-galaga .board-wrap'));
+  assert.ok(styles.includes('#view-snake .play-layout'));
+  assert.ok(styles.includes('calc((100vh - 356px) * 10 / 11)'));
+  assert.ok(styles.includes('#view-snake .board-wrap'));
 });
 
 test('memory and emergency grids use the available screen instead of a small fixed width', () => {
@@ -268,6 +271,7 @@ test('footer notice popups stay above games and close when a game starts', () =>
   const styles = read('styles.css');
   assert.ok(styles.includes('.page-footer { position: relative; z-index: 5;'));
   assert.ok(styles.includes('.privacy-notice { position: relative;'));
+  assert.ok(styles.includes('.privacy-notice:not([open]) .privacy-notice-list { display: none !important; }'));
   assert.ok(styles.includes('.privacy-notice-list { position: absolute; z-index: 10;'));
   assert.ok(styles.includes('max-height: min(50vh, 360px); overflow-y: auto;'));
   assert.ok(app.includes("event.target.closest('.view.is-visible .board-overlay button, .view.is-visible .rocket-overlay button')"));
