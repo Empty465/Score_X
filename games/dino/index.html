@@ -6,23 +6,19 @@
   <title>행성 탐사 로버 주행</title>
   <style>
     html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #101b25; color: #e8f3ff; font: 14px system-ui, sans-serif; }
-    body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
-    canvas { display: block; flex: 0 1 auto; min-height: 0; max-width: 100%; max-height: calc(100% - 38px); aspect-ratio: 3 / 2; }
-    .keyboard-hint { flex: 0 0 30px; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 8px; color: #a9c1c3; font-size: 12px; white-space: nowrap; }
-    kbd { padding: 2px 6px; border: 1px solid #405763; border-radius: 4px; background: #1a2b36; color: #e3f2ed; font: inherit; }
+    body { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    canvas { display: block; flex: 1 1 auto; min-height: 0; max-width: 100%; max-height: 100%; aspect-ratio: 3 / 2; }
     .controls { display: none; flex: 0 0 72px; box-sizing: border-box; width: 100%; align-items: center; justify-content: space-between; padding: 8px 16px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     .controls button { min-width: 78px; height: 54px; border: 1px solid #42634f; border-radius: 12px; background: #1b302b; color: #c5f5dc; font-size: 16px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     .controls button:active { background: #315c47; }
     @media (pointer: coarse) {
       canvas { flex: 1 1 auto; min-height: 0; max-height: calc(100% - 80px); }
       .controls { display: flex; }
-      .keyboard-hint { display: none; }
     }
   </style>
 </head>
 <body>
   <canvas id="canvas" width="720" height="480" aria-label="로버를 조작해 장애물을 넘고 저공 비행 드론의 스캔을 피하는 게임"></canvas>
-  <div class="keyboard-hint"><span><kbd>Space</kbd> / <kbd>↑</kbd> / <kbd>W</kbd> 점프</span><span><kbd>S</kbd> / <kbd>↓</kbd> 누르는 동안 숙이기</span></div>
   <div class="controls" aria-label="로버 점프와 숙이기 조작">
     <button type="button" data-control="duck" aria-label="숙이기">▼ 숙이기</button>
     <button type="button" data-control="jump" aria-label="점프">▲ 점프</button>

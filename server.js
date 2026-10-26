@@ -751,7 +751,10 @@ async function handleApi(request, response, url) {
     const { byScore, byCredits } = await loadPlayers();
     const accountId = await getAuthenticatedAccountId(request);
     const currentUser = accountId ? byScore.find((player) => player.id === accountId) || null : null;
-    if (currentUser) currentUser.ownedCosmetics = (await getUserCosmetics.all(currentUser.id)).map((item) => item.item_id);
+    if (currentUser) {
+      currentUser.ownedCosmetics = (await getUserCosmetics.all(currentUser.id)).map((item) => item.item_id);
+      currentUser.latestInvestment = serializeInvestmentSummary(await getLatestInvestment.get(currentUser.id));
+    }
     sendJson(response, 200, {
       players: byScore.slice(0, 10),
       creditPlayers: await Promise.all(byCredits.slice(0, 10).map(async (player) => ({
