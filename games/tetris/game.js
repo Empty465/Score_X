@@ -21,8 +21,9 @@
     const colors = { I: '#55d6d2', O: '#f1c75b', T: '#bd8cf4', S: '#75d78e', Z: '#ed7b77', J: '#6e9ef2', L: '#f29c61' };
     let rng = Math.random;
     let board = [];
+    let pieceQueue = [];
     let current = null;
-    let nextType = 'T';
+    let nextType = null;
     let score = 0;
     let lines = 0;
     let activeMs = 0;
@@ -44,8 +45,14 @@
       };
     }
 
-    function randomType() { return Object.keys(shapes)[Math.floor(rng() * 7)]; }
     function emptyBoard() { return Array.from({ length: ROWS }, () => Array(COLS).fill(null)); }
+    function refillPieceSet() {
+      pieceQueue = Object.keys(shapes);
+      for (let index = pieceQueue.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(rng() * (index + 1));
+        [pieceQueue[index], pieceQueue[swapIndex]] = [pieceQueue[swapIndex], pieceQueue[index]];
+      }
+    }
     function makePiece(type) {
       const shape = shapes[type].map((row) => [...row]);
       return { type, shape, x: Math.floor((COLS - shape[0].length) / 2), y: 0 };
@@ -60,8 +67,9 @@
       paused = false;
       accelerating = false;
       board = emptyBoard();
+      pieceQueue = [];
       current = null;
-      nextType = randomType();
+      nextType = null;
       score = 0;
       lines = 0;
       activeMs = 0;
@@ -84,13 +92,20 @@
     }
 
     function spawn() {
-      current = makePiece(nextType);
-      nextType = randomType();
+      if (pieceQueue.length === 0) refillPieceSet();
+      current = makePiece(pieceQueue.shift());
+      nextType = pieceQueue[0] || null;
       if (collides(current.shape, current.x, current.y)) finish();
     }
 
-    function rotate() {
-      const shape = current.shape.map((_, row) => current.shape.map((line) => line[row]).reverse());
+    function rotate(direction) {
+      let shape = current.shape;
+      const turns = direction === 2 ? 2 : 1;
+      for (let turn = 0; turn < turns; turn += 1) {
+        shape = direction < 0
+          ? shape[0].map((_, col) => shape.map((row) => row[shape.length - 1 - col]))
+          : shape.map((_, row) => shape.map((line) => line[row]).reverse());
+      }
       for (const offset of [0, -1, 1, -2, 2]) {
         if (!collides(shape, current.x + offset, current.y)) {
           current.shape = shape;
@@ -98,6 +113,11 @@
           break;
         }
       }
+    }
+
+    function hardDrop() {
+      while (!collides(current.shape, current.x, current.y + 1)) current.y += 1;
+      lockPiece();
     }
 
     function move(dx) {
@@ -224,7 +244,11 @@
       if (!running || paused || !current) return;
       if (action === 'left') move(-1);
       if (action === 'right') move(1);
-      if (action === 'rotate') rotate();
+      if (action === 'rotate') rotate(1);
+      if (action === 'rotate-cw') rotate(1);
+      if (action === 'rotate-ccw') rotate(-1);
+      if (action === 'rotate-180') rotate(2);
+      if (action === 'hardDrop') hardDrop();
       draw();
     }
 
@@ -241,7 +265,7 @@
         button.addEventListener('click', () => act(button.dataset.action));
       }
     });
-    const keyActions = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'rotate', w: 'rotate', W: 'rotate', ArrowDown: 'accelerate', s: 'accelerate', S: 'accelerate', ' ': 'accelerate' };
+    const keyActions = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'rotate-cw', e: 'rotate-cw', E: 'rotate-cw', w: 'rotate-180', W: 'rotate-180', q: 'rotate-ccw', Q: 'rotate-ccw', r: 'rotate-cw', R: 'rotate-cw', ArrowDown: 'accelerate', s: 'accelerate', S: 'accelerate', ' ': 'hardDrop' };
     document.addEventListener('keydown', (event) => {
       const action = keyActions[event.key];
       if (!action || event.repeat) return;
@@ -277,5 +301,5 @@
       frame = requestAnimationFrame(animate);
     });
     Scorex.onDestroy(() => { running = false; accelerating = false; if (frame !== null) cancelAnimationFrame(frame); });
-    Scorex.connect({ gameId: 'tetris', gameVersion: '1.0.0' });
+    Scorex.connect({ gameId: 'tetris', gameVersion: '2.0.0' });
   

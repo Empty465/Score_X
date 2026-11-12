@@ -8,23 +8,28 @@
     html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #081727; color: #d8f5ff; font: 14px system-ui, sans-serif; }
     body { position: relative; }
     canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
-    .controls { position: absolute; z-index: 1; right: 0; bottom: 0; left: 0; display: none; box-sizing: border-box; width: 100%; height: 72px; align-items: center; justify-content: center; gap: 8px; padding: 8px 4px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-    .controls button { width: 48px; height: 52px; border: 1px solid #315d7b; border-radius: 12px; background: #102840; color: #c5f5ff; font-size: 22px; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-    .controls button[data-action="accelerate"] { width: 64px; font-size: 14px; touch-action: none; }
+    .controls { position: absolute; z-index: 1; right: 0; bottom: 0; left: 0; display: none; box-sizing: border-box; width: 100%; height: 120px; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 6px 8px max(6px, env(safe-area-inset-bottom)); user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .controls button { min-width: 0; height: 100%; border: 1px solid #315d7b; border-radius: 12px; background: #102840; color: #c5f5ff; font-size: 14px; font-weight: 600; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .controls button span { display: block; margin-top: 2px; color: #87a8bd; font-size: 10px; font-weight: 400; }
+    .controls button[data-action="accelerate"] { grid-column: 2; font-size: 13px; touch-action: none; }
+    .controls button[data-action="hardDrop"] { grid-column: 3 / 5; background: #16405a; }
     .controls button:active { background: #235371; }
     @media (pointer: coarse) {
-      canvas { top: 0; right: auto; left: 50%; width: auto; height: calc(100% - 72px); aspect-ratio: 1 / 2; transform: translateX(-50%); }
-      .controls { display: flex; }
+      canvas { top: 0; right: auto; left: 50%; width: auto; height: calc(100% - 120px); aspect-ratio: 1 / 2; transform: translateX(-50%); }
+      .controls { display: grid; }
     }
   </style>
 </head>
 <body>
   <canvas id="canvas" width="600" height="1200" aria-label="화물 적재 블록 게임 화면"></canvas>
   <div class="controls" aria-label="블록 조작">
-    <button type="button" data-action="left" aria-label="왼쪽 이동">◀</button>
-    <button type="button" data-action="right" aria-label="오른쪽 이동">▶</button>
-    <button type="button" data-action="rotate" aria-label="회전">↻</button>
-    <button type="button" data-action="accelerate" aria-label="누르는 동안 낙하 가속">▼ 가속</button>
+    <button type="button" data-action="rotate-ccw" aria-label="반시계 방향 회전">Q<span>반시계</span></button>
+    <button type="button" data-action="left" aria-label="왼쪽 이동">◀<span>이동</span></button>
+    <button type="button" data-action="right" aria-label="오른쪽 이동">▶<span>이동</span></button>
+    <button type="button" data-action="rotate-cw" aria-label="시계 방향 회전">E<span>시계</span></button>
+    <button type="button" data-action="rotate-180" aria-label="180도 회전">W<span>180°</span></button>
+    <button type="button" data-action="accelerate" aria-label="누르는 동안 낙하 가속">▼<span>가속</span></button>
+    <button type="button" data-action="hardDrop" aria-label="즉시 낙하">⤓<span>즉시 낙하</span></button>
   </div>
   <script src="../../sdk/scorex-sdk.js"></script>
   <script src="game.js"></script>
