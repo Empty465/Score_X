@@ -59,6 +59,10 @@ test('new orbital mini-games are discovered and implement the game protocol', ()
     dino: [
       "[' ', 'ArrowUp', 'w', 'W']",
       "['ArrowDown', 's', 'S']",
+      'function setDucking(value)',
+      'if (value && jumpHeight > 0)',
+      'jumpHeight = 0;',
+      'jumpVelocity = 0;',
       'score = Math.min(MAX_SCORE, Math.floor(distance / 100))'
     ]
   };

@@ -181,6 +181,15 @@
       }
     }
 
+    function setDucking(value) {
+      ducking = value;
+      if (value && jumpHeight > 0) {
+        jumpHeight = 0;
+        jumpVelocity = 0;
+        draw();
+      }
+    }
+
     function update(delta) {
       const dt = Math.min(delta, 50) / 1000;
       activeMs += dt * 1000;
@@ -226,16 +235,16 @@
 
     document.querySelector('[data-control="jump"]').addEventListener('pointerdown', (event) => { event.preventDefault(); jump(); });
     const duckButton = document.querySelector('[data-control="duck"]');
-    duckButton.addEventListener('pointerdown', (event) => { event.preventDefault(); duckButton.setPointerCapture(event.pointerId); ducking = true; });
-    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((name) => duckButton.addEventListener(name, () => { ducking = false; }));
+    duckButton.addEventListener('pointerdown', (event) => { event.preventDefault(); duckButton.setPointerCapture(event.pointerId); setDucking(true); });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((name) => duckButton.addEventListener(name, () => setDucking(false)));
     document.addEventListener('keydown', (event) => {
       if ([' ', 'ArrowUp', 'w', 'W'].includes(event.key)) { event.preventDefault(); jump(); }
-      if (['ArrowDown', 's', 'S'].includes(event.key)) { event.preventDefault(); ducking = true; }
+      if (['ArrowDown', 's', 'S'].includes(event.key)) { event.preventDefault(); setDucking(true); }
     });
     document.addEventListener('keyup', (event) => {
-      if (['ArrowDown', 's', 'S'].includes(event.key)) ducking = false;
+      if (['ArrowDown', 's', 'S'].includes(event.key)) setDucking(false);
     });
-    window.addEventListener('blur', () => { ducking = false; });
+    window.addEventListener('blur', () => setDucking(false));
 
     Scorex.onInit((init) => { rng = seeded(init.seed); reset(); });
     Scorex.onStart(() => {

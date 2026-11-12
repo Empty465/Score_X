@@ -25,7 +25,7 @@ const GAME_GUIDES = {
   },
   dino: {
     title: '로버 조작',
-    copy: '장애물은 점프로 넘고 저공 비행 드론의 스캔은 숙여 피하세요. 오래 주행할수록 기록이 높아집니다.',
+    copy: '장애물은 점프로 넘고, 공중에서 숙이면 즉시 착지해 드론 스캔을 피합니다.',
     controls: [
       { keys: ['Space', '↑', 'W'], action: '점프' },
       { keys: ['S', '↓'], action: '숙이기' }
