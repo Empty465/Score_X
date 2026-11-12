@@ -129,6 +129,7 @@
   - [x] Shell: `<scorex-game>` Web Component (`shell/scorex-game.js`, MessageChannel 핸드셰이크·타임아웃·오류 처리·`destroy`)
   - [x] `scorex-sdk.js`, 목업 하니스(`tools/harness.html`), 샘플 게임(`examples/hello_game/`)
 - [x] **[신규 미니게임] 4족 보행 로봇 운영(`clop`, NO. 07)**: Q/W/O/P로 다리 4개 제어(모바일 터치 버튼), 120m 도착 성공·전복 시 종료·제한 100초, 언덕 5개(`clopHills`), 1m당 10점 + 완주 500점(최대 1,700점), 진행 바, `server.js` 최고 점수 컬럼 추가, 투자 시퀀스 자동 포함
+- [x] 단일 카탈로그 관리, 지연 로드·중복 로드·미등록 ID·로드 실패 처리, 새 게임 추가 절차 문서화(`games/README.md`)와 연동 테스트(`npm test`)
 
 ### 2026-10-19
 - [x] **점수판·티어·보상**
@@ -143,6 +144,5 @@
   - [x] 무작위 3~5개 미니게임 시퀀스 및 체크포인트 처리
   - [x] 정산 팝업(`전액 손실`/`일부 손실`/`본전`/`소량 이득`/`대량 이득`, 고지된 확률 테이블 기준) 및 DB 재화 반영
 
-### 날짜 미기재 (기존 구현 확인)
-- [x] 미니게임 모듈 구조: Shell과 게임 분리(ES Module 동적 로딩), `registerGame(id, lifecycle)` 생명주기, `window.Playground` 공통 API(게임 등록, 최고 기록 조회·저장, 점수 제출) — 이후 5.3.1에서 iframe 구조로 대체됨
-- [x] 단일 카탈로그 관리, 지연 로드·중복 로드·미등록 ID·로드 실패 처리, 새 게임 추가 절차 문서화(`games/README.md`)와 연동 테스트(`npm test`)
+### 2026-09-30
+- [x] 미니게임 모듈 구조: Shell과 게임 분리, `registerGame(id, lifecycle)` 생명주기, `window.Playground` 공통 API(게임 등록, 최고 기록 조회·저장, 점수 제출) — 이후 2026-10-22에 iframe 구조로 대체됨
