@@ -47,11 +47,22 @@ test('new orbital mini-games are discovered and implement the game protocol', ()
     ],
     tetris: [
       'board = [...Array.from({ length: cleared }, () => Array(COLS).fill(null)), ...remaining]',
-      'dropInterval() { return Math.max(120, 850 - (level() - 1) * 70); }'
+      'dropInterval() { return Math.max(120, 850 - (level() - 1) * 70); }',
+      'function refillPieceSet()',
+      'if (pieceQueue.length === 0) refillPieceSet();',
+      "Q: 'rotate-ccw'",
+      "E: 'rotate-cw'",
+      "W: 'rotate-180'",
+      "R: 'rotate-cw'",
+      "' ': 'hardDrop'"
     ],
     dino: [
       "[' ', 'ArrowUp', 'w', 'W']",
       "['ArrowDown', 's', 'S']",
+      'function setDucking(value)',
+      'if (value && jumpHeight > 0)',
+      'jumpHeight = 0;',
+      'jumpVelocity = 0;',
       'score = Math.min(MAX_SCORE, Math.floor(distance / 100))'
     ]
   };
@@ -110,21 +121,26 @@ test('new mini-game controls and status indicators are clearly explained', () =>
   assert.ok(cargoSource.includes('<canvas id="canvas" width="600" height="1200"'));
   assert.equal(cargoManifest.aspectRatio, '1:2');
   assert.ok(cargo.includes('width: 100%; height: 100%'));
-  assert.ok(cargoSource.includes('const CELL = 45'));
-  assert.ok(cargoSource.includes('const BOARD_X = 75'));
-  assert.ok(cargoSource.includes('const BOARD_Y = 150'));
+  assert.ok(cargoSource.includes('const CELL = 48'));
+  assert.ok(cargoSource.includes('const BOARD_X = 60'));
+  assert.ok(cargoSource.includes('const BOARD_Y = 132'));
   assert.ok(cargoSource.includes('context.fillText(\'SCORE\', 20, 57)'));
   assert.ok(cargoSource.includes('context.fillText(\'NEXT\', 425, 28)'));
   assert.ok(cargoSource.includes('(row + col) % 2 === 0 ? \'#142d40\' : \'#122a3c\''));
-  assert.ok(cargoSource.includes('context.strokeRect(59.5, 134.5, 481, 931)'));
-  assert.ok(cargoSource.includes('height: calc(100% - 72px)'));
+  assert.ok(cargoSource.includes('context.strokeRect(44.5, 116.5, 511, 991)'));
+  assert.ok(cargoSource.includes('height: calc(100% - 120px)'));
   assert.ok(cargoSource.includes("keyActions[event.key] === 'accelerate'"));
   assert.ok(cargoSource.includes('dropInterval() / (accelerating ? 4 : 1)'));
   assert.ok(cargoSource.includes('score + [0, 5, 15, 25, 40][cleared] * level()'));
   assert.ok(!cargoSource.includes('fallProgress'));
   assert.ok(cargoSource.includes('(current.y + y) * CELL'));
-  assert.ok(cargo.includes('.controls button[data-action="accelerate"] { width: 64px;'));
-  assert.ok(!cargoSource.includes('function hardDrop()'));
+  assert.ok(cargo.includes('.controls button[data-action="accelerate"] { grid-column: 2;'));
+  for (const action of ['rotate-ccw', 'rotate-cw', 'rotate-180', 'hardDrop', 'accelerate']) {
+    assert.ok(cargo.includes(`data-action="${action}"`), `mobile controls should include ${action}`);
+  }
+  assert.ok(cargo.includes('grid-template-columns: repeat(4, minmax(0, 1fr))'));
+  assert.ok(cargoSource.includes('function hardDrop()'));
+  assert.ok(cargoManifest.version === '2.0.0');
   assert.ok(!cargoManifest.hud.includes('progress'));
   for (const game of [rover, defense, cargo]) {
     assert.ok(game.includes('user-select: none'));
@@ -158,7 +174,11 @@ test('new mini-games have dedicated home art and desktop gameplay guides', () =>
   assert.ok(styles.includes('.tetris-active { position: absolute; top: 16%; left: 20%; width: 60%;'));
   assert.ok(generic.includes("keys: ['Space', '↑', 'W'], action: '점프'"));
   assert.ok(generic.includes("keys: ['S', '↓'], action: '숙이기'"));
-  assert.ok(generic.includes("keys: ['Space', 'S', '↓'], action: '누르는 동안 가속'"));
+  assert.ok(generic.includes("keys: ['S', '↓'], action: '누르는 동안 가속'"));
+  assert.ok(generic.includes("keys: ['Q'], action: '반시계 방향 회전'"));
+  assert.ok(generic.includes("keys: ['E', 'R', '↑'], action: '시계 방향 회전'"));
+  assert.ok(generic.includes("keys: ['W'], action: '180도 회전'"));
+  assert.ok(generic.includes("keys: ['Space'], action: '즉시 낙하'"));
   for (const id of ['galaga', 'tetris', 'dino']) {
     const html = read(`games/${id}/index.html`);
     assert.ok(!html.includes('keyboard-hint'), `${id} should rely on the desktop side guide instead of duplicating keyboard hints below the game`);

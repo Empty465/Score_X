@@ -13,16 +13,19 @@ const GAME_GUIDES = {
   },
   tetris: {
     title: '적재 조작',
-    copy: '블록을 회전하고 이동해 가로 줄을 완성하세요. 낙하 가속은 누르는 동안 적용됩니다.',
+    copy: '7개 블록 세트를 차례로 적재해 가로 줄을 완성하세요.',
     controls: [
       { keys: ['←', '→'], action: '이동' },
-      { keys: ['↑', 'W'], action: '회전' },
-      { keys: ['Space', 'S', '↓'], action: '누르는 동안 가속' }
+      { keys: ['Q'], action: '반시계 방향 회전' },
+      { keys: ['E', 'R', '↑'], action: '시계 방향 회전' },
+      { keys: ['W'], action: '180도 회전' },
+      { keys: ['Space'], action: '즉시 낙하' },
+      { keys: ['S', '↓'], action: '누르는 동안 가속' }
     ]
   },
   dino: {
     title: '로버 조작',
-    copy: '장애물은 점프로 넘고 저공 비행 드론의 스캔은 숙여 피하세요. 오래 주행할수록 기록이 높아집니다.',
+    copy: '장애물은 점프로 넘고, 공중에서 숙이면 즉시 착지해 드론 스캔을 피합니다.',
     controls: [
       { keys: ['Space', '↑', 'W'], action: '점프' },
       { keys: ['S', '↓'], action: '숙이기' }
